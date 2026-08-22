@@ -54,7 +54,8 @@
   "peerDependencies": {
     "@deepseek-ai/dsh-tools": "*",
     "@deepseek-ai/schemastery": "*",
-    "@deepseek-ai/cordis": "*"
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-llm": "*"
   },
   "license": "MIT"
 }
