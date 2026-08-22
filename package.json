@@ -14,6 +14,9 @@
     "./state": {
       "default": "./lib/state.js"
     },
+    "./core-tools": {
+      "default": "./lib/core-tools.js"
+    },
     "./discuss": {
       "default": "./lib/discuss.js"
     },
