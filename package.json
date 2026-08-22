@@ -4,6 +4,9 @@
   "description": "DeepSeek Harness bundle that reimplements opengsd-core (Git Ship Done) as a host-plane plugin set, replacing the default agent-loop behavior with the GSD phase loop: Discuss -> (UI design) -> Plan -> Execute -> Verify -> Ship.",
   "type": "module",
   "main": "./lib/persona.js",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
   "exports": {
     ".": {
       "default": "./lib/persona.js"
