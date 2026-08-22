@@ -1,0 +1,60 @@
+{
+  "name": "@dsh-gsd/bundle",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness bundle that reimplements opengsd-core (Git Ship Done) as a host-plane plugin set, replacing the default agent-loop behavior with the GSD phase loop: Discuss -> (UI design) -> Plan -> Execute -> Verify -> Ship.",
+  "type": "module",
+  "main": "./lib/persona.js",
+  "exports": {
+    ".": {
+      "default": "./lib/persona.js"
+    },
+    "./persona": {
+      "default": "./lib/persona.js"
+    },
+    "./state": {
+      "default": "./lib/state.js"
+    },
+    "./discuss": {
+      "default": "./lib/discuss.js"
+    },
+    "./plan": {
+      "default": "./lib/plan.js"
+    },
+    "./execute": {
+      "default": "./lib/execute.js"
+    },
+    "./verify": {
+      "default": "./lib/verify.js"
+    },
+    "./ship": {
+      "default": "./lib/ship.js"
+    },
+    "./ui": {
+      "default": "./lib/ui.js"
+    },
+    "./quick": {
+      "default": "./lib/quick.js"
+    },
+    "./commands": {
+      "default": "./lib/commands.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/*.js",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/schemastery": "*",
+    "@deepseek-ai/cordis": "*"
+  },
+  "license": "MIT"
+}

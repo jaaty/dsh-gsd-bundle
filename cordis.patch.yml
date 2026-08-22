@@ -1,0 +1,77 @@
+# The dsh-gsd-bundle patch: Git Ship Done (opengsd-core) reimplemented as a
+# DeepSeek Harness bundle. Applied after dsh-base's insert; rows here override
+# base rows by id (last write wins per row), and the insert block adds the GSD
+# plugin rows.
+#
+# A patch replaces the targeted row's whole `config`, so each overridden row
+# restates every key it owns.
+#
+# What "replace the default agent loop plugin" means here: the mechanical turn
+# machine in @deepseek-ai/dsh-agent-loop (tool scheduling, context assembly,
+# session prep) stays — that is DSH's core, not opengsd-core. The GSD bundle
+# replaces the agent loop's BEHAVIOUR: it overrides the agent-loop row's
+# configured agents to a GSD agent, and the gsd-persona row installs opengsd's
+# phase-loop mental model (Discuss -> UI -> Plan -> Execute -> Verify -> Ship)
+# as the persona every session reads. The gsd_* phase tools are the loop steps.
+
+# ── override: the agent-loop row now configures a GSD agent ──────────────────
+#
+# provider/model are intentionally omitted: the agent/request waterfall resolves
+# them from the user's model selection (agent-default-model), so the GSD agent
+# runs on whichever model the user picked. A configured startup agent named
+# `gsd` is created for CLI entry points; web sessions are created on demand by
+# the same factory and inherit the GSD persona + tools.
+- id: agent-loop
+  config:
+    maxParallelToolCalls: 10
+    agents:
+      - id: gsd
+
+# ── insert: the GSD phase-loop plugin rows ───────────────────────────────────
+- insert:
+    # The phase-loop persona + runtime-context (orients every step at STATE.md).
+    # Order -100 renders it before the deployment persona slot.
+    - id: gsd-persona
+      name: '@dsh-gsd/bundle/persona'
+
+    # The .planning/ artefact + STATE.md/ROADMAP.md service. Publishes the
+    # `gsdState` host service consumed by every phase tool below.
+    - id: gsd-state
+      name: '@dsh-gsd/bundle/state'
+
+    # Orientation/entry tools: gsd_init, gsd_status, gsd_progress, gsd_new_milestone.
+    - id: gsd-core-tools
+      name: '@dsh-gsd/bundle/core-tools'
+
+    # Phase tools. Each is one loop step as a model-facing tool.
+    - id: gsd-discuss
+      name: '@dsh-gsd/bundle/discuss'
+
+    - id: gsd-plan
+      name: '@dsh-gsd/bundle/plan'
+
+    - id: gsd-execute
+      name: '@dsh-gsd/bundle/execute'
+
+    - id: gsd-verify
+      name: '@dsh-gsd/bundle/verify'
+
+    - id: gsd-ship
+      name: '@dsh-gsd/bundle/ship'
+
+    # Optional UI design phase (below the loop threshold by default; enable per
+    # phase via gsd_ui_phase).
+    - id: gsd-ui
+      name: '@dsh-gsd/bundle/ui'
+
+    # The sub-threshold lightweight path (/gsd-quick in opengsd-core): for work
+    # too small to warrant the full loop.
+    - id: gsd-quick
+      name: '@dsh-gsd/bundle/quick'
+
+    # The /gsd-* slash-command layer: thin routers that inject a user message
+    # instructing the agent to run the matching gsd_* tool. Gives the opengsd
+    # UX (/gsd-plan-phase 1, /gsd-ship 1, ...) alongside natural-language driving.
+    # Only needs the host `commands` service.
+    - id: gsd-commands
+      name: '@dsh-gsd/bundle/commands'
