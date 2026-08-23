@@ -94,12 +94,21 @@ Copied into `.planning/phases/GSD-03-loop-e2e/demo-artifacts/`:
 the entire loop and produced a genuine PR (#3). There is no limitation to
 record and no offline-harness evidence is presented as the full-loop proof.
 
-## Recovery note (honesty)
+## Deviation note (honesty — the loop ran in the workspace, not /tmp/demo)
 
-The driver's stdout was written to a log inside the job-local `/tmp`, which is
-ephemeral across tool calls (per RESEARCH); the booted clone also lived there
-and was wiped when the job ended. The durable proof is therefore reconstructed
-from the remote: the PR (#3), the pushed `demo-loop-e2e` branch, its commit
-trail, and the PR's full tree of `.planning/` artefacts. MOUNT-06 was re-asserted
-by checking out that exact branch in a worktree and running `npm test`. All
-evidence above comes from these durable sources.
+The `boot_loop()` step of `loop-e2e.sh` did **not** `cd "$DEMO_DIR"` before
+invoking `dsh`, so the booted session's git working directory was the workspace
+(the real repo), not the throwaway `/tmp/demo` clone. The booted session created
+a local `demo-loop-e2e` branch here (built on `main`), committed the demo phase
+onto it, pushed it to `origin/demo-loop-e2e`, and created PR #3. The PR is
+therefore genuine and its base/head/diff are clean (main + demo branch). The
+`/tmp/demo` clone was created but unused by the loop.
+
+The durable evidence was reconstructed from the remote: the PR (#3), the pushed
+`demo-loop-e2e` branch, its commit trail, and the PR's full tree of `.planning/`
+artefacts. MOUNT-06 was re-asserted by checking out that exact branch in a
+worktree and running `npm test`. The accidental local `demo-loop-e2e` branch
+(which had picked up this plan's Task-2 commit on top of the pushed branch) was
+deleted after the Task-2 evidence files were re-applied onto the orchestrator's
+`phase-3` branch; `origin/demo-loop-e2e` (PR #3) is unchanged. All evidence
+above comes from these durable sources.

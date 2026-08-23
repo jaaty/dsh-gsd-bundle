@@ -96,7 +96,10 @@ DEMO_TASK="${DEMO_TASK:-In this repository run the full Git Ship Done loop end t
 boot_loop() {
   step "boot_loop -> DSH_HOME=$DSH_HOME_DIR dsh --profile headless (full demo phase)"
   local task="${DEMO_TASK}"
-  DSH_HOME="$DSH_HOME_DIR" dsh --profile headless "$task" >"$LOOP_LOG" 2>&1
+  # Run inside the demo clone so the booted session's git working dir is the
+  # throwaway repo (NOT the workspace) — otherwise it would commit to the real
+  # repo's branch. This was the one deviation during the genuine run.
+  (cd "$DEMO_DIR" && DSH_HOME="$DSH_HOME_DIR" dsh --profile headless "$task") >"$LOOP_LOG" 2>&1
   local code=$?
   echo "LOOP_EXIT=$code"
   echo "--- loop boot log tail ---"
