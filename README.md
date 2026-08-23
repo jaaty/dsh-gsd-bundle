@@ -34,6 +34,7 @@ All plugins are subpath exports of this one package (`@dsh-gsd/bundle/<name>`), 
 | `gsd-ship` | `./ship` | `gsd_ship` — preflight gates, PR body assembly, `gh pr create`, STATE update |
 | `gsd-ui` | `./ui` | `gsd_ui_phase` — `UI-SPEC.md` (ui-researcher + ui-checker) |
 | `gsd-quick` | `./quick` | `gsd_quick` — sub-threshold lightweight path → `.planning/quick/` |
+| `gsd-map-codebase` | `./map-codebase` | `gsd_map_codebase` — parallel fresh-context mapper subagents → `.planning/codebase/` (7 docs); brownfield pre-init onboarding tool |
 | `gsd-commands` | `./commands` | the `/gsd-*` slash-commands — thin routers that inject a user message telling the agent to run the matching tool |
 
 ## `.planning/` artefacts (faithful to opengsd-core)
@@ -45,6 +46,14 @@ All plugins are subpath exports of this one package (`@dsh-gsd/bundle/<name>`), 
 ├── REQUIREMENTS.md      numbered acceptance criteria (REQ-IDs)
 ├── STATE.md             YAML frontmatter (machine) + Markdown body (human), <100 lines
 ├── config.json          workflow + model configuration
+├── codebase/            brownfield codebase map (written by gsd_map_codebase, pre-init)
+│   ├── STACK.md                  technology stack
+│   ├── INTEGRATIONS.md           external services & data storage
+│   ├── ARCHITECTURE.md           system overview, layers, data flow
+│   ├── STRUCTURE.md              directory layout, "where to add new code"
+│   ├── CONVENTIONS.md            coding & naming patterns
+│   ├── TESTING.md                test framework & patterns
+│   └── CONCERNS.md               tech debt, bugs, fragility, coverage gaps
 └── phases/<NN>-<slug>/
     ├── <NN>-CONTEXT.md          7 blocks: domain, decisions (D-NN), canonical_refs, code_context, specifics, deferred
     ├── <NN>-RESEARCH.md         domain analysis, package legitimacy, risks, open questions, responsibility map, validation architecture; provenance tags
@@ -59,7 +68,7 @@ All plugins are subpath exports of this one package (`@dsh-gsd/bundle/<name>`), 
 
 ## Fresh-context subagents
 
-Research, planning, execution, and verification run as one-shot fresh-context subagents spawned through the host `subagents` service's in-process `spawn` provider (`ctx.subagents.start('spawn', { prompt, parent, signal })`) — exactly opengsd's fresh-~200k-context model. The role prompts (researcher, planner, plan-checker, executor, verifier, ui-researcher, ui-checker) are condensed faithfully from opengsd's `agents/*.md`: role, tools, inputs, outputs, the planner's goal-backward `must_haves`, the plan-checker's 12 dimensions and adversarial FORCE stance, the executor's atomic-commit + worktree discipline, and the verifier's "do not trust SUMMARY.md" escalation gate with the 3-value status decision tree.
+Research, planning, execution, and verification run as one-shot fresh-context subagents spawned through the host `subagents` service's in-process `spawn` provider (`ctx.subagents.start('spawn', { prompt, parent, signal })`) — exactly opengsd's fresh-~200k-context model. The role prompts (researcher, planner, plan-checker, executor, verifier, ui-researcher, ui-checker, codebase-mapper) are condensed faithfully from opengsd's `agents/*.md`: role, tools, inputs, outputs, the planner's goal-backward `must_haves`, the plan-checker's 12 dimensions and adversarial FORCE stance, the executor's atomic-commit + worktree discipline, the verifier's "do not trust SUMMARY.md" escalation gate with the 3-value status decision tree, and the codebase-mapper's focus→document templates with the forbidden-secrets rule.
 
 ## Install
 
@@ -90,6 +99,7 @@ Then in a session: `gsd_init` to bootstrap a project, `gsd_status` to orient, an
 | `/gsd-verify-work <N>` | `gsd_verify` | phase number |
 | `/gsd-ship <N> [--draft]` | `gsd_ship` | phase number + draft flag |
 | `/gsd-quick <task>` | `gsd_quick` | the task |
+| `/gsd-map-codebase [--fast [--focus tech\|arch\|quality\|concerns\|tech+arch]] [--paths p1,p2]` | `gsd_map_codebase` | fast flag, focus, path prefixes |
 | `/gsd-new-milestone <name> <version>` | `gsd_new_milestone` | name + version |
 
 e.g. `/gsd-plan-phase 1` routes to `gsd_plan`; `/gsd-ship 2 --draft` routes to `gsd_ship` as a draft PR.
@@ -102,6 +112,7 @@ This is a faithful reimplementation of opengsd-core's **phase loop and artefact 
 - **`gsd_run` is not wrapped.** The opengsd CLI query/check/state commands are reimplemented as in-process `gsdState` service methods (no separate `gsd_run` process).
 - **Capability gates** (security/broken-windows/TDD-audit `ship:pre`, `execute:wave:post`, `ui.safety-gate`, etc.) and the async-jobs manifest / `WINDOWS.md` ledger / UAT conversational loop are not implemented in this first version; `gsd_ship` performs the core preflight (verification passed, clean tree, branch, remote, `gh`) and PR creation.
 - Slash-command-style flags (`--gaps`, `--tdd`, `--mvp`, `--no-tracer`, `--granularity`, `--wave`, `--gaps-only`) are exposed as tool parameters rather than a slash-command layer.
+- **`gsd_map_codebase` `--query` intel mode** (the `intel.enabled` capability ecosystem — drift detection, `gsd-intel-updater`, the `query`/`status`/`diff`/`refresh` sub-commands) is not implemented in this first version, parallel to the omitted capability gates. The full parallel map, `--fast` single-focus scan (scan.md), and `--paths` incremental-remap scoping are all implemented; the existing-check's interactive refresh/update/skip choice is surfaced as `force` / `paths` parameters (a tool cannot hold a multi-turn interview).
 
 The reference used to build this is in `gsd-core-reference.md` (compiled from the opengsd-core `next` branch).
 

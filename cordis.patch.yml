@@ -69,6 +69,13 @@
     - id: gsd-quick
       name: '@dsh-gsd/bundle/quick'
 
+    # The brownfield codebase mapper (/gsd-map-codebase in opengsd-core):
+    # parallel fresh-context mapper subagents write 7 structured documents
+    # directly to .planning/codebase/. Pre-init onboarding tool; does not
+    # require a GSD project. Consumed by /gsd-plan-phase.
+    - id: gsd-map-codebase
+      name: '@dsh-gsd/bundle/map-codebase'
+
     # The /gsd-* slash-command layer: thin routers that inject a user message
     # instructing the agent to run the matching gsd_* tool. Gives the opengsd
     # UX (/gsd-plan-phase 1, /gsd-ship 1, ...) alongside natural-language driving.

@@ -37,6 +37,24 @@ function makeSubagents() {
         text = "status: passed, score: 2/2";
       } else if (label.startsWith("plan research")) {
         text = "# RESEARCH\n\n## Open Questions\n\n- none (RESOLVED)\n\nStandard.";
+      } else if (label.startsWith("map-codebase")) {
+        // Fake gsd-codebase-mapper: writes the focus's documents directly,
+        // each >20 lines so the orchestrator's verify step passes.
+        const focus = label.split(/\s+/)[1] || "tech";
+        const docsByFocus = {
+          tech: ["STACK", "INTEGRATIONS"],
+          arch: ["ARCHITECTURE", "STRUCTURE"],
+          quality: ["CONVENTIONS", "TESTING"],
+          concerns: ["CONCERNS"],
+          "tech+arch": ["STACK", "INTEGRATIONS", "ARCHITECTURE", "STRUCTURE"],
+        };
+        for (const d of docsByFocus[focus] || []) {
+          const lines = [`# ${d}`, "", `**Analysis Date:** 2026-08-22`, ""];
+          while (lines.length < 24) lines.push(`- ${d} finding ${lines.length}.`);
+          lines.push("", `*${d} analysis: 2026-08-22*`);
+          await fs.writeText({ targetKey: `${CWD}/.planning/codebase/${d}.md` }, lines.join("\n"));
+        }
+        text = `## Mapping Complete\n**Focus:** ${focus}\nDocuments written.`;
       }
       return { result: { output: [{ type: "text", text }], stopReason: "completed" }, dispose: () => {} };
     },
@@ -155,5 +173,74 @@ describe("gsd_status", () => {
     const res = await t.execute({}, exec);
     assert.match(res, /Milestone: M1/);
     assert.match(res, /Progress:/);
+  });
+});
+
+describe("gsd_map_codebase", () => {
+  beforeEach(async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    ctx = makeCtx();
+  });
+
+  const DOCS = ["STACK", "INTEGRATIONS", "ARCHITECTURE", "STRUCTURE", "CONVENTIONS", "TESTING", "CONCERNS"];
+
+  test("full mode spawns 4 mappers and writes all 7 documents", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ force: true }, exec);
+    assert.match(res, /Codebase mapping complete/);
+    for (const d of DOCS) assert.ok(fs.files.has(`${CWD}/.planning/codebase/${d}.md`), `${d}.md should be written`);
+    // documents are >20 lines (no thin-doc warning)
+    assert.doesNotMatch(res, /thin documents/);
+    assert.doesNotMatch(res, /missing documents/);
+  });
+
+  test("fast mode focus arch writes only ARCHITECTURE.md and STRUCTURE.md", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ fast: true, focus: "arch", force: true }, exec);
+    assert.match(res, /Codebase mapping complete/);
+    assert.ok(fs.files.has(`${CWD}/.planning/codebase/ARCHITECTURE.md`));
+    assert.ok(fs.files.has(`${CWD}/.planning/codebase/STRUCTURE.md`));
+    assert.ok(!fs.files.has(`${CWD}/.planning/codebase/STACK.md`), "tech docs must not be written in fast arch mode");
+    assert.ok(!fs.files.has(`${CWD}/.planning/codebase/CONCERNS.md`));
+  });
+
+  test("invalid fast focus is rejected by the schema and spawns nothing", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await assert.rejects(() => t.execute({ fast: true, focus: "bogus" }, exec), /focus|VALID_ARGS|must be one of/i);
+    for (const d of DOCS) assert.ok(!fs.files.has(`${CWD}/.planning/codebase/${d}.md`), "no documents should be written for an invalid focus");
+  });
+
+  test("existing map without force returns a notice and does not remap", async () => {
+    // pre-seed an existing map
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({}, exec);
+    assert.match(res, /already exists/);
+    assert.match(res, /STACK\.md/);
+    assert.doesNotMatch(res, /Codebase mapping complete/);
+  });
+
+  test("force=true refreshes an existing map", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ force: true }, exec);
+    assert.match(res, /Codebase mapping complete/);
+    for (const d of DOCS) assert.ok(fs.files.has(`${CWD}/.planning/codebase/${d}.md`));
+  });
+
+  test("paths incremental remap bypasses the existing-check", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ paths: ["lib/"] }, exec);
+    assert.match(res, /Codebase mapping complete/);
+  });
+
+  test("rejects forbidden path scope values and falls back to whole-repo", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ paths: ["../escape", "/abs", "lib/;rm"] }, exec);
+    assert.match(res, /Codebase mapping complete/);
+    // all forbidden -> whole repo -> all 7 docs
+    for (const d of DOCS) assert.ok(fs.files.has(`${CWD}/.planning/codebase/${d}.md`));
   });
 });

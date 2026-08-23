@@ -41,6 +41,9 @@
     "./quick": {
       "default": "./lib/quick.js"
     },
+    "./map-codebase": {
+      "default": "./lib/map-codebase.js"
+    },
     "./commands": {
       "default": "./lib/commands.js"
     },
