@@ -6,12 +6,12 @@
     "pattern_mapper": true,
     "tdd_mode": false,
     "mvp_mode": false,
-    "use_worktrees": true,
+    "use_worktrees": false,
     "agent_hint_routing": true,
     "text_mode": false,
     "commit_docs": true
   },
   "context_window": 200000,
-  "project_code": "GSD",
+  "project_code": "DEMO",
   "response_language": null
 }

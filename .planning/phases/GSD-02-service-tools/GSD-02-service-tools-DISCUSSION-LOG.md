@@ -1,3 +1,0 @@
-# Phase 2: service-tools — Discussion Log
-
-Discussed phase 2 (service-tools) with the user. Established the phase-1 overlap boundary: schema-validity for all 12 tools is already shipped (phase 1), so phase 2 is gap-focused — it adds execute() smoke calls for the 5 untested tools (gsd_new_milestone, gsd_progress, gsd_quick, gsd_ui_phase, gsd_verify) and extends the gsdState round-trip to the full artefact surface (PROJECT/REQUIREMENTS/ROADMAP/STATE/config + per-phase CONTEXT/RESEARCH/PLAN/SUMMARY/VERIFICATION). Smoke semantics: fail-loud guard assertions for infra-bound tools (gsd_ship git/gh, gsd_plan LLM), real success-path smokes for fake-host-f-able tools. All offline on FakeFs/fake-ctx; no live boot.

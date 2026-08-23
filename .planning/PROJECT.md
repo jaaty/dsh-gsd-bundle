@@ -1,4 +1,4 @@
-# @dsh-gsd/bundle
+# demo-e2e
 
-Reimplement opengsd-core (Git Ship Done) as a DeepSeek Harness plugin bundle that replaces the default agent-loop behaviour with the GSD phase loop (Discuss → Plan → Execute → Verify → Ship), running as host-plane Cordis plugins with a faithful `.planning/` artefact schema.
+Tiny demo project proving the full GSD phase loop end-to-end (Discuss -> Plan -> Execute -> Verify -> Ship) with a trivial non-destructive change to README.md.
 
