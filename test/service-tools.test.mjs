@@ -151,3 +151,41 @@ describe("gsd_progress", () => {
     assert.match(res, /Phase 1 plans/);
   });
 });
+
+describe("gsd_ui_phase", () => {
+  beforeEach(async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    ctx = makeCtx();
+  });
+
+  test("writes UI-SPEC and advances STATE to plan", async () => {
+    const { t } = await registerTool("ui", "gsd_ui_phase");
+    const res = await t.execute({ phase: 1, notes: "two-pane editor" }, exec);
+    assert.match(res, /gsd_ui_phase complete/);
+    assert.match(res, /VERIFICATION PASSED/);
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-UI-SPEC.md`));
+    const st = await svc.readState(CWD);
+    assert.equal(st.frontmatter.status, "plan");
+  });
+});
+
+describe("gsd_verify", () => {
+  beforeEach(async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    ctx = makeCtx();
+  });
+
+  test("writes VERIFICATION status:passed and advances STATE to ship", async () => {
+    // gsd_verify returns early if no plans or any plan lacks a SUMMARY (R4).
+    await svc.writeArtifact(CWD, 1, "PLAN-01", FENCED_PLAN);
+    await svc.markPlanSummary(CWD, 1, 1, FENCED_SUMMARY);
+    const { t } = await registerTool("verify", "gsd_verify");
+    const res = await t.execute({ phase: 1 }, exec);
+    assert.match(res, /Phase 1 verified/);
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-VERIFICATION.md`));
+    const st = await svc.readState(CWD);
+    assert.equal(st.frontmatter.status, "ship");
+  });
+});
