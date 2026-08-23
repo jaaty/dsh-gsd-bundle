@@ -2,16 +2,16 @@
 gsd_state_version: 1
 milestone: v1.0
 milestone_name: demo
-status: ship
+status: shipped
 active_phase: 1
-next_action: ship-phase
-next_phases: [1]
+next_action: complete
+next_phases: []
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
   completed_plans: 1
-  percent: 0
+  percent: 100
 current_phase: 1
 current_phase_name: demo
 current_plan: 1
@@ -32,6 +32,8 @@ _No active phase._
 ### Recent Decisions
 - Phase 1: CONTEXT.md sealed — 4 decisions
 - Phase 1: planned — 1 plan(s) across 1 wave(s).
+- Phase 1: verified — 3/3 must-haves.
+- Phase 1 shipped — PR #3 (https://github.com/jaaty/dsh-gsd-bundle/pull/3)
 
 ### Blockers / Concerns
 _none_
