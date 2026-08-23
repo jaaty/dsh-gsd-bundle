@@ -10,12 +10,12 @@ progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 2
-  completed_plans: 3
+  completed_plans: 4
   percent: 67
 current_phase: 3
 current_phase_name: loop-e2e
-current_plan: 2
-last_updated: "2026-08-23T23:04:26.392Z"
+current_plan: 1
+last_updated: "2026-08-23T23:17:38.673Z"
 state_head: null
 last_activity: 2026-08-23
 stopped_at: "Phase 2 shipped — PR #2"
