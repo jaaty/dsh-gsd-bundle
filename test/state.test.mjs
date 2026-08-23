@@ -158,6 +158,145 @@ describe("requirements traceability", () => {
   });
 });
 
+// MOUNT-03: extend the existing PLAN/SUMMARY round-trip coverage to the full
+// artefact surface (PROJECT, REQUIREMENTS, ROADMAP, STATE, config.json, plus
+// the per-phase CONTEXT/RESEARCH/VERIFICATION artefacts). Each structured
+// accessor is asserted on the projected subset it actually preserves, per the
+// documented parse asymmetries (ROADMAP slug injection; STATE
+// last_updated/last_activity mutation + active_phase numeric-string coercion).
+describe("planning artefact round-trip", () => {
+  test("readProject returns PROJECT.md verbatim (read fidelity; no public writer)", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const PROJ = "# @my-proj\n\nA purpose paragraph with detail.\n";
+    await fs.writeText(
+      { targetKey: `${CWD}/.planning/PROJECT.md` },
+      PROJ,
+    );
+    assert.equal(await svc.readProject(CWD), PROJ);
+  });
+
+  test("writeArtifact/readArtifact round-trips CONTEXT verbatim", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const body = "---\nphase: 01-auth\ngathered: 2026-08-22\n---\n# Context\n\nGathered decisions.\n";
+    await svc.writeArtifact(CWD, 1, "CONTEXT", body);
+    assert.equal(await svc.readArtifact(CWD, 1, "CONTEXT"), body);
+    assert.equal(await svc.hasArtifact(CWD, 1, "CONTEXT"), true);
+  });
+
+  test("writeArtifact/readArtifact round-trips RESEARCH verbatim", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const body = "---\nresearcher: gsd-phase-researcher\n---\n# Research\n\nFindings here.\n";
+    await svc.writeArtifact(CWD, 1, "RESEARCH", body);
+    assert.equal(await svc.readArtifact(CWD, 1, "RESEARCH"), body);
+    assert.equal(await svc.hasArtifact(CWD, 1, "RESEARCH"), true);
+  });
+
+  test("writeArtifact/readArtifact round-trips VERIFICATION verbatim", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const body = "---\nphase: 01-auth\nstatus: passed\n---\n# Verification\n\nAll checks green.\n";
+    await svc.writeArtifact(CWD, 1, "VERIFICATION", body);
+    assert.equal(await svc.readArtifact(CWD, 1, "VERIFICATION"), body);
+    assert.equal(await svc.hasArtifact(CWD, 1, "VERIFICATION"), true);
+  });
+
+  test("writeRequirements/readRequirements round-trips with no loss", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const reqs = [
+      { id: "AUTH-01", text: "User can log in", complete: true },
+      { id: "AUTH-02", text: "User can log out", complete: false },
+      { id: "TODO-01", text: "Add a task", complete: false },
+    ];
+    await svc.writeRequirements(CWD, reqs);
+    assert.deepEqual(await svc.readRequirements(CWD), reqs);
+  });
+
+  test("writeRoadmap/readRoadmap round-trips modulo slug injection", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const roadmap = await svc.readRoadmap(CWD);
+    roadmap.milestoneName = "M2";
+    roadmap.version = "v2.0";
+    roadmap.phases = [
+      { n: 1, name: "auth", goal: "Add login", requirements: ["AUTH-01"], status: "pending" },
+      { n: 2, name: "ship", goal: "Ship it", requirements: [], status: "Complete" },
+    ];
+    await svc.writeRoadmap(CWD, roadmap);
+    const back = await svc.readRoadmap(CWD);
+    assert.equal(back.milestoneName, "M2");
+    assert.equal(back.version, "v2.0");
+    assert.deepEqual(back.phases.map(p => ({n:p.n, name:p.name, goal:p.goal, requirements:p.requirements, status:p.status})), [
+      {n:1, name:"auth", goal:"Add login", requirements:["AUTH-01"], status:"pending"},
+      {n:2, name:"ship", goal:"Ship it", requirements:[], status:"Complete"},
+    ]);
+  });
+
+  test("writeState/readState round-trips modulo last_updated/last_activity and numeric-scalar coercion of active_phase", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const doc = await svc.readState(CWD);
+    doc.frontmatter.status = "plan";
+    doc.frontmatter.active_phase = "1";
+    doc.frontmatter.milestone = "v1.0";
+    doc.body.position = "Phase 1: discuss";
+    doc.body.decisions = ["D-01: use cookies", "D-02: use jwt"];
+    doc.body.blockers = ["need design"];
+    doc.body.continuity = { lastSession: "2026-08-22", stoppedAt: "discuss", resumeFile: "src/a.js" };
+    await svc.writeState(CWD, doc);
+    const back = await svc.readState(CWD);
+
+    // Projected frontmatter: exclude last_updated/last_activity (writeState
+    // mutates them, lib/state.js:252-253) and active_phase (string "1" is
+    // emitted unquoted and coerced back to Number 1 by coerceScalar,
+    // lib/_shared.js:35) — asserted separately below.
+    const inFm = { ...doc.frontmatter };
+    delete inFm.last_updated;
+    delete inFm.last_activity;
+    delete inFm.active_phase;
+    const outFm = { ...back.frontmatter };
+    delete outFm.last_updated;
+    delete outFm.last_activity;
+    delete outFm.active_phase;
+    assert.deepEqual(outFm, inFm);
+
+    // The coerced scalar's value is preserved modulo type.
+    assert.equal(String(back.frontmatter.active_phase), doc.frontmatter.active_phase);
+
+    // _stringifyState only emits position/decisions/blockers/continuity
+    // (lib/state.js:196-217) — this is the faithful body contract.
+    assert.deepEqual(back.body, {
+      position: "Phase 1: discuss",
+      decisions: ["D-01: use cookies", "D-02: use jwt"],
+      blockers: ["need design"],
+      continuity: { lastSession: "2026-08-22", stoppedAt: "discuss", resumeFile: "src/a.js" },
+    });
+  });
+
+  test("initProject->readConfig round-trips the config", async () => {
+    const fs = new FakeFs();
+    const svc = new GsdState(stateCtx(fs), {});
+    await svc.initProject(CWD, {
+      name: "T", purpose: "p", milestoneName: "M1", version: "v1.0",
+      requirements: [],
+      phases: [{ name: "auth", goal: "g", requirements: [] }],
+      tdd: true, mvp: true, projectCode: "GSDB", discussMode: "text",
+    });
+    const cfg = await svc.readConfig(CWD);
+    assert.equal(cfg.gsd_state_version, "1.0");
+    assert.equal(cfg.workflow.tdd_mode, true);
+    assert.equal(cfg.workflow.mvp_mode, true);
+    assert.equal(cfg.project_code, "GSDB");
+    assert.equal(cfg.workflow.discuss_mode, "text");
+    assert.equal(cfg.context_window, 200000);
+    assert.equal(cfg.workflow.use_worktrees, false);
+    assert.equal(cfg.workflow.commit_docs, true);
+  });
+});
+
 function awaitBuild(fs) {
   return buildProject(fs, CWD);
 }
