@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v1.0
 milestone_name: bundle-live
-status: execute
+status: ship
 active_phase: 2
-next_action: execute-phase
+next_action: ship-phase
 next_phases: [2]
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 2
-  completed_plans: 2
+  completed_plans: 3
   percent: 33
 current_phase: 2
 current_phase_name: service-tools
 current_plan: 2
-last_updated: "2026-08-23T08:05:00.000Z"
+last_updated: "2026-08-23T07:55:42.752Z"
 state_head: null
 last_activity: 2026-08-23
 stopped_at: "Phase 1 shipped — PR #1"
