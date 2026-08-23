@@ -1,0 +1,17 @@
+{
+  "gsd_state_version": "1.0",
+  "workflow": {
+    "discuss_mode": "discuss",
+    "nyquist_validation": true,
+    "pattern_mapper": true,
+    "tdd_mode": false,
+    "mvp_mode": false,
+    "use_worktrees": true,
+    "agent_hint_routing": true,
+    "text_mode": false,
+    "commit_docs": true
+  },
+  "context_window": 200000,
+  "project_code": "GSD",
+  "response_language": null
+}
