@@ -243,3 +243,77 @@ describe("mount: cordis.patch.yml rows resolve", () => {
     assert.deepEqual(commandNames, [...EXPECTED_COMMAND_NAMES].sort(), "registered command names mismatch");
   });
 });
+
+describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
+  let fs, ctx;
+
+  const exec = {
+    agent: { session: { header: { cwd: CWD } } },
+    signal: { aborted: false, addEventListener() {}, removeEventListener() {} },
+  };
+
+  beforeEach(async () => {
+    fs = new FakeFs();
+    ctx = makeMountCtx(fs);
+    await applyAll(ctx);
+  });
+
+  test("persona section is gsd:persona (order -100) with phase-loop text", () => {
+    const section = ctx.sections[0];
+    assert.equal(section.name, "gsd:persona");
+    assert.ok(section.order === -100, `expected order -100, got ${section.order}`);
+    assert.match(section.text, /Discuss/);
+    assert.match(section.text, /Ship/);
+  });
+
+  test("runtime-context provider is gsd:state (order 10)", () => {
+    const context = ctx.contexts[0];
+    assert.equal(context.name, "gsd:state");
+    assert.ok(context.order === 10, `expected order 10, got ${context.order}`);
+  });
+
+  test("gsd_init smoke orients the context provider at STATE.md", async () => {
+    // Single minimal smoke call (D-04): gsd_init writes the .planning/ tree
+    // through the SAME provided gsdState (R-1 — do NOT use buildProject, which
+    // constructs a separate GsdState and would render "no project").
+    const gsdInit = ctx.tools.find((t) => t.name === "gsd_init");
+    assert.ok(gsdInit, "gsd_init tool not registered");
+    const res = await gsdInit.execute(
+      {
+        name: "demo",
+        milestoneName: "M1",
+        version: "v1.0",
+        requirements: [{ id: "MOUNT-01", text: "x" }],
+        phases: [{ name: "p1", goal: "do it", requirements: ["MOUNT-01"] }],
+      },
+      exec,
+    );
+    assert.match(res, /Initialised GSD project/);
+
+    // The context provider now renders the loop position at the current STATE.md.
+    const out = ctx.contexts[0].text({ agent: { session: { header: { cwd: CWD } } } });
+    assert.match(
+      out,
+      /GSD loop position: milestone .+ \/ (phase .+ \/ step .+|no active phase)/,
+      "context provider did not render the loop position",
+    );
+  });
+
+  test("uninitialised-cwd branch renders the orientation hint", () => {
+    const out = ctx.contexts[0].text({ agent: { session: { header: { cwd: "/elsewhere" } } } });
+    assert.match(out, /no \.planning\/ project found/);
+  });
+
+  test("all 12 registered tools have a valid compiled schema", () => {
+    // apply() not throwing already proves defineTool compiled the schema (D-04);
+    // assert the shape explicitly for every tool.
+    assert.equal(ctx.tools.length, 12);
+    for (const t of ctx.tools) {
+      assert.equal(typeof t.name, "string", `${t.name}: name is not a string`);
+      assert.equal(typeof t.description, "string", `${t.name}: description is not a string`);
+      assert.equal(typeof t.parameters, "object", `${t.name}: parameters is not an object`);
+      assert.ok(t.parameters !== null, `${t.name}: parameters is null`);
+      assert.ok(t.output && t.output.schema, `${t.name}: missing output.schema`);
+    }
+  });
+});
