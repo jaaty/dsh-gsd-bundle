@@ -51,10 +51,13 @@ bootstrap_home() {
 }
 JSON
 
-  # Empty user layer (comment-only cordis.patch.yml).
+  # Empty user layer (cordis.patch.yml) — MUST be a real top-level YAML array.
+  # A comment-only file parses to null and loadOverlayPatches rejects it
+  # ("must be a top-level YAML array"), which breaks the whole composition.
   cat > "$PROFILE_DIR/cordis.patch.yml" <<'YML'
 # User layer for the relocated headless profile (GSD live-boot proof).
-# No user overrides; the bundle + dsh-base rows are the full composition.
+# A top-level YAML array of loader patch entries; empty by default.
+[]
 YML
 
   # Symlink the workspace bundle into the profile's node_modules.
