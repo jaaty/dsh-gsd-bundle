@@ -1,0 +1,31 @@
+GSD-03-loop-e2e live-boot proof
+===============================
+
+Captured 2026-08-23 from a single `dsh` run under DSH_HOME=/tmp/dshhome
+(relocated home; the real /home/jatyeo/.dsh is EROFS under this sandbox, per D-04).
+
+1) COMPOSE (dsh --profile headless --dump-config, DSH_HOME=/tmp/dshhome)
+   GSD_BUNDLE_ROWS=12
+   @dsh-gsd/bundle/ insert rows present: 12 (gsd-persona, gsd-state,
+   gsd-core-tools, gsd-discuss, gsd-plan, gsd-execute, gsd-verify, gsd-ship,
+   gsd-ui, gsd-quick, gsd-map-codebase, gsd-commands)
+   agent-loop override: PRESENT (config.agents: [{ id: gsd }])
+
+2) LIVE HEADLESS BOOT (dsh --profile headless, DSH_HOME=/tmp/dshhome)
+   Task: "Reply with exactly the output of the gsd_status tool: the current
+          phase number and step, on a single line, prefixed with PHASE="
+   Booted session stdout (last non-empty line):
+     PHASE=3 step=execute
+   BOOT_EXIT=0
+
+This proves the genuine live preconditions MOUNT-05 depends on (CONTEXT
+D-01/D-02/D-04): a relocated DSH_HOME composes the headless profile with all
+12 @dsh-gsd/bundle/* rows applied, and a freshly booted headless session
+binds the gsd_status tool and completes a real LLM round-trip (Ollama,
+deepseek-v4-flash:0731-cloud) with exit 0. No offline-harness fallback was
+used (D-03).
+
+Deviation note (fixed in live-boot.sh): the profile's user-layer
+cordis.patch.yml must be a real top-level YAML array ([]), not comment-only;
+a comment-only file parses to null and loadOverlayPatches rejects it, which
+would break composition. The final script writes a valid [] user layer.
