@@ -189,3 +189,80 @@ describe("gsd_verify", () => {
     assert.equal(st.frontmatter.status, "ship");
   });
 });
+
+// gsd_quick writes TASK.md via real node:fs/promises (lib/quick.js:55-57),
+// bypassing ctx.fs, so its happy path CANNOT run on pure FakeFs at cwd=/project.
+// Smoke it against a REAL temp directory (OQ-1). Fully offline (no LLM, no
+// git/gh, no network) per D-04; cleaned up in a try/finally.
+describe("gsd_quick", () => {
+  test("records the task entry on the real filesystem", async () => {
+    const tmp = await fsPromises.mkdtemp(path.join(os.tmpdir(), "gsd-quick-"));
+    try {
+      const realFs = realFsAdapter();
+      const realSvc = new GsdState(
+        { fs: realFs, get: () => undefined, provide: () => {}, effect: () => () => {} },
+        {},
+      );
+      await realSvc.initProject(tmp, {
+        name: "T",
+        purpose: "p",
+        milestoneName: "M1",
+        version: "v1.0",
+        requirements: [{ id: "AUTH-01", text: "x", complete: false }],
+        phases: [{ name: "auth", goal: "g", requirements: ["AUTH-01"] }],
+      });
+      const execWithTmp = {
+        agent: { session: { header: { cwd: tmp } } },
+        signal: { aborted: false, addEventListener() {}, removeEventListener() {} },
+      };
+      // Register gsd_quick directly against a ctx wired to the real temp svc +
+      // fake subagents (the `quick` branch returns canned output; it does not
+      // touch the shared FakeFs).
+      const mod = await import("../lib/quick.js");
+      const tools = [];
+      const c = {
+        fs: realFs,
+        get: (n) =>
+          n === "gsdState" ? realSvc : n === "subagents" ? makeSubagents() : n === "tools" ? { register() {} } : undefined,
+        provide() {},
+        effect: () => () => {},
+        tools: { register: (t) => tools.push(t) },
+      };
+      mod.apply(c, {});
+      const t = tools.find((x) => x.name === "gsd_quick");
+      assert.ok(t, "gsd_quick not registered");
+
+      const res = await t.execute({ task: "fix the typo in README", slug: "fix-typo" }, execWithTmp);
+      assert.match(res, /gsd_quick done/);
+
+      // TASK.md exists on the REAL filesystem with the recorded entry.
+      const dir = await fsPromises.readdir(path.join(tmp, ".planning", "quick"));
+      const quickDir = dir.find((d) => d.endsWith("-fix-typo"));
+      assert.ok(quickDir, "quick task dir not found");
+      assert.match(quickDir, /^\d{4}-\d{2}-\d{2}-fix-typo$/);
+      const entry = await fsPromises.readFile(
+        path.join(tmp, ".planning", "quick", quickDir, "TASK.md"),
+        "utf8",
+      );
+      assert.match(entry, /# Quick task/);
+      assert.match(entry, /fix the typo in README/);
+    } finally {
+      await fsPromises.rm(tmp, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("gsd_ship", () => {
+  test("preflight fails loud on a non-repo cwd", async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    ctx = makeCtx();
+    // Seed a PASSED verification so gate 1 passes (lib/ship.js:56-59).
+    await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_PASSED);
+    const { t } = await registerTool("ship", "gsd_ship");
+    // cwd "/project" does not exist on the real filesystem, so gitOk returns ""
+    // and gate 3 fires "could not determine current branch" (lib/ship.js:68),
+    // producing the /gsd_ship preflight failed:/ throw (D-03 fail-loud guard).
+    await assert.rejects(() => t.execute({ phase: 1 }, exec), /gsd_ship preflight failed:/);
+  });
+});
