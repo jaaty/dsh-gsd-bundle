@@ -325,3 +325,37 @@ describe("fetchGitData", () => {
     assert.equal(used, "develop");
   });
 });
+
+describe("gsd_ship capability-gate wiring (static)", () => {
+  test("ship.js imports runCapabilityGates + fetchGitData and wires the gates before the push", async () => {
+    const fs = await import("node:fs/promises");
+    const src = await fs.readFile(new URL("../lib/ship.js", import.meta.url), "utf8");
+
+    // Import line brings in both symbols.
+    const importLine = src.split("\n").find((l) => l.includes("from \"./gates.js\""));
+    assert.ok(importLine.includes("runCapabilityGates"), "import line has runCapabilityGates");
+    assert.ok(importLine.includes("fetchGitData"), "import line has fetchGitData");
+
+    // defaultBranch + listPlans are referenced before the push comment.
+    const pushIdx = src.indexOf("6. push branch");
+    assert.ok(pushIdx > -1, "push step comment present");
+    const defaultBranchIdx = src.indexOf("defaultBranch");
+    const listPlansIdx = src.indexOf("listPlans(cwd, args.phase)");
+    assert.ok(defaultBranchIdx > -1 && defaultBranchIdx < pushIdx, "defaultBranch resolved before push");
+    assert.ok(listPlansIdx > -1 && listPlansIdx < pushIdx, "listPlans called before push");
+
+    // Gate Report appended and blockError fails.
+    assert.ok(src.includes("\"## Gate Report\""), "Gate Report heading appended");
+    assert.ok(src.includes("if (blockError) fail(blockError)"), "blockError fails the ship");
+
+    // runCapabilityGates is passed the FULL cfg, not cfg.gates.
+    const callIdx = src.indexOf("runCapabilityGates({");
+    const callEnd = src.indexOf("}", callIdx);
+    const call = src.slice(callIdx, callEnd);
+    assert.ok(/\bcfg\b/.test(call), "runCapabilityGates receives the full cfg");
+    assert.ok(!/cfg\.gates/.test(call), "runCapabilityGates does NOT receive a pre-extracted gates sub-object");
+
+    // skip_gates parameter present in the schema.
+    assert.ok(src.includes("skip_gates"), "skip_gates parameter registered");
+  });
+});
