@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v1.1
 milestone_name: loop-durability
-status: ship
-active_phase: 6
-next_action: ship-phase
-next_phases: [6]
+status: idle
+active_phase: null
+next_action: null
+next_phases: []
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 6
   total_plans: 2
   completed_plans: 12
-  percent: 67
+  percent: 100
 current_phase: 6
 current_phase_name: loop-robustness
 current_plan: 2
-last_updated: "2026-08-24T04:43:57.265Z"
+last_updated: "2026-08-24T04:44:52.071Z"
 state_head: null
 last_activity: 2026-08-24
-stopped_at: "Phase 4 shipped — PR #5"
+stopped_at: "Phase 6 shipped — PR #7"
 paused_at: null
 ---
 # GSD STATE
@@ -48,6 +48,7 @@ _No active phase._
 - Phase 5: planned — 2 plan(s) across 2 wave(s).
 - Phase 6: plan 01 executed — prefix-tolerant plan dep resolution (DUR-05); 93 tests green.
 - Phase 6: plan 02 executed — gsd_quick TASK.md write routed through ctx.fs via writeQuickRecord (DUR-06); 94 tests green.
+- Phase 6 shipped — PR #7 (https://github.com/jaaty/dsh-gsd-bundle/pull/7)
 
 ### Blockers / Concerns
 _none_
