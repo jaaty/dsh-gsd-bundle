@@ -12,6 +12,7 @@ import {
   tddAuditGate,
   resolveGatesConfig,
   runCapabilityGates,
+  fetchGitData,
 } from "../lib/gates.js";
 
 describe("security gate", () => {
@@ -263,5 +264,64 @@ describe("runCapabilityGates", () => {
     });
     assert.ok(reportLines.some((l) => l === "security: skipped"));
     assert.equal(blockError, null);
+  });
+});
+
+describe("fetchGitData", () => {
+  // Fake gitFn keyed on args[0]+args[1]; returns canned stdout for the base,
+  // merge-base, diff and log calls the adapter makes.
+  const fakeGitFn = (cwd, args) => {
+    switch (args[0] + ":" + (args[1] || "")) {
+      case "symbolic-ref:refs/remotes/origin/HEAD": return "origin/main";
+      case "merge-base:HEAD": return "abc123";
+      case "diff:--name-only": return "src/a.js\nb/.env";
+      case "log:--format=%s": return "test(08-01): a\nfeat(08-01): b";
+      default: return "";
+    }
+  };
+
+  test("returns changed files, their contents, and commit subjects", async () => {
+    const dir = await import("node:fs/promises").then(async (fs) => {
+      const d = `${process.cwd()}/.tmp-gates-fetch-${Date.now()}`;
+      await fs.mkdir(`${d}/src`, { recursive: true });
+      await fs.mkdir(`${d}/b`, { recursive: true });
+      await fs.writeFile(`${d}/src/a.js`, "const a = 1;", "utf8");
+      await fs.writeFile(`${d}/b/.env`, "SECRET=1", "utf8");
+      return d;
+    });
+    try {
+      const res = await fetchGitData(dir, fakeGitFn, undefined);
+      assert.deepEqual(res.changedFiles, ["src/a.js", "b/.env"]);
+      assert.equal(res.contentMap["src/a.js"], "const a = 1;");
+      assert.equal(res.contentMap["b/.env"], "SECRET=1");
+      assert.deepEqual(res.commitSubjects, ["test(08-01): a", "feat(08-01): b"]);
+    } finally {
+      await import("node:fs/promises").then((fs) => fs.rm(dir, { recursive: true, force: true }));
+    }
+  });
+
+  test("empty merge-base (HEAD == base) -> empty changed files and subjects", async () => {
+    const emptyBaseGit = (cwd, args) => {
+      if (args[0] === "merge-base") return "";
+      if (args[0] === "symbolic-ref") return "origin/main";
+      return "";
+    };
+    const dir = process.cwd();
+    const res = await fetchGitData(dir, emptyBaseGit, "main");
+    assert.deepEqual(res.changedFiles, []);
+    assert.deepEqual(res.commitSubjects, []);
+    assert.deepEqual(res.contentMap, {});
+  });
+
+  test("explicit base is used instead of origin/HEAD", async () => {
+    let used = "";
+    const git = (cwd, args) => {
+      if (args[0] === "merge-base") { used = args[2]; return "xyz"; }
+      if (args[0] === "symbolic-ref") throw new Error("must not resolve origin/HEAD when base given");
+      return "";
+    };
+    const dir = process.cwd();
+    await fetchGitData(dir, git, "develop");
+    assert.equal(used, "develop");
   });
 });
