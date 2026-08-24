@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v1.2
 milestone_name: uat-loop
-status: execute
+status: ship
 active_phase: 7
-next_action: execute-phase
+next_action: ship-phase
 next_phases: [7]
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 2
-  completed_plans: 12
+  completed_plans: 14
   percent: 86
 current_phase: 7
 current_phase_name: uat-conversation
 current_plan: 2
-last_updated: "2026-08-24T05:09:54.740Z"
+last_updated: "2026-08-24T05:17:32.687Z"
 state_head: null
 last_activity: 2026-08-24
 stopped_at: "Phase 6 shipped — PR #7"

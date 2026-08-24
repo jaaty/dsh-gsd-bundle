@@ -20,5 +20,5 @@
 
 ## UAT
 
-- [ ] UAT-01: Executors honor checkpoint:decision and checkpoint:human-action tasks: they stop, surface a human-facing question, and do not proceed without a human answer.
-- [ ] UAT-02: gsd_execute pauses the phase at a decision/human-action checkpoint, waits for and captures the human's answer, and resumes the plan from the checkpoint with that answer applied, then completes.
+- [x] UAT-01: Executors honor checkpoint:decision and checkpoint:human-action tasks: they stop, surface a human-facing question, and do not proceed without a human answer.
+- [x] UAT-02: gsd_execute pauses the phase at a decision/human-action checkpoint, waits for and captures the human's answer, and resumes the plan from the checkpoint with that answer applied, then completes.
