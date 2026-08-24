@@ -5,7 +5,7 @@ import { test, describe, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 
 import { GsdState } from "../lib/state.js";
-import { resolvePlanDep } from "../lib/_shared.js";
+import { resolvePlanDep, parseFrontmatter } from "../lib/_shared.js";
 import { FakeFs, stateCtx } from "./helpers/fake-fs.mjs";
 import { buildProject, FENCED_PLAN, FENCELESS_PLAN, FENCED_SUMMARY, VERIFICATION_PASSED } from "./helpers/project.mjs";
 
@@ -67,6 +67,30 @@ committed_hashes: ["a"]
 ---
 # checkpoint`;
 
+// A pending decision checkpoint awaiting a human answer (D-01/D-03/D-05): carries
+// the deterministic decision_id the driving agent must echo back to resume.
+const CHECKPOINT_DECISION = `---
+plan: 01-auth-01
+last_completed_task: 1
+checkpoint_reason: human-verify
+committed_hashes: ["a"]
+checkpoint_kind: decision
+decision_id: 01-auth-01-ck1
+---
+# checkpoint`;
+
+// A checkpoint already answered on a prior turn (D-04): the persisted human_answer
+// lets a later call resume with no args (context-reset resume).
+const CHECKPOINT_ANSWERED = `---
+plan: 01-auth-01
+last_completed_task: 1
+checkpoint_reason: human-verify
+committed_hashes: ["a"]
+decision_id: 01-auth-01-ck1
+human_answer: use pg
+---
+# checkpoint`;
+
 
 const exec = {
   agent: { session: { header: { cwd: CWD } } },
@@ -92,7 +116,7 @@ function makeSubagents() {
         if (EXEC_CHECKPOINT_MODE && !fs.files.has(cpKey)) {
           // checkpoint stop: return structured checkpoint state, no SUMMARY
           text = "checkpoint reached at task 1";
-          structured = { checkpoint: { plan: "01-auth-01", last_completed_task: 1, checkpoint_reason: "human-verify", committed_hashes: ["a"] } };
+          structured = { checkpoint: { plan: "01-auth-01", last_completed_task: 1, checkpoint_reason: "human-verify", committed_hashes: ["a"], checkpoint_kind: "decision" } };
         } else {
           // resume path (an existing CHECKPOINT) or a normal run: complete
           await fs.writeText({ targetKey: `${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md` }, FENCED_SUMMARY);
@@ -187,9 +211,9 @@ describe("gsd_execute", () => {
 
   test("--gaps-only runs only the plans with gap_closure true", async () => {
     // the checkpoint-aware fake writes SUMMARY only when a CHECKPOINT is present,
-    // so seed a valid checkpoint to let the gap_closure plan resume + complete.
+    // so seed an answered checkpoint to let the gap_closure plan resume + complete.
     await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
-    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", CHECKPOINT_FM);
+    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", CHECKPOINT_ANSWERED);
     const { t } = await registerTool("execute", "gsd_execute");
     const res = await t.execute({ phase: 1, gapsOnly: true }, exec);
     assert(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md`), "gaps-only must execute the gap_closure plan");
@@ -246,9 +270,11 @@ describe("gsd_execute", () => {
     await t.execute({ phase: 1 }, exec);
     assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-CHECKPOINT.md`), "checkpoint artefact persisted under the new name");
     // Resume run (now writes SUMMARY as normal) -> the new window entry must
-    // reference the resumed plan id as its checkpoint.
+    // reference the resumed plan id as its checkpoint. The persisted checkpoint
+    // has no human_answer, so the answer must be supplied to clear the awaiting
+    // gate (D-05) and let the plan resume.
     EXEC_CHECKPOINT_MODE = false;
-    await t.execute({ phase: 1 }, exec);
+    await t.execute({ phase: 1, answer: "use pg", decision_id: "01-auth-01-ck1" }, exec);
     const windows = await svc.readWindows(CWD);
     assert.equal(windows.entries.length, 2, "two windows across the two runs");
     const resumedWin = windows.entries[windows.entries.length - 1];
@@ -270,13 +296,16 @@ describe("gsd_execute", () => {
 
   test("resumes a checkpointed plan from the last completed task (DUR-02/D-04)", async () => {
     await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
-    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", CHECKPOINT_FM);
+    // The checkpoint carries a decision_id but no human_answer, so the answer
+    // must be supplied on this call to clear the awaiting gate (D-05/D-03).
+    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", CHECKPOINT_DECISION);
     const { t } = await registerTool("execute", "gsd_execute");
-    const res = await t.execute({ phase: 1 }, exec);
+    const res = await t.execute({ phase: 1, answer: "use pg", decision_id: "01-auth-01-ck1" }, exec);
     const prompt = executeCaptured[0] || "";
     assert.match(prompt, /RESUME from checkpoint/);
     assert.match(prompt, /last_completed_task/);
     assert.match(prompt, /begin at task 2/);
+    assert.match(prompt, /human answered 01-auth-01-ck1 = use pg/);
     assert(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md`), "resumed executor writes SUMMARY and completes");
     assert.match(res, /01-auth-01 ✓/);
   });
@@ -291,7 +320,8 @@ describe("gsd_execute", () => {
 
   test("a completed SUMMARY wins over a stale CHECKPOINT and triggers cleanup (D-06)", async () => {
     await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
-    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", CHECKPOINT_FM);
+    // seed an answered checkpoint so the plan resumes (not awaiting) and completes
+    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", CHECKPOINT_ANSWERED);
     // spy on removeArtifact — the real fs unlink is a no-op on the in-memory fake fs
     let removeCalls = 0;
     const orig = svc.removeArtifact.bind(svc);
@@ -302,6 +332,91 @@ describe("gsd_execute", () => {
     assert(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md`), "SUMMARY wins -> plan completes");
     assert.match(res, /01-auth-01 ✓/);
     assert.ok(removeCalls >= 1, "stale CHECKPOINT removal path invoked once SUMMARY wins");
+  });
+
+  test("(D-05/D-01) an unanswered decision checkpoint returns the awaiting marker and spawns no executor", async () => {
+    await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
+    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", CHECKPOINT_DECISION);
+    executeSpawnCount = 0;
+    const { t } = await registerTool("execute", "gsd_execute");
+    const res = await t.execute({ phase: 1 }, exec);
+    assert.match(res, /GSD_AWAITING_HUMAN: plan .* \(checkpoint:decision\)/);
+    assert.match(res, /decision_id=01-auth-01-ck1/);
+    assert.match(res, /question=/);
+    assert.equal(executeSpawnCount, 0, "no executor must be spawned for an awaiting plan");
+    assert(!fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md`), "no SUMMARY may be written while awaiting");
+  });
+
+  test("(D-03/UAT-02) answer + matching decision_id resumes the plan with the answer bound and completes", async () => {
+    await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
+    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", CHECKPOINT_DECISION);
+    const { t } = await registerTool("execute", "gsd_execute");
+    const res = await t.execute({ phase: 1, answer: "use pg", decision_id: "01-auth-01-ck1" }, exec);
+    const prompt = executeCaptured[0] || "";
+    assert.match(prompt, /human answered 01-auth-01-ck1 = use pg/);
+    assert.match(prompt, /begin at task 2/);
+    assert(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md`), "answered plan resumes and completes");
+    assert.match(res, /01-auth-01 ✓/);
+  });
+
+  test("(D-04) the human answer is persisted into the CHECKPOINT frontmatter", async () => {
+    await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
+    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", CHECKPOINT_DECISION);
+    const { t } = await registerTool("execute", "gsd_execute");
+    await t.execute({ phase: 1, answer: "use pg", decision_id: "01-auth-01-ck1" }, exec);
+    const cp = await svc.readArtifact(CWD, 1, "CHECKPOINT-01");
+    const { frontmatter } = parseFrontmatter(cp);
+    assert.equal(frontmatter.human_answer, "use pg");
+    assert.equal(frontmatter.decision_id, "01-auth-01-ck1");
+  });
+
+  test("(D-04) context-reset resume: a persisted human_answer resumes a checkpoint with no args", async () => {
+    await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
+    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", CHECKPOINT_ANSWERED);
+    const { t } = await registerTool("execute", "gsd_execute");
+    const res = await t.execute({ phase: 1 }, exec);
+    const prompt = executeCaptured[0] || "";
+    assert.match(prompt, /human answered 01-auth-01-ck1 = use pg/);
+    assert(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md`), "persisted answer lets the plan resume");
+    assert.match(res, /01-auth-01 ✓/);
+  });
+
+  test("(D-06) a stale/non-matching decision_id is ignored with no error and stays awaiting", async () => {
+    await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
+    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", CHECKPOINT_DECISION);
+    executeSpawnCount = 0;
+    const { t } = await registerTool("execute", "gsd_execute");
+    const res = await t.execute({ phase: 1, answer: "x", decision_id: "nope" }, exec);
+    assert.match(res, /GSD_AWAITING_HUMAN/);
+    assert.equal(executeSpawnCount, 0, "stale answer must not spawn the executor");
+    assert(!fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md`));
+  });
+
+  test("(D-07) checkpoint:decision, human-action, and human-verify all share one marker->answer path", async () => {
+    for (const kind of ["decision", "human-action", "human-verify"]) {
+      // fresh project per kind so the plan is incomplete (no SUMMARY) each time
+      fs = new FakeFs();
+      svc = await buildProject(fs, CWD);
+      await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
+      const fm = `---
+plan: 01-auth-01
+last_completed_task: 1
+checkpoint_reason: choose
+committed_hashes: ["a"]
+checkpoint_kind: ${kind}
+decision_id: 01-auth-01-ck1
+---
+# checkpoint`;
+      await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", fm);
+      executeSpawnCount = 0;
+      executeCaptured.length = 0;
+      const { t } = await registerTool("execute", "gsd_execute");
+      const res = await t.execute({ phase: 1 }, exec);
+      assert.match(res, new RegExp(`checkpoint:${kind}`), `awaiting marker names kind ${kind}`);
+      assert.equal(executeSpawnCount, 0, `no spawn while awaiting for ${kind}`);
+      await t.execute({ phase: 1, answer: "go", decision_id: "01-auth-01-ck1" }, exec);
+      assert.match(executeCaptured[0] || "", /human answered 01-auth-01-ck1 = go/, `answer+decision_id resumes ${kind}`);
+    }
   });
 
   test("prefixed project: wave-2 dispatches only after its non-prefixed dep's SUMMARY exists (DUR-05)", async () => {
