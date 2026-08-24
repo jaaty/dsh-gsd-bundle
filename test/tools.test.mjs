@@ -13,6 +13,10 @@ let fs;
 let svc;
 let ctx;
 
+// When true, the fake executor writes a CHECKPOINT-<PP> artefact and no SUMMARY,
+// simulating a resumable checkpoint stop.
+let EXEC_CHECKPOINT_MODE = false;
+
 const exec = {
   agent: { session: { header: { cwd: CWD } } },
   signal: { aborted: false, addEventListener() {}, removeEventListener() {} },
@@ -30,8 +34,13 @@ function makeSubagents() {
       } else if (label.startsWith("plan-checker")) {
         text = "## VERIFICATION PASSED";
       } else if (label.startsWith("execute")) {
-        await fs.writeText({ targetKey: `${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md` }, FENCED_SUMMARY);
-        text = "executor done";
+        if (EXEC_CHECKPOINT_MODE) {
+          await fs.writeText({ targetKey: `${CWD}/.planning/phases/01-auth/01-auth-CHECKPOINT-01.md` }, FENCED_SUMMARY);
+          text = "checkpointed at task 1 (resumable)";
+        } else {
+          await fs.writeText({ targetKey: `${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md` }, FENCED_SUMMARY);
+          text = "executor done";
+        }
       } else if (label.startsWith("verify")) {
         await fs.writeText({ targetKey: `${CWD}/.planning/phases/01-auth/01-auth-VERIFICATION.md` }, VERIFICATION_PASSED);
         text = "status: passed, score: 2/2";
@@ -132,6 +141,54 @@ describe("gsd_execute", () => {
     const res = await t.execute({ phase: 1, gapsOnly: true }, exec);
     assert.ok(!fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md`), "non-gap plan must not run under --gaps-only");
     assert.match(res, /incomplete/);
+  });
+
+  test("a successful run writes a WIN-01 window and a done JOB-01 job", async () => {
+    EXEC_CHECKPOINT_MODE = false;
+    const { t } = await registerTool("execute", "gsd_execute");
+    const res = await t.execute({ phase: 1 }, exec);
+    assert.match(res, /01-auth-01 ✓/);
+    assert.ok(fs.files.has(`${CWD}/.planning/WINDOWS.md`), "WINDOWS.md must be written");
+    const windows = await svc.readWindows(CWD);
+    assert.equal(windows.entries.length, 1);
+    assert.equal(windows.entries[0].id, "WIN-01");
+    assert.match(windows.entries[0].summary, /Executed 1\/1 plans/);
+    assert.ok(fs.files.has(`${CWD}/.planning/async-jobs.json`), "async-jobs.json must be written");
+    const jobs = await svc.readJobs(CWD);
+    assert.equal(jobs.entries.length, 1);
+    assert.equal(jobs.entries[0].id, "JOB-01");
+    assert.equal(jobs.entries[0].status, "done");
+    assert.equal(jobs.entries[0].result, "SUMMARY written");
+  });
+
+  test("a checkpoint stop writes a done job mentioning checkpoint and a window", async () => {
+    EXEC_CHECKPOINT_MODE = true;
+    const { t } = await registerTool("execute", "gsd_execute");
+    await t.execute({ phase: 1 }, exec);
+    const jobs = await svc.readJobs(CWD);
+    assert.equal(jobs.entries.length, 1);
+    assert.equal(jobs.entries[0].status, "done");
+    assert.match(jobs.entries[0].result, /checkpoint/);
+    const windows = await svc.readWindows(CWD);
+    assert.equal(windows.entries.length, 1);
+    assert.equal(windows.entries[0].id, "WIN-01");
+  });
+
+  test("resume path carries the resumed plan id as the window checkpoint reference (D-07)", async () => {
+    // First run stops at a checkpoint -> CHECKPOINT-01 artefact exists.
+    EXEC_CHECKPOINT_MODE = true;
+    const { t } = await registerTool("execute", "gsd_execute");
+    await t.execute({ phase: 1 }, exec);
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-CHECKPOINT-01.md`));
+    // Resume run (now writes SUMMARY as normal) -> the new window entry must
+    // reference the resumed plan id as its checkpoint.
+    EXEC_CHECKPOINT_MODE = false;
+    await t.execute({ phase: 1 }, exec);
+    const windows = await svc.readWindows(CWD);
+    assert.equal(windows.entries.length, 2, "two windows across the two runs");
+    const resumedWin = windows.entries[windows.entries.length - 1];
+    assert.ok(resumedWin.checkpoint, "resumed window must carry a checkpoint reference");
+    assert.match(resumedWin.checkpoint, /^01-auth-01$/);
   });
 });
 
