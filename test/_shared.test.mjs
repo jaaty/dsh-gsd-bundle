@@ -16,6 +16,9 @@ import {
   matchesGapClosure,
   isValidRef,
   isClosedPhase,
+  nextSeq,
+  parseWindows,
+  stringifyWindows,
 } from "../lib/_shared.js";
 
 describe("frontmatter parse/stringify", () => {
@@ -166,5 +169,65 @@ describe("isClosedPhase (gsd_plan --force gate)", () => {
     assert.equal(isClosedPhase(""), false);
     assert.equal(isClosedPhase(undefined), false);
     assert.equal(isClosedPhase(`---\nstatus: "passed"\n---\n`), true);
+  });
+});
+
+describe("WINDOWS ledger helpers (DUR-03, D-01/D-06)", () => {
+  test("nextSeq derives WIN-<seq+1>; empty -> 1", async () => {
+    assert.equal(nextSeq([], "WIN"), 1);
+    assert.equal(nextSeq([{ id: "WIN-01" }], "WIN"), 2);
+    assert.equal(nextSeq([{ id: "WIN-01" }, { id: "WIN-03" }], "WIN"), 4);
+    assert.equal(nextSeq([{ id: "JOB-02" }], "WIN"), 1); // wrong prefix ignored
+    assert.equal(nextSeq([{ id: "WIN-abc" }], "WIN"), 1); // non-numeric ignored
+  });
+
+  test("parseWindows/stringifyWindows round-trip entries losslessly", async () => {
+    const entries = [
+      {
+        id: "WIN-01", phase: 1, step: "execute", opened: "2026-08-24T00:00:00Z",
+        closed: "2026-08-24T01:00:00Z", summary: "Ran plan 01", checkpoint: "CHECKPOINT-02",
+      },
+      { id: "WIN-02", phase: 1, step: "verify", opened: "2026-08-24T01:00:00Z", closed: "2026-08-24T02:00:00Z", summary: "Verified" },
+    ];
+    const parsed = parseWindows(stringifyWindows(entries));
+    assert.deepEqual(parsed, entries);
+  });
+
+  test("parseWindows of a WIN-01 block with summary yields that entry", async () => {
+    const text = `# WINDOWS
+
+## WIN-01
+- id: WIN-01
+- phase: 1
+- step: execute
+- opened: 2026-08-24T00:00:00Z
+- closed: 2026-08-24T01:00:00Z
+- summary: Ran plan 01
+`;
+    assert.deepEqual(parseWindows(text), [
+      { id: "WIN-01", phase: 1, step: "execute", opened: "2026-08-24T00:00:00Z", closed: "2026-08-24T01:00:00Z", summary: "Ran plan 01" },
+    ]);
+  });
+
+  test("parseWindows throws on an unknown '## FOO' section", async () => {
+    assert.throws(() => parseWindows("# WINDOWS\n\n## FOO\n- phase: 1\n"), SyntaxError);
+  });
+
+  test("parseWindows throws on an unknown field under a WIN header", async () => {
+    assert.throws(() => parseWindows("# WINDOWS\n\n## WIN-01\n- bogus: x\n"), SyntaxError);
+  });
+
+  test("parseWindows throws on a stray line under a WIN header", async () => {
+    assert.throws(() => parseWindows("# WINDOWS\n\n## WIN-01\njust some text\n"), SyntaxError);
+  });
+
+  test("parseWindows of only '# WINDOWS' with no '##' headers returns [] (absence, not corruption)", async () => {
+    assert.deepEqual(parseWindows("# WINDOWS\n"), []);
+    assert.deepEqual(parseWindows(""), []);
+  });
+
+  test("stringifyWindows recomputes a WIN-<seq> id when entry.id is absent", async () => {
+    const text = stringifyWindows([{ phase: 1, step: "execute", summary: "s" }]);
+    assert.match(text, /^## WIN-01$/m);
   });
 });
