@@ -3,7 +3,7 @@ phase: 06-loop-robustness
 plan: 02
 type: tdd
 wave: 2
-depends_on: ["06-loop-robustness-01"]
+depends_on: ["GSD-06-loop-robustness-01"]
 files_modified: ["lib/state.js", "lib/quick.js", "test/state.test.mjs", "test/service-tools.test.mjs"]
 autonomous: true
 requirements: ["DUR-06"]
