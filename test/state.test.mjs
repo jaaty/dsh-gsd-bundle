@@ -42,6 +42,26 @@ describe("init + artefact naming", () => {
     assert.equal(path.basename(written), "01-auth-01-SUMMARY.md");
   });
 
+  test("writeArtifact(CHECKPOINT-01) maps to <base>-01-CHECKPOINT.md and round-trips (D-01)", async () => {
+    // BUG: _artifactFile only knew PLAN|SUMMARY, so CHECKPOINT-01 fell through
+    // to <base>-CHECKPOINT-01.md — never matching the <base>-<PP>-CHECKPOINT.md
+    // layout the resume path reads. Now the per-plan group includes CHECKPOINT.
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const content = `---
+plan: 01-auth-01
+last_completed_task: 1
+checkpoint_reason: checkpoint:human-verify
+committed_hashes: []
+---
+# Checkpoint`;
+    const written = await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", content);
+    assert.equal(path.basename(written), "01-auth-01-CHECKPOINT.md");
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-CHECKPOINT.md`));
+    assert.equal(await svc.readArtifact(CWD, 1, "CHECKPOINT-01"), content);
+    assert.equal(await svc.hasArtifact(CWD, 1, "CHECKPOINT-01"), true);
+  });
+
   test("writeArtifact creates parent phase dir (host fs may not auto-create)", async () => {
     // BUG: _ensureDir was a no-op; writes relied on an unverified host-fs
     // contract. Now _write ensures parents via node:fs.
