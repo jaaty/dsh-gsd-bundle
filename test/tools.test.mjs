@@ -17,6 +17,10 @@ let ctx;
 // gsd_execute call (resume tests assert the exact prompt + spawn count).
 let executeSpawnCount = 0;
 const executeCaptured = [];
+// When true, the fake executor stops at a checkpoint (returns structured
+// checkpoint state, writes no SUMMARY). When false it completes normally.
+// On a resume run (a CHECKPOINT artefact already exists) it always completes.
+let EXEC_CHECKPOINT_MODE = false;
 
 // A two-task plan so a checkpoint at task 1 is in-range (1 < task_count=2).
 const PLAN_2_TASKS = `---
@@ -62,6 +66,7 @@ committed_hashes: ["a"]
 ---
 # checkpoint`;
 
+
 const exec = {
   agent: { session: { header: { cwd: CWD } } },
   signal: { aborted: false, addEventListener() {}, removeEventListener() {} },
@@ -83,14 +88,14 @@ function makeSubagents() {
         executeSpawnCount++;
         executeCaptured.push(req.prompt[0]?.text || "");
         const cpKey = `${CWD}/.planning/phases/01-auth/01-auth-01-CHECKPOINT.md`;
-        if (fs.files.has(cpKey)) {
-          // resume path: an existing CHECKPOINT means the executor continues and completes
-          await fs.writeText({ targetKey: `${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md` }, FENCED_SUMMARY);
-          text = "executor done";
-        } else {
-          // first run: stop at a checkpoint task, return structured checkpoint, no SUMMARY
+        if (EXEC_CHECKPOINT_MODE && !fs.files.has(cpKey)) {
+          // checkpoint stop: return structured checkpoint state, no SUMMARY
           text = "checkpoint reached at task 1";
           structured = { checkpoint: { plan: "01-auth-01", last_completed_task: 1, checkpoint_reason: "human-verify", committed_hashes: ["a"] } };
+        } else {
+          // resume path (an existing CHECKPOINT) or a normal run: complete
+          await fs.writeText({ targetKey: `${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md` }, FENCED_SUMMARY);
+          text = "executor done";
         }
       } else if (label.startsWith("verify")) {
         await fs.writeText({ targetKey: `${CWD}/.planning/phases/01-auth/01-auth-VERIFICATION.md` }, VERIFICATION_PASSED);
@@ -175,6 +180,7 @@ describe("gsd_execute", () => {
     await svc.writeArtifact(CWD, 1, "PLAN-01", FENCED_PLAN);
     executeSpawnCount = 0;
     executeCaptured.length = 0;
+    EXEC_CHECKPOINT_MODE = false;
     ctx = makeCtx();
   });
 
@@ -198,8 +204,60 @@ describe("gsd_execute", () => {
     assert.match(res, /incomplete/);
   });
 
+  test("a successful run writes a WIN-01 window and a done JOB-01 job", async () => {
+    EXEC_CHECKPOINT_MODE = false;
+    const { t } = await registerTool("execute", "gsd_execute");
+    const res = await t.execute({ phase: 1 }, exec);
+    assert.match(res, /01-auth-01 ✓/);
+    assert.ok(fs.files.has(`${CWD}/.planning/WINDOWS.md`), "WINDOWS.md must be written");
+    const windows = await svc.readWindows(CWD);
+    assert.equal(windows.entries.length, 1);
+    assert.equal(windows.entries[0].id, "WIN-01");
+    assert.match(windows.entries[0].summary, /Executed 1\/1 plans/);
+    assert.ok(fs.files.has(`${CWD}/.planning/async-jobs.json`), "async-jobs.json must be written");
+    const jobs = await svc.readJobs(CWD);
+    assert.equal(jobs.entries.length, 1);
+    assert.equal(jobs.entries[0].id, "JOB-01");
+    assert.equal(jobs.entries[0].status, "done");
+    assert.equal(jobs.entries[0].result, "SUMMARY written");
+  });
+
+  test("a checkpoint stop writes a done job mentioning checkpoint and a window", async () => {
+    // PLAN_2_TASKS (2 tasks) so the checkpoint at last_completed_task=1 is in-range.
+    await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
+    EXEC_CHECKPOINT_MODE = true;
+    const { t } = await registerTool("execute", "gsd_execute");
+    await t.execute({ phase: 1 }, exec);
+    const jobs = await svc.readJobs(CWD);
+    assert.equal(jobs.entries.length, 1);
+    assert.equal(jobs.entries[0].status, "done");
+    assert.match(jobs.entries[0].result, /checkpoint/);
+    const windows = await svc.readWindows(CWD);
+    assert.equal(windows.entries.length, 1);
+    assert.equal(windows.entries[0].id, "WIN-01");
+  });
+
+  test("resume path carries the resumed plan id as the window checkpoint reference (D-07)", async () => {
+    // First run stops at a checkpoint -> CHECKPOINT-01 artefact (new name) exists.
+    await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
+    EXEC_CHECKPOINT_MODE = true;
+    const { t } = await registerTool("execute", "gsd_execute");
+    await t.execute({ phase: 1 }, exec);
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-CHECKPOINT.md`), "checkpoint artefact persisted under the new name");
+    // Resume run (now writes SUMMARY as normal) -> the new window entry must
+    // reference the resumed plan id as its checkpoint.
+    EXEC_CHECKPOINT_MODE = false;
+    await t.execute({ phase: 1 }, exec);
+    const windows = await svc.readWindows(CWD);
+    assert.equal(windows.entries.length, 2, "two windows across the two runs");
+    const resumedWin = windows.entries[windows.entries.length - 1];
+    assert.ok(resumedWin.checkpoint, "resumed window must carry a checkpoint reference");
+    assert.match(resumedWin.checkpoint, /^01-auth-01$/);
+  });
+
   test("persists a checkpointed executor return and leaves the plan incomplete (DUR-01)", async () => {
     await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
+    EXEC_CHECKPOINT_MODE = true;
     const { t } = await registerTool("execute", "gsd_execute");
     const res = await t.execute({ phase: 1 }, exec);
     assert(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-CHECKPOINT.md`), "CHECKPOINT-01 must be persisted from the structured return");
@@ -284,6 +342,59 @@ describe("gsd_status", () => {
     const res = await t.execute({}, exec);
     assert.match(res, /Milestone: M1/);
     assert.match(res, /Progress:/);
+  });
+
+  test("fresh project renders empty Windows and Async Jobs sections and keeps continuity", async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    const { t } = await registerTool("core-tools", "gsd_status");
+    const res = await t.execute({}, exec);
+    assert.match(res, /## Windows/);
+    assert.match(res, /No windows recorded/);
+    assert.match(res, /## Async Jobs/);
+    assert.match(res, /No jobs/);
+    assert.match(res, /Stopped at:/);
+  });
+
+  test("seeded windows and jobs render in the two sections", async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    await svc.appendWindow(CWD, { phase: "1", step: "execute", summary: "executed phase 1" });
+    await svc.appendJob(CWD, { kind: "subagent", plan: "GSD-01-auth-01", status: "done", result: "SUMMARY written" });
+    const { t } = await registerTool("core-tools", "gsd_status");
+    const res = await t.execute({}, exec);
+    assert.match(res, /## Windows/);
+    assert.match(res, /WIN-01/);
+    assert.match(res, /phase 1 execute/);
+    assert.match(res, /## Async Jobs/);
+    assert.match(res, /JOB-01/);
+    assert.match(res, /SUMMARY written/);
+    assert.match(res, /Stopped at:/);
+  });
+
+  test("corrupt async-jobs.json renders a warning line, does not throw, keeps continuity", async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    await fs.writeText({ targetKey: `${CWD}/.planning/async-jobs.json` }, "not-json{{{");
+    const { t } = await registerTool("core-tools", "gsd_status");
+    let res;
+    await assert.doesNotReject(async () => { res = await t.execute({}, exec); });
+    assert.match(res, /corrupt/);
+    assert.match(res, /async-jobs\.json is corrupt/);
+    assert.match(res, /Stopped at:/);
+  });
+
+  test("corrupt WINDOWS.md renders a warning line, does not throw, keeps continuity", async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    // unknown-section header makes parseWindows throw -> readWindows corrupt:true
+    await fs.writeText({ targetKey: `${CWD}/.planning/WINDOWS.md` }, "# WINDOWS\n## FOO\n- phase: 1\n");
+    const { t } = await registerTool("core-tools", "gsd_status");
+    let res;
+    await assert.doesNotReject(async () => { res = await t.execute({}, exec); });
+    assert.match(res, /corrupt/);
+    assert.match(res, /WINDOWS\.md is corrupt/);
+    assert.match(res, /Stopped at:/);
   });
 });
 

@@ -3,22 +3,22 @@ gsd_state_version: 1
 milestone: v1.1
 milestone_name: loop-durability
 status: ship
-active_phase: 4
+active_phase: 5
 next_action: ship-phase
-next_phases: [4]
+next_phases: [5]
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 2
-  completed_plans: 7
-  percent: 50
-current_phase: 4
-current_phase_name: checkpoint-resume
+  completed_plans: 9
+  percent: 67
+current_phase: 5
+current_phase_name: window-ledger
 current_plan: 2
-last_updated: "2026-08-24T00:51:16.472Z"
+last_updated: "2026-08-24T03:38:22.608Z"
 state_head: null
 last_activity: 2026-08-24
-stopped_at: "Phase 3 shipped — PR #4"
+stopped_at: "Phase 4 shipped — PR #5"
 paused_at: null
 ---
 # GSD STATE
@@ -43,6 +43,9 @@ _No active phase._
 - Phase 3 shipped — PR #4 (https://github.com/jaaty/dsh-gsd-bundle/pull/4)
 - Phase 4: CONTEXT.md sealed — 7 decisions
 - Phase 4: planned — 2 plan(s) across 2 wave(s).
+- Phase 4 shipped — PR #5 (https://github.com/jaaty/dsh-gsd-bundle/pull/5)
+- Phase 5: CONTEXT.md sealed — 7 decisions
+- Phase 5: planned — 2 plan(s) across 2 wave(s).
 
 ### Blockers / Concerns
 _none_

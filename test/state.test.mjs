@@ -342,6 +342,97 @@ describe("planning artefact round-trip", () => {
   });
 });
 
+describe("WINDOWS ledger accessors (DUR-03, D-02/D-06)", () => {
+  test("readWindows on a fresh project returns { entries: [], corrupt: false } without throwing", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    assert.deepEqual(await svc.readWindows(CWD), { entries: [], corrupt: false });
+  });
+
+  test("appendWindow assigns WIN-01 then WIN-02 on successive calls, read back losslessly", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const w1 = await svc.appendWindow(CWD, { phase: 1, step: "execute", summary: "Ran plan 01" });
+    const w2 = await svc.appendWindow(CWD, { phase: 1, step: "verify", summary: "Verified" });
+    assert.equal(w1.id, "WIN-01");
+    assert.equal(w2.id, "WIN-02");
+    assert.equal(w1.phase, 1);
+    assert.equal(w1.step, "execute");
+    assert.ok(fs.files.has(`${CWD}/.planning/WINDOWS.md`));
+    const { entries, corrupt } = await svc.readWindows(CWD);
+    assert.equal(corrupt, false);
+    assert.equal(entries.length, 2);
+    assert.equal(entries[0].id, "WIN-01");
+    assert.equal(entries[1].id, "WIN-02");
+    assert.equal(entries[0].summary, "Ran plan 01");
+  });
+
+  test("appendWindow copies the optional checkpoint reference (D-07)", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const w = await svc.appendWindow(CWD, { phase: 1, step: "execute", summary: "resume", checkpoint: "CHECKPOINT-02" });
+    const { entries } = await svc.readWindows(CWD);
+    assert.equal(w.checkpoint, "CHECKPOINT-02");
+    assert.equal(entries[0].checkpoint, "CHECKPOINT-02");
+  });
+
+  test("a corrupt WINDOWS.md body yields { entries: [], corrupt: true } with no throw", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    await fs.writeText({ targetKey: `${CWD}/.planning/WINDOWS.md` }, "# WINDOWS\n## FOO\n- phase: 1\n");
+    assert.deepEqual(await svc.readWindows(CWD), { entries: [], corrupt: true });
+  });
+});
+
+describe("async-jobs registry accessors (DUR-04, D-04/D-06)", () => {
+  test("readJobs on a fresh project returns { entries: [], corrupt: false } without throwing", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    assert.deepEqual(await svc.readJobs(CWD), { entries: [], corrupt: false });
+  });
+
+  test("appendJob assigns JOB-01 then JOB-02; updateJob flips status to done and records completed", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const j1 = await svc.appendJob(CWD, { kind: "subagent", status: "running" });
+    const j2 = await svc.appendJob(CWD, { kind: "subagent", status: "pending" });
+    assert.equal(j1.id, "JOB-01");
+    assert.equal(j2.id, "JOB-02");
+    assert.equal(j1.status, "running");
+    assert.ok(fs.files.has(`${CWD}/.planning/async-jobs.json`));
+
+    const updated = await svc.updateJob(CWD, "JOB-01", { status: "done", result: "ok" });
+    assert.equal(updated.status, "done");
+    assert.equal(updated.result, "ok");
+    assert.ok(updated.completed);
+
+    const { entries } = await svc.readJobs(CWD);
+    assert.equal(entries.length, 2);
+    assert.equal(entries[0].status, "done");
+    assert.equal(entries[0].result, "ok");
+    assert.equal(entries[1].id, "JOB-02");
+  });
+
+  test("updateJob for an unknown id returns null", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    assert.equal(await svc.updateJob(CWD, "JOB-99", { status: "done" }), null);
+  });
+
+  test("a corrupt async-jobs.json body yields { entries: [], corrupt: true } with no throw", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    await fs.writeText({ targetKey: `${CWD}/.planning/async-jobs.json` }, "{ not valid json !!");
+    assert.deepEqual(await svc.readJobs(CWD), { entries: [], corrupt: true });
+  });
+
+  test("a non-array async-jobs.json body also degrades to corrupt", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    await fs.writeText({ targetKey: `${CWD}/.planning/async-jobs.json` }, `{"not":"an array"}`);
+    assert.deepEqual(await svc.readJobs(CWD), { entries: [], corrupt: true });
+  });
+});
 function awaitBuild(fs) {
   return buildProject(fs, CWD);
 }
