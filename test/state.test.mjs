@@ -297,6 +297,47 @@ describe("planning artefact round-trip", () => {
   });
 });
 
+describe("WINDOWS ledger accessors (DUR-03, D-02/D-06)", () => {
+  test("readWindows on a fresh project returns { entries: [], corrupt: false } without throwing", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    assert.deepEqual(await svc.readWindows(CWD), { entries: [], corrupt: false });
+  });
+
+  test("appendWindow assigns WIN-01 then WIN-02 on successive calls, read back losslessly", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const w1 = await svc.appendWindow(CWD, { phase: 1, step: "execute", summary: "Ran plan 01" });
+    const w2 = await svc.appendWindow(CWD, { phase: 1, step: "verify", summary: "Verified" });
+    assert.equal(w1.id, "WIN-01");
+    assert.equal(w2.id, "WIN-02");
+    assert.equal(w1.phase, 1);
+    assert.equal(w1.step, "execute");
+    assert.ok(fs.files.has(`${CWD}/.planning/WINDOWS.md`));
+    const { entries, corrupt } = await svc.readWindows(CWD);
+    assert.equal(corrupt, false);
+    assert.equal(entries.length, 2);
+    assert.equal(entries[0].id, "WIN-01");
+    assert.equal(entries[1].id, "WIN-02");
+    assert.equal(entries[0].summary, "Ran plan 01");
+  });
+
+  test("appendWindow copies the optional checkpoint reference (D-07)", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const w = await svc.appendWindow(CWD, { phase: 1, step: "execute", summary: "resume", checkpoint: "CHECKPOINT-02" });
+    const { entries } = await svc.readWindows(CWD);
+    assert.equal(w.checkpoint, "CHECKPOINT-02");
+    assert.equal(entries[0].checkpoint, "CHECKPOINT-02");
+  });
+
+  test("a corrupt WINDOWS.md body yields { entries: [], corrupt: true } with no throw", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    await fs.writeText({ targetKey: `${CWD}/.planning/WINDOWS.md` }, "# WINDOWS\n## FOO\n- phase: 1\n");
+    assert.deepEqual(await svc.readWindows(CWD), { entries: [], corrupt: true });
+  });
+});
 function awaitBuild(fs) {
   return buildProject(fs, CWD);
 }
