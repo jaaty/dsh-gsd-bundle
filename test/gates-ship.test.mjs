@@ -143,3 +143,80 @@ describe("CAP-02 wiring: gsd_ship aborts before push on a failing gate (static)"
     assert.ok(failBlockErrorIdx > -1 && failBlockErrorIdx < pushIdx, "blockError failure raised before push");
   });
 });
+
+describe("skip + tdd enforcement", () => {
+  const SECRET_GIT = { changedFiles: ["a/.env"], contentMap: {}, commitSubjects: [] };
+
+  test("config-disabled gate reports skipped and does not block (D-08, D-06)", async () => {
+    const { reportLines, blockError } = runCapabilityGates({
+      cfg: { gates: { security: false } },
+      gitData: SECRET_GIT,
+      plans: [],
+      skipGates: [],
+    });
+    assert.ok(reportLines.includes("security: skipped"), reportLines.join("\n"));
+    assert.equal(blockError, null, "a skipped gate never blocks");
+    // The other gates still report their real status.
+    assert.ok(reportLines.some((l) => l.startsWith("broken_windows:")), reportLines.join("\n"));
+    assert.ok(reportLines.some((l) => l.startsWith("tdd_audit:")), reportLines.join("\n"));
+    assert.equal(reportLines.length, 3);
+  });
+
+  test("skipGates list reports skipped and does not block (D-06)", async () => {
+    const { reportLines, blockError } = runCapabilityGates({
+      cfg: {},
+      gitData: SECRET_GIT,
+      plans: [],
+      skipGates: ["security"],
+    });
+    assert.ok(reportLines.includes("security: skipped"), reportLines.join("\n"));
+    assert.equal(blockError, null, "a skipped gate never blocks");
+  });
+
+  test("config-disable AND skipGates for different gates are both respected", async () => {
+    const { reportLines, blockError } = runCapabilityGates({
+      cfg: { gates: { security: false } },
+      gitData: SECRET_GIT,
+      plans: [],
+      skipGates: ["tdd_audit"],
+    });
+    assert.ok(reportLines.includes("security: skipped"), reportLines.join("\n"));
+    assert.ok(reportLines.includes("tdd_audit: skipped"), reportLines.join("\n"));
+    assert.equal(blockError, null);
+  });
+
+  test("D-09: tdd-audit fails a type:tdd plan with only a feat: commit regardless of tdd_mode", async () => {
+    // cfg carries NO tdd_mode (and this repo's config has tdd_mode: false) — yet
+    // the tdd-audit gate still enforces RED→GREEN on a type:tdd plan.
+    const { reportLines, blockError } = runCapabilityGates({
+      cfg: {},
+      gitData: { changedFiles: [], contentMap: {}, commitSubjects: ["feat(08-01): b"] },
+      plans: [{ id: "GSD-08-x-01", type: "tdd" }],
+      skipGates: [],
+    });
+    assert.ok(reportLines.some((l) => l.startsWith("tdd_audit: fail")), reportLines.join("\n"));
+    assert.ok(blockError && blockError.includes("tdd_audit"), "tdd_audit failure blocks");
+  });
+
+  test("D-09: a type:tdd plan with test: before feat: passes (RED→GREEN honored)", async () => {
+    const { reportLines, blockError } = runCapabilityGates({
+      cfg: {},
+      gitData: { changedFiles: [], contentMap: {}, commitSubjects: ["test(08-01): a", "feat(08-01): b"] },
+      plans: [{ id: "GSD-08-x-01", type: "tdd" }],
+      skipGates: [],
+    });
+    assert.ok(reportLines.includes("tdd_audit: pass"), reportLines.join("\n"));
+    assert.equal(blockError, null);
+  });
+
+  test("skipping the failing gate unblocks the ship while it stays reported", async () => {
+    const { reportLines, blockError } = runCapabilityGates({
+      cfg: {},
+      gitData: SECRET_GIT,
+      plans: [],
+      skipGates: ["security"],
+    });
+    assert.ok(reportLines.includes("security: skipped"), reportLines.join("\n"));
+    assert.equal(blockError, null, "opt-out via skipGates unblocks without hiding the gate");
+  });
+});
