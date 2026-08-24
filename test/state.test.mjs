@@ -338,6 +338,56 @@ describe("WINDOWS ledger accessors (DUR-03, D-02/D-06)", () => {
     assert.deepEqual(await svc.readWindows(CWD), { entries: [], corrupt: true });
   });
 });
+
+describe("async-jobs registry accessors (DUR-04, D-04/D-06)", () => {
+  test("readJobs on a fresh project returns { entries: [], corrupt: false } without throwing", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    assert.deepEqual(await svc.readJobs(CWD), { entries: [], corrupt: false });
+  });
+
+  test("appendJob assigns JOB-01 then JOB-02; updateJob flips status to done and records completed", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const j1 = await svc.appendJob(CWD, { kind: "subagent", status: "running" });
+    const j2 = await svc.appendJob(CWD, { kind: "subagent", status: "pending" });
+    assert.equal(j1.id, "JOB-01");
+    assert.equal(j2.id, "JOB-02");
+    assert.equal(j1.status, "running");
+    assert.ok(fs.files.has(`${CWD}/.planning/async-jobs.json`));
+
+    const updated = await svc.updateJob(CWD, "JOB-01", { status: "done", result: "ok" });
+    assert.equal(updated.status, "done");
+    assert.equal(updated.result, "ok");
+    assert.ok(updated.completed);
+
+    const { entries } = await svc.readJobs(CWD);
+    assert.equal(entries.length, 2);
+    assert.equal(entries[0].status, "done");
+    assert.equal(entries[0].result, "ok");
+    assert.equal(entries[1].id, "JOB-02");
+  });
+
+  test("updateJob for an unknown id returns null", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    assert.equal(await svc.updateJob(CWD, "JOB-99", { status: "done" }), null);
+  });
+
+  test("a corrupt async-jobs.json body yields { entries: [], corrupt: true } with no throw", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    await fs.writeText({ targetKey: `${CWD}/.planning/async-jobs.json` }, "{ not valid json !!");
+    assert.deepEqual(await svc.readJobs(CWD), { entries: [], corrupt: true });
+  });
+
+  test("a non-array async-jobs.json body also degrades to corrupt", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    await fs.writeText({ targetKey: `${CWD}/.planning/async-jobs.json` }, `{"not":"an array"}`);
+    assert.deepEqual(await svc.readJobs(CWD), { entries: [], corrupt: true });
+  });
+});
 function awaitBuild(fs) {
   return buildProject(fs, CWD);
 }
