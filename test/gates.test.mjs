@@ -11,6 +11,7 @@ import {
   brokenWindowsGate,
   tddAuditGate,
   resolveGatesConfig,
+  runCapabilityGates,
 } from "../lib/gates.js";
 
 describe("security gate", () => {
@@ -191,5 +192,76 @@ describe("resolveGatesConfig", () => {
     assert.equal(res.security.enabled, false);
     assert.equal(res.tdd_audit.enabled, false);
     assert.equal(res.broken_windows.enabled, true);
+  });
+});
+
+describe("runCapabilityGates", () => {
+  const clean = { changedFiles: ["src/a.js"], contentMap: { "src/a.js": "const x = 1;" }, commitSubjects: [] };
+
+  test("clean data -> every gate reports pass, blockError null", async () => {
+    const { reportLines, blockError } = runCapabilityGates({ cfg: {}, gitData: clean, plans: [] });
+    assert.equal(reportLines.length, 3);
+    assert.ok(reportLines.every((l) => /: pass$/.test(l)), reportLines.join("\n"));
+    assert.equal(blockError, null);
+  });
+
+  test("a changed .env -> security: fail and blockError names security + file", async () => {
+    const { reportLines, blockError } = runCapabilityGates({
+      cfg: {},
+      gitData: { changedFiles: ["a/.env"], contentMap: { "a/.env": "x" }, commitSubjects: [] },
+      plans: [],
+    });
+    const line = reportLines.find((l) => l.startsWith("security:"));
+    assert.match(line, /^security: fail/);
+    assert.match(line, /\.env/);
+    assert.ok(blockError.includes("security"), blockError);
+    assert.ok(blockError.includes(".env"), blockError);
+  });
+
+  test("content with TODO -> broken_windows: fail names file + marker", async () => {
+    const { reportLines, blockError } = runCapabilityGates({
+      cfg: {},
+      gitData: { changedFiles: ["src/a.js"], contentMap: { "src/a.js": "// TODO later" }, commitSubjects: [] },
+      plans: [],
+    });
+    const line = reportLines.find((l) => l.startsWith("broken_windows:"));
+    assert.match(line, /^broken_windows: fail/);
+    assert.match(line, /src\/a\.js/);
+    assert.ok(blockError.includes("broken_windows"), blockError);
+    assert.ok(blockError.includes("TODO"), blockError);
+  });
+
+  test("tdd plan with only a feat: commit -> tdd_audit: fail names planId", async () => {
+    const { reportLines, blockError } = runCapabilityGates({
+      cfg: {},
+      gitData: { changedFiles: [], contentMap: {}, commitSubjects: ["feat(08-01): b"] },
+      plans: [{ id: "GSD-08-x-01", type: "tdd" }],
+    });
+    const line = reportLines.find((l) => l.startsWith("tdd_audit:"));
+    assert.match(line, /^tdd_audit: fail/);
+    assert.match(line, /GSD-08-x-01/);
+    assert.ok(blockError.includes("test:"), blockError);
+  });
+
+  test("security disabled via cfg.gates -> security: skipped, no block, others still reported", async () => {
+    const { reportLines, blockError } = runCapabilityGates({
+      cfg: { gates: { security: false } },
+      gitData: { changedFiles: ["a/.env"], contentMap: {}, commitSubjects: [] },
+      plans: [],
+    });
+    assert.ok(reportLines.some((l) => l === "security: skipped"), reportLines.join("\n"));
+    assert.equal(blockError, null);
+    assert.equal(reportLines.length, 3);
+  });
+
+  test("security skipped via skipGates -> skipped and does not block", async () => {
+    const { reportLines, blockError } = runCapabilityGates({
+      cfg: {},
+      gitData: { changedFiles: ["a/.env"], contentMap: {}, commitSubjects: [] },
+      plans: [],
+      skipGates: ["security"],
+    });
+    assert.ok(reportLines.some((l) => l === "security: skipped"));
+    assert.equal(blockError, null);
   });
 });
