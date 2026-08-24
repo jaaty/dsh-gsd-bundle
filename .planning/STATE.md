@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v1.2
 milestone_name: uat-loop
-status: ship
-active_phase: 7
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [7]
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 2
   completed_plans: 14
-  percent: 86
+  percent: 100
 current_phase: 7
 current_phase_name: uat-conversation
 current_plan: 2
-last_updated: "2026-08-24T05:17:32.687Z"
+last_updated: "2026-08-24T05:18:00.056Z"
 state_head: null
 last_activity: 2026-08-24
-stopped_at: "Phase 6 shipped — PR #7"
+stopped_at: "Phase 7 shipped — PR #8"
 paused_at: null
 ---
 # GSD STATE
@@ -51,6 +51,7 @@ _No active phase._
 - Phase 6 shipped — PR #7 (https://github.com/jaaty/dsh-gsd-bundle/pull/7)
 - Phase 7: CONTEXT.md sealed — 7 decisions
 - Phase 7: planned — 2 plan(s) across 2 wave(s).
+- Phase 7 shipped — PR #8 (https://github.com/jaaty/dsh-gsd-bundle/pull/8)
 
 ### Blockers / Concerns
 _none_
