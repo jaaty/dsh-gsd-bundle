@@ -208,6 +208,27 @@ describe("gsd_execute", () => {
     const st = await svc.readState(CWD);
     assert.equal(st.frontmatter.status, "execute", "plan stays incomplete -> STATE stays execute");
   });
+
+  test("resumes a checkpointed plan from the last completed task (DUR-02/D-04)", async () => {
+    await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
+    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", CHECKPOINT_FM);
+    const { t } = await registerTool("execute", "gsd_execute");
+    const res = await t.execute({ phase: 1 }, exec);
+    const prompt = executeCaptured[0] || "";
+    assert.match(prompt, /RESUME from checkpoint/);
+    assert.match(prompt, /last_completed_task/);
+    assert.match(prompt, /begin at task 2/);
+    assert(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md`), "resumed executor writes SUMMARY and completes");
+    assert.match(res, /01-auth-01 ✓/);
+  });
+
+  test("a corrupt/out-of-range checkpoint fails loud instead of re-running from task 1 (D-05)", async () => {
+    await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
+    const bad = CHECKPOINT_FM.replace("last_completed_task: 1", "last_completed_task: 9");
+    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", bad);
+    const { t } = await registerTool("execute", "gsd_execute");
+    await assert.rejects(() => t.execute({ phase: 1 }, exec), /invalid CHECKPOINT-01/);
+  });
 });
 
 describe("gsd_plan closed-phase gate", () => {
