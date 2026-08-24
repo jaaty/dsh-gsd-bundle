@@ -3,17 +3,13 @@
 // gsd_verify) plus the gsd_ship fail-loud preflight guard. Reuses the
 // registerTool/makeCtx/makeSubagents pattern from tools.test.mjs (D-04) with
 // added canned handlers for ui-researcher, ui-checker, and quick labels.
-// Offline on FakeFs/fake-ctx, except gsd_quick which needs a real temp cwd
-// because it writes TASK.md via node:fs/promises (OQ-1).
+// Offline on FakeFs/fake-ctx throughout — gsd_quick included, now that its
+// TASK.md write routes through ctx.fs via GsdState.writeQuickRecord (DUR-06).
 
 import { test, describe, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import os from "node:os";
-import path from "node:path";
-import fsPromises from "node:fs/promises";
 
-import { GsdState } from "../lib/state.js";
-import { FakeFs, stateCtx, realFsAdapter } from "./helpers/fake-fs.mjs";
+import { FakeFs } from "./helpers/fake-fs.mjs";
 import { buildProject, FENCED_PLAN, FENCED_SUMMARY, VERIFICATION_PASSED } from "./helpers/project.mjs";
 
 const CWD = "/project";
@@ -190,65 +186,28 @@ describe("gsd_verify", () => {
   });
 });
 
-// gsd_quick writes TASK.md via real node:fs/promises (lib/quick.js:55-57),
-// bypassing ctx.fs, so its happy path CANNOT run on pure FakeFs at cwd=/project.
-// Smoke it against a REAL temp directory (OQ-1). Fully offline (no LLM, no
-// git/gh, no network) per D-04; cleaned up in a try/finally.
+// gsd_quick routes its TASK.md write through GsdState.writeQuickRecord → ctx.fs
+// (lib/quick.js), so its happy path now runs on pure FakeFs at cwd=/project —
+// proving the raw-fs bypass (OQ-1) is gone (DUR-06).
 describe("gsd_quick", () => {
-  test("records the task entry on the real filesystem", async () => {
-    const tmp = await fsPromises.mkdtemp(path.join(os.tmpdir(), "gsd-quick-"));
-    try {
-      const realFs = realFsAdapter();
-      const realSvc = new GsdState(
-        { fs: realFs, get: () => undefined, provide: () => {}, effect: () => () => {} },
-        {},
-      );
-      await realSvc.initProject(tmp, {
-        name: "T",
-        purpose: "p",
-        milestoneName: "M1",
-        version: "v1.0",
-        requirements: [{ id: "AUTH-01", text: "x", complete: false }],
-        phases: [{ name: "auth", goal: "g", requirements: ["AUTH-01"] }],
-      });
-      const execWithTmp = {
-        agent: { session: { header: { cwd: tmp } } },
-        signal: { aborted: false, addEventListener() {}, removeEventListener() {} },
-      };
-      // Register gsd_quick directly against a ctx wired to the real temp svc +
-      // fake subagents (the `quick` branch returns canned output; it does not
-      // touch the shared FakeFs).
-      const mod = await import("../lib/quick.js");
-      const tools = [];
-      const c = {
-        fs: realFs,
-        get: (n) =>
-          n === "gsdState" ? realSvc : n === "subagents" ? makeSubagents() : n === "tools" ? { register() {} } : undefined,
-        provide() {},
-        effect: () => () => {},
-        tools: { register: (t) => tools.push(t) },
-      };
-      mod.apply(c, {});
-      const t = tools.find((x) => x.name === "gsd_quick");
-      assert.ok(t, "gsd_quick not registered");
+  beforeEach(async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    ctx = makeCtx();
+  });
 
-      const res = await t.execute({ task: "fix the typo in README", slug: "fix-typo" }, execWithTmp);
-      assert.match(res, /gsd_quick done/);
+  test("records the task entry through ctx.fs on FakeFs", async () => {
+    const { t } = await registerTool("quick", "gsd_quick");
+    const res = await t.execute({ task: "fix the typo in README", slug: "fix-typo" }, exec);
+    assert.match(res, /gsd_quick done/);
 
-      // TASK.md exists on the REAL filesystem with the recorded entry.
-      const dir = await fsPromises.readdir(path.join(tmp, ".planning", "quick"));
-      const quickDir = dir.find((d) => d.endsWith("-fix-typo"));
-      assert.ok(quickDir, "quick task dir not found");
-      assert.match(quickDir, /^\d{4}-\d{2}-\d{2}-fix-typo$/);
-      const entry = await fsPromises.readFile(
-        path.join(tmp, ".planning", "quick", quickDir, "TASK.md"),
-        "utf8",
-      );
-      assert.match(entry, /# Quick task/);
-      assert.match(entry, /fix the typo in README/);
-    } finally {
-      await fsPromises.rm(tmp, { recursive: true, force: true });
-    }
+    // TASK.md lands on the FakeFs file map at .planning/quick/<date>-<slug>/TASK.md.
+    const key = [...fs.files.keys()].find((k) => k.includes("/.planning/quick/") && k.endsWith("/TASK.md"));
+    assert.ok(key, "quick TASK.md not written to FakeFs");
+    assert.match(key, /\/.planning\/quick\/\d{4}-\d{2}-\d{2}-fix-typo\/TASK\.md$/);
+    const entry = fs.files.get(key);
+    assert.match(entry, /# Quick task/);
+    assert.match(entry, /fix the typo in README/);
   });
 });
 
