@@ -19,6 +19,8 @@ import {
   nextSeq,
   parseWindows,
   stringifyWindows,
+  stripPlanPrefix,
+  resolvePlanDep,
 } from "../lib/_shared.js";
 
 describe("frontmatter parse/stringify", () => {
@@ -229,5 +231,29 @@ describe("WINDOWS ledger helpers (DUR-03, D-01/D-06)", () => {
   test("stringifyWindows recomputes a WIN-<seq> id when entry.id is absent", async () => {
     const text = stringifyWindows([{ phase: 1, step: "execute", summary: "s" }]);
     assert.match(text, /^## WIN-01$/m);
+  });
+});
+
+describe("plan dependency prefix tolerance (DUR-05)", () => {
+  test("stripPlanPrefix removes a leading project-code token", async () => {
+    // BUG: plan ids are project-code-prefixed ("GSD-01-auth-01") but the planner
+    // wrote depends_on as the bare "01-auth-01"; exact-match resolution missed it.
+    assert.equal(stripPlanPrefix("GSD-01-auth-01"), "01-auth-01");
+    assert.equal(stripPlanPrefix("01-auth-01"), "01-auth-01"); // no prefix -> unchanged
+  });
+
+  test("resolvePlanDep matches a non-prefixed dep to a prefixed plan id", async () => {
+    const plans = [{ id: "GSD-01-auth-01" }];
+    assert.equal(resolvePlanDep(plans, "01-auth-01"), plans[0]);
+  });
+
+  test("resolvePlanDep exact-match still wins", async () => {
+    const plans = [{ id: "GSD-01-auth-01" }];
+    assert.equal(resolvePlanDep(plans, "GSD-01-auth-01"), plans[0]);
+  });
+
+  test("resolvePlanDep returns undefined when nothing matches", async () => {
+    const plans = [{ id: "GSD-01-auth-01" }];
+    assert.equal(resolvePlanDep(plans, "99-nonexistent-01"), undefined);
   });
 });
