@@ -229,6 +229,21 @@ describe("gsd_execute", () => {
     const { t } = await registerTool("execute", "gsd_execute");
     await assert.rejects(() => t.execute({ phase: 1 }, exec), /invalid CHECKPOINT-01/);
   });
+
+  test("a completed SUMMARY wins over a stale CHECKPOINT and triggers cleanup (D-06)", async () => {
+    await svc.writeArtifact(CWD, 1, "PLAN-01", PLAN_2_TASKS);
+    await svc.writeArtifact(CWD, 1, "CHECKPOINT-01", CHECKPOINT_FM);
+    // spy on removeArtifact — the real fs unlink is a no-op on the in-memory fake fs
+    let removeCalls = 0;
+    const orig = svc.removeArtifact.bind(svc);
+    svc.removeArtifact = async (...a) => { removeCalls++; return orig(...a); };
+    const { t } = await registerTool("execute", "gsd_execute");
+    const res = await t.execute({ phase: 1 }, exec);
+    assert.equal(executeSpawnCount, 1, "executor spawned exactly once (not re-run from scratch)");
+    assert(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md`), "SUMMARY wins -> plan completes");
+    assert.match(res, /01-auth-01 ✓/);
+    assert.ok(removeCalls >= 1, "stale CHECKPOINT removal path invoked once SUMMARY wins");
+  });
 });
 
 describe("gsd_plan closed-phase gate", () => {
