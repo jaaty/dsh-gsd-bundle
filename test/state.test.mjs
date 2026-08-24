@@ -512,6 +512,19 @@ describe("async-jobs registry accessors (DUR-04, D-04/D-06)", () => {
     assert.deepEqual(await svc.readJobs(CWD), { entries: [], corrupt: true });
   });
 });
+
+describe("quick-record accessor (DUR-06, D-04/D-05)", () => {
+  test("writeQuickRecord routes through ctx.fs to .planning/quick/<date>-<slug>/TASK.md", async () => {
+    // A bare GsdState on a fresh FakeFs with NO prior .planning/quick dir — the
+    // accessor must be missing/parent-tolerant (must not throw) and the write
+    // must land on the FakeFs file map, proving the node:fs bypass is gone.
+    const fs = new FakeFs();
+    const svc = makeSvc(fs);
+    await svc.writeQuickRecord(CWD, "2026-08-24-fix-typo", "# entry");
+    assert.ok(fs.files.has(`${CWD}/.planning/quick/2026-08-24-fix-typo/TASK.md`));
+    assert.equal(fs.files.get(`${CWD}/.planning/quick/2026-08-24-fix-typo/TASK.md`), "# entry");
+  });
+});
 function awaitBuild(fs) {
   return buildProject(fs, CWD);
 }
