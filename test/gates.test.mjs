@@ -120,3 +120,76 @@ describe("broken-windows gate", () => {
     assert.deepEqual(res.findings, []);
   });
 });
+
+describe("tdd-audit gate", () => {
+  const plans = [{ id: "GSD-08-x-01", type: "tdd" }];
+
+  test("test: subject before feat: subject passes", async () => {
+    const res = tddAuditGate(plans, ["test(08-01): a", "feat(08-01): b"]);
+    assert.equal(res.status, "pass");
+    assert.deepEqual(res.findings, []);
+  });
+
+  test("missing test: commit before feat:/fix: fails", async () => {
+    const res = tddAuditGate(plans, ["feat(08-01): b"]);
+    assert.equal(res.status, "fail");
+    assert.equal(res.findings[0].planId, "GSD-08-x-01");
+    assert.match(res.findings[0].reason, /test:/);
+  });
+
+  test("a non-tdd plan is never audited", async () => {
+    const res = tddAuditGate([{ id: "GSD-08-x-01", type: "execute" }], ["feat(08-01): b"]);
+    assert.equal(res.status, "pass");
+  });
+
+  test("tdd plan whose only scope-matching subject is feat: fails", async () => {
+    const res = tddAuditGate(plans, ["feat(08-01): x"]);
+    assert.equal(res.status, "fail");
+  });
+
+  test("subjects from another plan do not satisfy a tdd plan scoped (08-01)", async () => {
+    const res = tddAuditGate(plans, ["test(09-01): z"]);
+    assert.equal(res.status, "fail");
+  });
+
+  test("plan id with a phase-slug prefix derives scope 08-01, not gates-01", async () => {
+    const res = tddAuditGate(
+      [{ id: "GSD-08-capability-gates-01", type: "tdd" }],
+      ["test(08-01): a", "feat(08-01): b"],
+    );
+    assert.equal(res.status, "pass");
+  });
+});
+
+describe("resolveGatesConfig", () => {
+  test("absent gates block -> all three enabled", async () => {
+    const res = resolveGatesConfig({});
+    assert.equal(res.security.enabled, true);
+    assert.equal(res.broken_windows.enabled, true);
+    assert.equal(res.tdd_audit.enabled, true);
+    assert.equal(res.security.status, "enabled");
+  });
+
+  test("gates.security false -> security disabled, others enabled", async () => {
+    const res = resolveGatesConfig({ gates: { security: false } });
+    assert.equal(res.security.enabled, false);
+    assert.equal(res.security.status, "skipped");
+    assert.equal(res.broken_windows.enabled, true);
+    assert.equal(res.tdd_audit.enabled, true);
+  });
+
+  test("empty gates block + skip broken_windows -> that gate skipped", async () => {
+    const res = resolveGatesConfig({ gates: {} }, ["broken_windows"]);
+    assert.equal(res.broken_windows.enabled, false);
+    assert.equal(res.broken_windows.status, "skipped");
+    assert.equal(res.security.enabled, true);
+    assert.equal(res.tdd_audit.enabled, true);
+  });
+
+  test("config false + skip combine: security by config, tdd_audit by skip", async () => {
+    const res = resolveGatesConfig({ gates: { security: false } }, ["tdd_audit"]);
+    assert.equal(res.security.enabled, false);
+    assert.equal(res.tdd_audit.enabled, false);
+    assert.equal(res.broken_windows.enabled, true);
+  });
+});
