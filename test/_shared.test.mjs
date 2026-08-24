@@ -21,6 +21,9 @@ import {
   stringifyWindows,
   stripPlanPrefix,
   resolvePlanDep,
+  decisionIdFor,
+  awaitingDecision,
+  awaitingMarker,
 } from "../lib/_shared.js";
 
 describe("frontmatter parse/stringify", () => {
@@ -255,5 +258,67 @@ describe("plan dependency prefix tolerance (DUR-05)", () => {
   test("resolvePlanDep returns undefined when nothing matches", async () => {
     const plans = [{ id: "GSD-01-auth-01" }];
     assert.equal(resolvePlanDep(plans, "99-nonexistent-01"), undefined);
+  });
+});
+
+describe("conversational UAT helpers (D-01/D-03/D-04/D-05/D-06)", () => {
+  test("decisionIdFor is deterministic and index-suffixed", async () => {
+    assert.equal(decisionIdFor("GSD-07-uat-conversation-01", 1), "GSD-07-uat-conversation-01-ck1");
+    assert.equal(decisionIdFor("x", 3), "x-ck3");
+  });
+
+  test("awaitingDecision returns false when human_answer is persisted (context-reset resume, D-04)", async () => {
+    assert.equal(awaitingDecision({ human_answer: "use pg" }, "", ""), false);
+    assert.equal(awaitingDecision({ human_answer: "  use pg  " }, "", ""), false);
+  });
+
+  test("awaitingDecision returns false when a matching answer+decision_id are passed (D-03)", async () => {
+    assert.equal(awaitingDecision({ decision_id: "p-ck1" }, "use pg", "p-ck1"), false);
+  });
+
+  test("awaitingDecision returns true when no answer and no decision_id (awaiting, D-05)", async () => {
+    assert.equal(awaitingDecision({ decision_id: "p-ck1" }, "", ""), true);
+    assert.equal(awaitingDecision({ decision_id: "p-ck1" }, undefined, undefined), true);
+  });
+
+  test("awaitingDecision returns true when decision_id does not match the stored one (stale answer ignored, D-06)", async () => {
+    assert.equal(awaitingDecision({ decision_id: "p-ck1" }, "use pg", "WRONG"), true);
+  });
+
+  test("awaitingDecision returns true when an answer is passed with no decision_id (D-06)", async () => {
+    assert.equal(awaitingDecision({ decision_id: "p-ck1" }, "use pg", ""), true);
+    assert.equal(awaitingDecision({ decision_id: "p-ck1" }, "use pg", undefined), true);
+  });
+
+  test("awaitingDecision returns true when a stored decision_id is missing", async () => {
+    assert.equal(awaitingDecision({}, "use pg", "p-ck1"), true);
+  });
+
+  test("awaitingDecision guards null/undefined checkpointFm (defensive default)", async () => {
+    assert.equal(awaitingDecision(null, "", ""), true);
+    assert.equal(awaitingDecision(undefined, "use pg", "p-ck1"), true);
+  });
+
+  test("awaitingMarker formats the stable marker line naming plan, kind, decision_id, question", async () => {
+    const marker = awaitingMarker({
+      plan: "GSD-07-uat-conversation-01",
+      decision_id: "GSD-07-uat-conversation-01-ck1",
+      kind: "decision",
+      question: "Which db?",
+    });
+    assert.ok(marker.startsWith("GSD_AWAITING_HUMAN: plan "), "marker prefix");
+    assert.ok(marker.includes("GSD-07-uat-conversation-01"), "plan id present");
+    assert.ok(marker.includes("checkpoint:decision"), "kind present");
+    assert.ok(marker.includes("decision_id=GSD-07-uat-conversation-01-ck1"), "decision_id present");
+    assert.ok(marker.includes("question=Which db?"), "question present");
+    assert.ok(marker.includes("checkpoint"), "literal substring 'checkpoint' (DUR-01)");
+  });
+
+  test("awaitingMarker interpolates each kind into checkpoint:<kind> (D-07 single marker shape)", async () => {
+    for (const kind of ["decision", "human-action", "human-verify"]) {
+      const marker = awaitingMarker({ plan: "p", decision_id: "d", kind, question: "q" });
+      assert.ok(marker.includes(`checkpoint:${kind}`), `kind ${kind} present`);
+      assert.ok(marker.startsWith("GSD_AWAITING_HUMAN: plan p"));
+    }
   });
 });
