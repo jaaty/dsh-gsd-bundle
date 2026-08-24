@@ -1,6 +1,6 @@
-# Roadmap — uat-loop (v1.2)
+# Roadmap — ship-gates (v1.3)
 
-7 phase(s) | requirements mapped per phase
+8 phase(s) | requirements mapped per phase
 
 | # | Phase | Goal | Requirements |
 |---|-------|------|--------------|
@@ -11,6 +11,7 @@
 | 05 | [x] window-ledger | Add the WINDOWS.md multi-window ledger and an async-jobs manifest, and surface both through gsd_status. | DUR-03 … DUR-04 |
 | 06 | [x] loop-robustness | Fix the planner depends_on project-code-prefix bug and route gsd_quick's TASK.md write through the gsd artefact model. | DUR-05 … DUR-06 |
 | 07 | [x] uat-conversation | Implement the conversational UAT loop: an executor stopping at a checkpoint:decision or checkpoint:human-action task surfaces a human-facing question, and gsd_execute pauses the phase, waits for the human's answer, and resumes the checkpointed plan with that answer applied so the phase completes. | UAT-01 … UAT-02 |
+| 08 | capability-gates | Implement the capability-gate gatekeeper in gsd_ship: before creating the PR, gsd_ship runs a set of capability gates (security, broken-windows, TDD-audit), reports each gate's pass/fail status, and refuses to ship when any required gate fails with a clear report of what failed and why. | CAP-01 … CAP-02 |
 
 ## Progress
 
@@ -23,3 +24,4 @@
 | 05 | window-ledger | [x] Complete | 2026-08-24 |
 | 06 | loop-robustness | [x] Complete | 2026-08-24 |
 | 07 | uat-conversation | [x] Complete | 2026-08-24 |
+| 08 | capability-gates | pending |  |
