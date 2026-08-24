@@ -174,6 +174,34 @@ describe("gsd_status", () => {
     assert.match(res, /Milestone: M1/);
     assert.match(res, /Progress:/);
   });
+
+  test("fresh project renders empty Windows and Async Jobs sections and keeps continuity", async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    const { t } = await registerTool("core-tools", "gsd_status");
+    const res = await t.execute({}, exec);
+    assert.match(res, /## Windows/);
+    assert.match(res, /No windows recorded/);
+    assert.match(res, /## Async Jobs/);
+    assert.match(res, /No jobs/);
+    assert.match(res, /Stopped at:/);
+  });
+
+  test("seeded windows and jobs render in the two sections", async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    await svc.appendWindow(CWD, { phase: "1", step: "execute", summary: "executed phase 1" });
+    await svc.appendJob(CWD, { kind: "subagent", plan: "GSD-01-auth-01", status: "done", result: "SUMMARY written" });
+    const { t } = await registerTool("core-tools", "gsd_status");
+    const res = await t.execute({}, exec);
+    assert.match(res, /## Windows/);
+    assert.match(res, /WIN-01/);
+    assert.match(res, /phase 1 execute/);
+    assert.match(res, /## Async Jobs/);
+    assert.match(res, /JOB-01/);
+    assert.match(res, /SUMMARY written/);
+    assert.match(res, /Stopped at:/);
+  });
 });
 
 describe("gsd_map_codebase", () => {
