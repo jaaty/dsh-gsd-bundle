@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v1.1
 milestone_name: loop-durability
-status: execute
+status: ship
 active_phase: 6
-next_action: execute-phase
+next_action: ship-phase
 next_phases: [6]
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 2
-  completed_plans: 11
+  completed_plans: 12
   percent: 67
 current_phase: 6
 current_phase_name: loop-robustness
 current_plan: 2
-last_updated: "2026-08-24T04:34:24.620Z"
+last_updated: "2026-08-24T04:43:57.265Z"
 state_head: null
 last_activity: 2026-08-24
 stopped_at: "Phase 4 shipped — PR #5"
