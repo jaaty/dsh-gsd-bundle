@@ -4,9 +4,11 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
+import os from "node:os";
+import { mkdtemp, rm } from "node:fs/promises";
 
 import { GsdState } from "../lib/state.js";
-import { FakeFs, stateCtx } from "./helpers/fake-fs.mjs";
+import { FakeFs, stateCtx, realFsAdapter } from "./helpers/fake-fs.mjs";
 import {
   buildProject,
   FENCED_PLAN,
@@ -75,6 +77,29 @@ committed_hashes: []
     const fs = new FakeFs();
     const svc = await awaitBuild(fs);
     assert.equal(svc.planningRoot(CWD), `${CWD}/.planning`);
+  });
+});
+
+describe("removeArtifact", () => {
+  test("removeArtifact deletes a persisted CHECKPOINT artefact on a real fs (D-06 primitive)", async () => {
+    // FakeFs is in-memory with no unlink; use the real-fs adapter + a temp dir
+    // to prove removeArtifact actually deletes the file on disk.
+    const tmp = await mkdtemp(path.join(os.tmpdir(), "gsd-remove-"));
+    try {
+      const svc = new GsdState(stateCtx(realFsAdapter()), {});
+      await svc.initProject(tmp, {
+        name: "Test", purpose: "p", milestoneName: "M1", version: "v1.0",
+        requirements: [],
+        phases: [{ name: "auth", goal: "g", requirements: [] }],
+      });
+      const content = "---\nplan: 01-auth-01\nlast_completed_task: 1\n---\n# Checkpoint";
+      await svc.writeArtifact(tmp, 1, "CHECKPOINT-01", content);
+      assert.equal(await svc.hasArtifact(tmp, 1, "CHECKPOINT-01"), true);
+      await svc.removeArtifact(tmp, 1, "CHECKPOINT-01");
+      assert.equal(await svc.hasArtifact(tmp, 1, "CHECKPOINT-01"), false);
+    } finally {
+      await rm(tmp, { recursive: true, force: true });
+    }
   });
 });
 
