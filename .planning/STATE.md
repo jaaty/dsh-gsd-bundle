@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v1.3
 milestone_name: ship-gates
-status: execute
+status: ship
 active_phase: 8
-next_action: execute-phase
+next_action: ship-phase
 next_phases: [8]
 progress:
   total_phases: 8
   completed_phases: 7
-  total_plans: 2
-  completed_plans: 14
+  total_plans: 3
+  completed_plans: 17
   percent: 88
 current_phase: 8
 current_phase_name: capability-gates
-current_plan: 2
-last_updated: "2026-08-24T05:45:39.394Z"
+current_plan: 3
+last_updated: "2026-08-24T05:54:49.174Z"
 state_head: null
 last_activity: 2026-08-24
 stopped_at: "Phase 7 shipped — PR #8"
