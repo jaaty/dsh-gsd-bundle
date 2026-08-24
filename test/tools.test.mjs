@@ -5,6 +5,7 @@ import { test, describe, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 
 import { GsdState } from "../lib/state.js";
+import { resolvePlanDep } from "../lib/_shared.js";
 import { FakeFs, stateCtx } from "./helpers/fake-fs.mjs";
 import { buildProject, FENCED_PLAN, FENCELESS_PLAN, FENCED_SUMMARY, VERIFICATION_PASSED } from "./helpers/project.mjs";
 
@@ -301,6 +302,81 @@ describe("gsd_execute", () => {
     assert(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md`), "SUMMARY wins -> plan completes");
     assert.match(res, /01-auth-01 ✓/);
     assert.ok(removeCalls >= 1, "stale CHECKPOINT removal path invoked once SUMMARY wins");
+  });
+
+  test("prefixed project: wave-2 dispatches only after its non-prefixed dep's SUMMARY exists (DUR-05)", async () => {
+    // Regression: with a project_code the plan id is prefixed ("GSDB-01-auth-01")
+    // but depends_on may carry the bare "01-auth-01". Prefix-tolerant resolution
+    // must block wave-2 until the wave-1 SUMMARY exists, then dispatch it.
+    fs = new FakeFs();
+    svc = new GsdState(stateCtx(fs), {});
+    await svc.initProject(CWD, {
+      name: "T", purpose: "p", milestoneName: "M1", version: "v1.0",
+      requirements: [{ id: "AUTH-01", text: "log in" }, { id: "TODO-01", text: "todo" }],
+      phases: [{ name: "auth", goal: "g", requirements: ["AUTH-01", "TODO-01"] }],
+      projectCode: "GSDB",
+    });
+    const base = "GSDB-01-auth";
+    // the shared resolver turns the bare depends_on into the prefixed plan id
+    assert.equal(resolvePlanDep([{ id: `${base}-01` }], "01-auth-01").id, `${base}-01`);
+    await svc.writeArtifact(CWD, 1, "PLAN-01", `---
+phase: 01-auth
+plan: 01
+type: tdd
+wave: 1
+depends_on: []
+files_modified: ["src/a.js"]
+autonomous: true
+requirements: ["AUTH-01"]
+---
+<objective>w1</objective><tasks></tasks>`);
+    await svc.writeArtifact(CWD, 1, "PLAN-02", `---
+phase: 01-auth
+plan: 02
+type: tdd
+wave: 2
+depends_on: ["01-auth-01"]
+files_modified: ["src/b.js"]
+autonomous: true
+requirements: ["TODO-01"]
+---
+<objective>w2</objective><tasks></tasks>`);
+
+    // custom subagents that write SUMMARY at the prefixed path, keyed by the plan's own id
+    const spawnCounts = { w1: 0, w2: 0 };
+    const subagents = {
+      getProvider: (n) => (n === "spawn" ? { spawn: true } : undefined),
+      async start(_n, req) {
+        const id = req.label.split(" ")[1]; // "execute GSDB-01-auth-01"
+        const pNum = id.split("-").pop();
+        if (req.label.startsWith("execute")) {
+          if (id === `${base}-01`) spawnCounts.w1++;
+          if (id === `${base}-02`) spawnCounts.w2++;
+          await fs.writeText({ targetKey: `${CWD}/.planning/phases/${base}/${base}-${pNum}-SUMMARY.md` }, FENCED_SUMMARY);
+        }
+        return { result: { output: [{ type: "text", text: "done" }], stopReason: "completed", structured: undefined }, dispose: () => {} };
+      },
+    };
+    const c = makeCtx();
+    c.get = (n) => (n === "gsdState" ? svc : n === "subagents" ? subagents : n === "tools" ? { register() {} } : undefined);
+    const mod = await import(`../lib/execute.js`);
+    const tools = [];
+    c.tools = { register: (t) => tools.push(t) };
+    mod.apply(c, {});
+    const t = tools.find((x) => x.name === "gsd_execute");
+
+    // First run: only wave-1 is runnable; wave-2 stays blocked (no SUMMARY yet).
+    const res1 = await t.execute({ phase: 1 }, exec);
+    assert.equal(spawnCounts.w1, 1, "wave-1 dispatched on first run");
+    assert.equal(spawnCounts.w2, 0, "wave-2 must NOT dispatch before its wave-1 SUMMARY exists");
+    assert.match(res1, /skipping .*01-auth-02/);
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/${base}/${base}-01-SUMMARY.md`), "wave-1 SUMMARY written");
+
+    // Second run: wave-1 is complete, so wave-2 resolves its dep and dispatches.
+    const res2 = await t.execute({ phase: 1 }, exec);
+    assert.equal(spawnCounts.w2, 1, "wave-2 dispatched once wave-1 SUMMARY exists");
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/${base}/${base}-02-SUMMARY.md`), "wave-2 SUMMARY written");
+    assert.match(res2, /02 ✓/);
   });
 });
 

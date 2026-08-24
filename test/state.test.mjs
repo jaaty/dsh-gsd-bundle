@@ -8,9 +8,11 @@ import os from "node:os";
 import { mkdtemp, rm } from "node:fs/promises";
 
 import { GsdState } from "../lib/state.js";
+import { resolvePlanDep } from "../lib/_shared.js";
 import { FakeFs, stateCtx, realFsAdapter } from "./helpers/fake-fs.mjs";
 import {
   buildProject,
+  REQS,
   FENCED_PLAN,
   FENCELESS_PLAN,
   FENCED_SUMMARY,
@@ -144,6 +146,83 @@ describe("planIndex", () => {
     assert.equal(idx.plans.length, 2);
     assert.equal(idx.incomplete.length, 2);
     assert.deepEqual(Object.keys(idx.waves), ["1"]);
+  });
+
+  test("prefixed project: non-prefixed depends_on resolves and gates wave 2 (DUR-05)", async () => {
+    // BUG: with a project_code the plan id is prefixed (GSDB-01-auth-01) but the
+    // planner wrote depends_on as the bare "01-auth-01"; exact-match resolution
+    // never matched, so the wave-2 plan either ran too early (planIndex) or was
+    // blocked forever (execute). Prefix-tolerant resolution fixes both.
+    const fs = new FakeFs();
+    const svc = new GsdState(stateCtx(fs), {});
+    await svc.initProject(CWD, {
+      name: "T", purpose: "p", milestoneName: "M1", version: "v1.0",
+      requirements: REQS,
+      phases: [{ name: "auth", goal: "g", requirements: ["AUTH-01", "TODO-01"] }],
+      projectCode: "GSDB",
+    });
+    // plan 1 = wave 1 (no deps); plan 2 = wave 2, depends_on the non-prefixed id.
+    await svc.writeArtifact(CWD, 1, "PLAN-01", `---
+phase: 01-auth
+plan: 01
+type: tdd
+wave: 1
+depends_on: []
+files_modified: ["src/a.js"]
+autonomous: true
+requirements: ["AUTH-01"]
+---
+<objective>w1</objective><tasks></tasks>`);
+    await svc.writeArtifact(CWD, 1, "PLAN-02", `---
+phase: 01-auth
+plan: 02
+type: tdd
+wave: 2
+depends_on: ["01-auth-01"]
+files_modified: ["src/b.js"]
+autonomous: true
+requirements: ["TODO-01"]
+---
+<objective>w2</objective><tasks></tasks>`);
+
+    const plans1 = await svc.listPlans(CWD, 1);
+    assert.equal(plans1.find((p) => p.plan === "1").id, "GSDB-01-auth-01"); // prefixed base
+    assert.equal(resolvePlanDep(plans1, "01-auth-01").id, "GSDB-01-auth-01"); // prefix-tolerant
+
+    // plan 2 blocked while its wave-1 dep has no SUMMARY.
+    let idx = await svc.planIndex(CWD, 1);
+    assert.ok(!idx.runnable.some((p) => p.plan === "2"), "wave-2 blocked before wave-1 SUMMARY");
+
+    // once the wave-1 SUMMARY exists, wave 2 becomes runnable.
+    await svc.markPlanSummary(CWD, 1, 1, FENCED_SUMMARY);
+    idx = await svc.planIndex(CWD, 1);
+    assert.ok(idx.runnable.some((p) => p.plan === "2"), "wave-2 runnable after wave-1 SUMMARY");
+  });
+
+  test("an unresolvable depends_on fails loud with a named error (DUR-05 D-03)", async () => {
+    const fs = new FakeFs();
+    const svc = new GsdState(stateCtx(fs), {});
+    await svc.initProject(CWD, {
+      name: "T", purpose: "p", milestoneName: "M1", version: "v1.0",
+      requirements: REQS,
+      phases: [{ name: "auth", goal: "g", requirements: ["AUTH-01"] }],
+      projectCode: "GSDB",
+    });
+    await svc.writeArtifact(CWD, 1, "PLAN-01", `---
+phase: 01-auth
+plan: 01
+type: tdd
+wave: 2
+depends_on: ["99-nonexistent-01"]
+files_modified: ["src/a.js"]
+autonomous: true
+requirements: ["AUTH-01"]
+---
+<objective>x</objective><tasks></tasks>`);
+    await assert.rejects(
+      () => svc.planIndex(CWD, 1),
+      /unresolved plan dependency "99-nonexistent-01"/,
+    );
   });
 });
 
@@ -431,6 +510,19 @@ describe("async-jobs registry accessors (DUR-04, D-04/D-06)", () => {
     const svc = await awaitBuild(fs);
     await fs.writeText({ targetKey: `${CWD}/.planning/async-jobs.json` }, `{"not":"an array"}`);
     assert.deepEqual(await svc.readJobs(CWD), { entries: [], corrupt: true });
+  });
+});
+
+describe("quick-record accessor (DUR-06, D-04/D-05)", () => {
+  test("writeQuickRecord routes through ctx.fs to .planning/quick/<date>-<slug>/TASK.md", async () => {
+    // A bare GsdState on a fresh FakeFs with NO prior .planning/quick dir — the
+    // accessor must be missing/parent-tolerant (must not throw) and the write
+    // must land on the FakeFs file map, proving the node:fs bypass is gone.
+    const fs = new FakeFs();
+    const svc = makeSvc(fs);
+    await svc.writeQuickRecord(CWD, "2026-08-24-fix-typo", "# entry");
+    assert.ok(fs.files.has(`${CWD}/.planning/quick/2026-08-24-fix-typo/TASK.md`));
+    assert.equal(fs.files.get(`${CWD}/.planning/quick/2026-08-24-fix-typo/TASK.md`), "# entry");
   });
 });
 function awaitBuild(fs) {
