@@ -1,0 +1,20 @@
+# Quick task 2026-08-24-ship-complete-phase-ordering
+
+**Task:** Fix a bug in the `gsd_ship` tool in `lib/ship.js` where the phase-completion progress update is never committed or pushed, so it never reaches the feature branch and PR (and thus never lands in main after the PR is merged).
+
+BACKGROUND (root cause, verified): `gsd_ship` runs, in order: (1) push the branch (`git push -u origin <branch>`, line ~80), (2) create the PR via `gh pr create` (line ~130), and only THEN (3) writes the completion bookkeeping — `updateStateFrontmatter(...)` (line 140), `addDecision(...)` (line 141), and `completePhase(...)` (line 142). `completePhase` is what marks the phase `[x] Complete` in `.planning/ROADMAP.md`, bumps `progress.completed_phases`/`percent` in `.planning/STATE.md`, and advances `next_phases`. Because these writes happen AFTER the push and are never staged/committed/pushed, the progress update sits only in the local working tree of the feature branch. When the PR is later merged (squash or regular), main gets whatever was on the pushed branch — which is MISSING the completion markers. This is why phases shipped via gsd_ship show stale "pending" progress in main.
+
+THE FIX — make the completion state part of the pushed branch. The cleanest approach given that `completePhase` writes files after the PR number is known: after the existing `completePhase(cwd, args.phase)` call (and after `updateStateFrontmatter`/`addDecision`), stage and commit the `.planning/` changes that these three calls produced, then push them to the branch. Concretely, inside `lib/ship.js`, after line ~142 (`await s.completePhase(cwd, args.phase);`), add steps that: (a) `git add .planning` (or `git add -A`), (b) `git commit -m "docs(planning): mark phase <N> complete (shipped — PR #<num>)"` if there is anything staged (guard against the empty-commit error), and (c) `git push` to origin. Use the existing `git()` / `gitOk()` helper functions already imported in the file (do NOT add new raw child-process code). Keep the existing log.push calls; add a log line like `pushed completion state for phase <N>`. The existing failure style (`fail(...)`) should be used if the commit/push fails, consistent with the file.
+
+Also ensure the existing `gsd_ship preflight (no git/gh)` test in `test/tools.test.mjs` (which only asserts missing-VERIFICATION fails preflight) still passes — the new commit/push steps happen after all preflight gates, so they must NOT run when preflight fails. Do not break any existing test; run `node --test test/tools.test.mjs test/mount.test.mjs test/service-tools.test.mjs test/_shared.test.mjs` to confirm all pass. Add a short comment above the new block explaining the ordering fix (why the completion commit must be pushed after completePhase). Commit the change atomically as one commit on the current branch.
+**Run:** 2026-08-24T05:25:40.762Z
+
+## Result
+
+Done. Fixed the `gsd_ship` completion-push bug in `lib/ship.js`.
+
+**What changed:** After `completePhase(...)` (and the preceding `updateStateFrontmatter`/`addDecision` calls) write the completion markers, the tool now stages `.planning`, commits those changes (`docs(planning): mark phase <N> complete (shipped — PR #<num>)`) and pushes them to origin. It guards against the empty-commit error by only committing when `git diff --cached --name-only` shows staged files. Added an explanatory comment and log lines, all using the existing `git()`/`fail()` helpers.
+
+**Why it's correct:** These steps run strictly after every preflight gate and after PR creation, so they never fire on preflight failure — the existing `missing VERIFICATION.md fails preflight` test still passes. All 61 tests across the four suites pass (`node --test test/tools.test.mjs test/mount.test.mjs test/service-tools.test.mjs test/_shared.test.mjs`).
+
+**Commit:** `b03fd67` — `fix(ship): commit and push phase-completion state after PR creation`
