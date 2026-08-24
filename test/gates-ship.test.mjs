@@ -66,3 +66,80 @@ describe("CAP-01 gate report", () => {
     assert.ok(reportLines.some((l) => l.startsWith("tdd_audit: pass")), reportLines.join("\n"));
   });
 });
+
+describe("CAP-02 blocking", () => {
+  test("a failing security gate yields a blockError naming the gate and file", async () => {
+    const { blockError } = runCapabilityGates({
+      cfg: {},
+      gitData: { changedFiles: ["a/.env"], contentMap: {}, commitSubjects: [] },
+      plans: [],
+      skipGates: [],
+    });
+    assert.ok(blockError, "blockError is non-null when a required gate fails");
+    assert.ok(blockError.includes("security"), blockError);
+    assert.ok(blockError.includes(".env"), blockError);
+  });
+
+  test("a failing broken-windows gate names gate + file + marker", async () => {
+    const { blockError } = runCapabilityGates({
+      cfg: {},
+      gitData: { changedFiles: ["src/a.js"], contentMap: { "src/a.js": "// TODO" }, commitSubjects: [] },
+      plans: [],
+      skipGates: [],
+    });
+    assert.ok(blockError, "blockError is non-null");
+    assert.ok(blockError.includes("broken_windows"), blockError);
+    assert.ok(blockError.includes("src/a.js"), blockError);
+    assert.ok(blockError.includes("TODO"), blockError);
+  });
+
+  test("a failing tdd-audit gate names gate + plan id", async () => {
+    const { blockError } = runCapabilityGates({
+      cfg: {},
+      gitData: { changedFiles: [], contentMap: {}, commitSubjects: ["feat(08-01): b"] },
+      plans: [{ id: "GSD-08-x-01", type: "tdd" }],
+      skipGates: [],
+    });
+    assert.ok(blockError, "blockError is non-null");
+    assert.ok(blockError.includes("tdd_audit"), blockError);
+    assert.ok(blockError.includes("GSD-08-x-01"), blockError);
+  });
+
+  test("a required failing gate produces a blocking message naming gate + file + reason", async () => {
+    const { reportLines, blockError } = runCapabilityGates({
+      cfg: {},
+      gitData: { changedFiles: ["a/.env"], contentMap: {}, commitSubjects: [] },
+      plans: [],
+      skipGates: [],
+    });
+    const line = reportLines.find((l) => l.startsWith("security: fail"));
+    assert.match(line, /security: fail/);
+    assert.match(line, /a\/\.env/);
+    assert.match(blockError, /security gate failed/);
+    assert.match(blockError, /\.env/);
+  });
+});
+
+describe("CAP-02 wiring: gsd_ship aborts before push on a failing gate (static)", () => {
+  test("ship.js fails with blockError and runs the gates before the push block", async () => {
+    const fs = await import("node:fs/promises");
+    const src = await fs.readFile(new URL("../lib/ship.js", import.meta.url), "utf8");
+
+    // The blocking failure path must call fail() with blockError (D-05).
+    assert.match(src, /fail\s*\(\s*blockError\s*\)/, "fail(blockError) present");
+
+    // The gate section (## Gate Report + runCapabilityGates) must sit textually
+    // BEFORE the push step so a failing gate aborts before any push/PR I/O.
+    const pushIdx = src.indexOf("6. push branch");
+    assert.ok(pushIdx > -1, "push-branch step marker present in ship.js");
+    const gateReportIdx = src.indexOf("## Gate Report");
+    const runGatesIdx = src.indexOf("runCapabilityGates({");
+    assert.ok(gateReportIdx > -1 && gateReportIdx < pushIdx, "Gate Report appended before push");
+    assert.ok(runGatesIdx > -1 && runGatesIdx < pushIdx, "runCapabilityGates called before push");
+
+    // The fail(blockError) call must appear before the push block too, proving a
+    // failing required gate throws before the push (CAP-02).
+    const failBlockErrorIdx = src.indexOf("if (blockError) fail(blockError)");
+    assert.ok(failBlockErrorIdx > -1 && failBlockErrorIdx < pushIdx, "blockError failure raised before push");
+  });
+});
