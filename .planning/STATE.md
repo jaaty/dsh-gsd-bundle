@@ -2,16 +2,16 @@
 gsd_state_version: 1
 milestone: v1.3
 milestone_name: ship-gates
-status: ship
-active_phase: 8
-next_action: ship-phase
-next_phases: [8]
+status: idle
+active_phase: null
+next_action: null
+next_phases: []
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 3
   completed_plans: 17
-  percent: 88
+  percent: 100
 current_phase: 8
 current_phase_name: capability-gates
 current_plan: 3
@@ -54,6 +54,7 @@ _No active phase._
 - Phase 7 shipped — PR #8 (https://github.com/jaaty/dsh-gsd-bundle/pull/8)
 - Phase 8: CONTEXT.md sealed — 9 decisions
 - Phase 8: planned — 3 plan(s) across 3 wave(s).
+- Phase 8 shipped — PR #10 (https://github.com/jaaty/dsh-gsd-bundle/pull/10)
 
 ### Blockers / Concerns
 _none_
