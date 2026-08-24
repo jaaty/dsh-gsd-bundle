@@ -202,6 +202,31 @@ describe("gsd_status", () => {
     assert.match(res, /SUMMARY written/);
     assert.match(res, /Stopped at:/);
   });
+
+  test("corrupt async-jobs.json renders a warning line, does not throw, keeps continuity", async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    await fs.writeText({ targetKey: `${CWD}/.planning/async-jobs.json` }, "not-json{{{");
+    const { t } = await registerTool("core-tools", "gsd_status");
+    let res;
+    await assert.doesNotReject(async () => { res = await t.execute({}, exec); });
+    assert.match(res, /corrupt/);
+    assert.match(res, /async-jobs\.json is corrupt/);
+    assert.match(res, /Stopped at:/);
+  });
+
+  test("corrupt WINDOWS.md renders a warning line, does not throw, keeps continuity", async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    // unknown-section header makes parseWindows throw -> readWindows corrupt:true
+    await fs.writeText({ targetKey: `${CWD}/.planning/WINDOWS.md` }, "# WINDOWS\n## FOO\n- phase: 1\n");
+    const { t } = await registerTool("core-tools", "gsd_status");
+    let res;
+    await assert.doesNotReject(async () => { res = await t.execute({}, exec); });
+    assert.match(res, /corrupt/);
+    assert.match(res, /WINDOWS\.md is corrupt/);
+    assert.match(res, /Stopped at:/);
+  });
 });
 
 describe("gsd_map_codebase", () => {
