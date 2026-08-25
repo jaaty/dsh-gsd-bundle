@@ -563,6 +563,40 @@ describe("gsd_status", () => {
     assert.match(res, /Stopped at:/);
   });
 
+  test("a running job whose result file exists renders done/failed", async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    await svc.appendJob(CWD, { kind: "subagent", status: "running" });
+    await fs.writeText({ targetKey: `${CWD}/.planning/jobs/JOB-01.result.json` }, JSON.stringify({ id: "JOB-01", exitCode: 0, stdout: "hello", stderr: "", error: null }));
+    const { t } = await registerTool("core-tools", "gsd_status");
+    const res = await t.execute({}, exec);
+    assert.match(res, /JOB-01/);
+    assert.match(res, /done/);
+    assert.match(res, /hello/);
+  });
+
+  test("a running job with no result file renders running", async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    await svc.appendJob(CWD, { kind: "subagent", status: "running" });
+    const { t } = await registerTool("core-tools", "gsd_status");
+    const res = await t.execute({}, exec);
+    assert.match(res, /JOB-01/);
+    assert.match(res, /running/);
+  });
+
+  test("a corrupt result file does not throw and leaves the job running", async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    await svc.appendJob(CWD, { kind: "subagent", status: "running" });
+    await fs.writeText({ targetKey: `${CWD}/.planning/jobs/JOB-01.result.json` }, "not-json{{{");
+    const { t } = await registerTool("core-tools", "gsd_status");
+    let res;
+    await assert.doesNotReject(async () => { res = await t.execute({}, exec); });
+    assert.match(res, /JOB-01/);
+    assert.match(res, /running/);
+  });
+
   test("corrupt async-jobs.json renders a warning line, does not throw, keeps continuity", async () => {
     fs = new FakeFs();
     svc = await buildProject(fs, CWD);
