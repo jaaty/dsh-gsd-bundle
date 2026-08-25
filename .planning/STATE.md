@@ -1,24 +1,24 @@
 ---
 gsd_state_version: 1
-milestone: v1.3
-milestone_name: ship-gates
+milestone: v1.4
+milestone_name: job-runtime
 status: idle
 active_phase: null
 next_action: null
-next_phases: []
+next_phases: [9]
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 3
-  completed_plans: 17
+  total_phases: 9
+  completed_phases: 9
+  total_plans: 2
+  completed_plans: 20
   percent: 100
-current_phase: 8
-current_phase_name: capability-gates
-current_plan: 3
-last_updated: "2026-08-24T05:54:49.174Z"
+current_phase: 9
+current_phase_name: job-runtime
+current_plan: 2
+last_updated: "2026-08-25T05:16:40.945Z"
 state_head: null
-last_activity: 2026-08-24
-stopped_at: "Phase 7 shipped — PR #8"
+last_activity: 2026-08-25
+stopped_at: "Phase 9 shipped — PR #11"
 paused_at: null
 ---
 # GSD STATE
@@ -55,6 +55,10 @@ _No active phase._
 - Phase 8: CONTEXT.md sealed — 9 decisions
 - Phase 8: planned — 3 plan(s) across 3 wave(s).
 - Phase 8 shipped — PR #10 (https://github.com/jaaty/dsh-gsd-bundle/pull/10)
+- Phase 9: CONTEXT.md sealed — 5 decisions
+- Phase 9: planned — 2 plan(s) across 2 wave(s).
+- Phase 9: plan 01 executed — real background-job runtime (launchJob/reconcileJobs + detached job-wrapper); 163 tests green.
+- Phase 9 shipped — PR #11 (https://github.com/jaaty/dsh-gsd-bundle/pull/11)
 
 ### Blockers / Concerns
 _none_
