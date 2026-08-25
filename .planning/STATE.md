@@ -1,21 +1,21 @@
 ---
 gsd_state_version: 1
-milestone: v1.4
-milestone_name: job-runtime
-status: idle
-active_phase: null
-next_action: null
-next_phases: [9]
+milestone: v1.5
+milestone_name: codebase-query
+status: ship
+active_phase: 10
+next_action: ship-phase
+next_phases: [10]
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 9
   total_plans: 2
-  completed_plans: 20
-  percent: 100
-current_phase: 9
-current_phase_name: job-runtime
+  completed_plans: 22
+  percent: 90
+current_phase: 10
+current_phase_name: codebase-query
 current_plan: 2
-last_updated: "2026-08-25T05:16:40.945Z"
+last_updated: "2026-08-25T05:54:52.057Z"
 state_head: null
 last_activity: 2026-08-25
 stopped_at: "Phase 9 shipped — PR #11"
@@ -59,6 +59,9 @@ _No active phase._
 - Phase 9: planned — 2 plan(s) across 2 wave(s).
 - Phase 9: plan 01 executed — real background-job runtime (launchJob/reconcileJobs + detached job-wrapper); 163 tests green.
 - Phase 9 shipped — PR #11 (https://github.com/jaaty/dsh-gsd-bundle/pull/11)
+- Phase 10: CONTEXT.md sealed — 5 decisions
+- Phase 10: planned — 2 plan(s) across 2 wave(s).
+- quick 2026-08-25-readme-docs-release: Update the project's README and documentation to (1) fix drift from all the changes made across the 9 shipped phases, and (2) prepare the project for public release and listing in the dsh plugin ecosystem.
 
 ### Blockers / Concerns
 _none_
