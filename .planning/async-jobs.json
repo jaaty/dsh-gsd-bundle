@@ -18,5 +18,25 @@
     "started": "2026-08-25T05:14:38.151Z",
     "result": "SUMMARY written",
     "completed": "2026-08-25T05:15:40.558Z"
+  },
+  {
+    "id": "JOB-03",
+    "kind": "subagent",
+    "plan": "GSD-10-codebase-query-01",
+    "phase": 10,
+    "status": "done",
+    "started": "2026-08-25T05:51:48.573Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-25T05:52:50.511Z"
+  },
+  {
+    "id": "JOB-04",
+    "kind": "subagent",
+    "plan": "GSD-10-codebase-query-02",
+    "phase": 10,
+    "status": "done",
+    "started": "2026-08-25T05:52:52.505Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-25T05:54:14.563Z"
   }
 ]

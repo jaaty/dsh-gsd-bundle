@@ -6,6 +6,8 @@ import assert from "node:assert/strict";
 
 import { GsdState } from "../lib/state.js";
 import { resolvePlanDep, parseFrontmatter } from "../lib/_shared.js";
+import { CODEBASE_QUERY_PROMPT } from "../lib/_agents.js";
+import { apply as applyCommands } from "../lib/commands.js";
 import { FakeFs, stateCtx } from "./helpers/fake-fs.mjs";
 import { buildProject, FENCED_PLAN, FENCELESS_PLAN, FENCED_SUMMARY, VERIFICATION_PASSED } from "./helpers/project.mjs";
 
@@ -22,6 +24,9 @@ const executeCaptured = [];
 // checkpoint state, writes no SUMMARY). When false it completes normally.
 // On a resume run (a CHECKPOINT artefact already exists) it always completes.
 let EXEC_CHECKPOINT_MODE = false;
+// When true, the fake codebase-query subagent returns empty output with a
+// "failed" stopReason (query-mode failure-path test).
+let QUERY_FAIL_MODE = false;
 
 // A two-task plan so a checkpoint at task 1 is in-range (1 < task_count=2).
 const PLAN_2_TASKS = `---
@@ -104,6 +109,7 @@ function makeSubagents() {
       const label = req.label;
       let text = "done";
       let structured;
+      let stopReason = "completed";
       if (label.startsWith("planner") && !label.includes("revise")) {
         await fs.writeText({ targetKey: `${CWD}/.planning/phases/01-auth/01-auth-01-PLAN.md` }, FENCED_PLAN);
         text = "## PLANNING COMPLETE";
@@ -145,8 +151,15 @@ function makeSubagents() {
           await fs.writeText({ targetKey: `${CWD}/.planning/codebase/${d}.md` }, lines.join("\n"));
         }
         text = `## Mapping Complete\n**Focus:** ${focus}\nDocuments written.`;
+      } else if (label.startsWith("codebase-query")) {
+        if (QUERY_FAIL_MODE) {
+          text = "";
+          stopReason = "failed";
+        } else {
+          text = "The auth flow uses JWT via lib/auth.js.\n\nSources:\n- ARCHITECTURE.md (map)\n- lib/auth.js (codebase)";
+        }
       }
-      return { result: { output: [{ type: "text", text }], stopReason: "completed", structured }, dispose: () => {} };
+      return { result: { output: [{ type: "text", text }], stopReason, structured }, dispose: () => {} };
     },
   };
 }
@@ -687,5 +700,77 @@ describe("gsd_map_codebase", () => {
     assert.match(res, /Codebase mapping complete/);
     // all forbidden -> whole repo -> all 7 docs
     for (const d of DOCS) assert(fs.files.has(`${CWD}/.planning/codebase/${d}.md`));
+  });
+
+  test("query mode with an existing map returns the subagent's answer with a Sources section", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ query: "How is auth handled?" }, exec);
+    assert.match(res, /JWT/);
+    assert.match(res, /Sources/);
+    assert.match(res, /ARCHITECTURE\.md/);
+    assert.equal([...fs.files.keys()].filter((k) => k.startsWith(`${CWD}/.planning/codebase/`)).length, 1);
+  });
+
+  test("query mode with no map returns a notice and never throws", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ query: "q" }, exec);
+    assert.match(res, /No .planning\/codebase\/ map exists yet/);
+    await assert.doesNotReject(() => t.execute({ query: "q" }, exec));
+  });
+
+  test("query subagent failure returns a clear failure message and never throws", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
+    QUERY_FAIL_MODE = true;
+    try {
+      const res = await t.execute({ query: "q" }, exec);
+      assert.match(res, /query failed/);
+      await assert.doesNotReject(() => t.execute({ query: "q" }, exec));
+    } finally {
+      QUERY_FAIL_MODE = false;
+    }
+  });
+
+  test("query mode ignores fast/focus/paths/force and writes no map docs", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ query: "q", fast: true, focus: "arch", paths: ["lib/"], force: true }, exec);
+    assert.match(res, /JWT/);
+    assert.equal([...fs.files.keys()].filter((k) => k.startsWith(`${CWD}/.planning/codebase/`)).length, 1);
+  });
+
+  test("empty or whitespace query falls through to full mapping", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ query: "   " }, exec);
+    assert.doesNotMatch(res, /JWT/);
+    assert.doesNotMatch(res, /No .planning\/codebase\/ map exists yet/);
+    assert.match(res, /Codebase mapping complete/);
+  });
+
+  test("query arg is present in the compiled schema", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    assert.equal(t.parameters.properties.query.type, "string");
+  });
+
+  test("CODEBASE_QUERY_PROMPT carries the FORBIDDEN FILES rule", async () => {
+    assert.match(CODEBASE_QUERY_PROMPT, /FORBIDDEN FILES/);
+  });
+
+  test("slash command --query builds a tool call with the query string", async () => {
+    const registered = [];
+    const c = {
+      effect: (fn) => fn(),
+      commands: { register: (cmd) => { registered.push(cmd); return () => {}; } },
+    };
+    applyCommands(c, {});
+    const cmd = registered.find((x) => x.name === "gsd-map-codebase");
+    assert.ok(cmd, "gsd-map-codebase command should be registered");
+    let sentText = "";
+    const agent = { followup: (msg) => { sentText = msg.content[0].text; } };
+    const res = cmd.handler({ rawInput: "--query how is auth handled", agent });
+    assert.match(sentText, /how is auth handled/);
+    assert.match(sentText, /gsd_map_codebase/);
+    assert.equal(res.kind, "success");
   });
 });

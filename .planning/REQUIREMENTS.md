@@ -32,3 +32,8 @@
 
 - [x] JOB-01: A job can be launched to run asynchronously and its lifecycle tracked through running → done/failed states in the async-jobs manifest.
 - [x] JOB-02: The runtime collects and surfaces a job's result when it finishes, and gsd_status reflects real asynchronous job state rather than a registry-only record.
+
+## CBQ
+
+- [x] CBQ-01: A query can be asked against the mapped codebase and answered from the existing .planning/codebase/ map plus the codebase itself, without triggering a full re-scan.
+- [x] CBQ-02: The query path is surfaced through gsd_map_codebase (a --query argument) and returns a targeted answer to the question.
