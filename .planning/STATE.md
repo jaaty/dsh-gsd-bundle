@@ -9,12 +9,12 @@ next_phases: [9]
 progress:
   total_phases: 9
   completed_phases: 8
-  total_plans: 3
-  completed_plans: 17
+  total_plans: 2
+  completed_plans: 18
   percent: 89
 current_phase: 9
 current_phase_name: job-runtime
-current_plan: 3
+current_plan: 1
 last_updated: "2026-08-25T05:13:16.001Z"
 state_head: null
 last_activity: 2026-08-25
@@ -57,6 +57,7 @@ _No active phase._
 - Phase 8 shipped — PR #10 (https://github.com/jaaty/dsh-gsd-bundle/pull/10)
 - Phase 9: CONTEXT.md sealed — 5 decisions
 - Phase 9: planned — 2 plan(s) across 2 wave(s).
+- Phase 9: plan 01 executed — real background-job runtime (launchJob/reconcileJobs + detached job-wrapper); 163 tests green.
 
 ### Blockers / Concerns
 _none_
