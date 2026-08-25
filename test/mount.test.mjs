@@ -297,6 +297,12 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
       /GSD loop position: milestone .+ \/ (phase .+ \/ step .+|no active phase)/,
       "context provider did not render the loop position",
     );
+    // The snapshot must state the wait-for-explicit-command contract (Option A).
+    assert.match(
+      out,
+      /do NOT advance to the next step until the user issues an explicit command/,
+      "context provider did not render the wait-for-command contract",
+    );
   });
 
   test("uninitialised-cwd branch renders the orientation hint", () => {
