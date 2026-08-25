@@ -22,6 +22,9 @@ const executeCaptured = [];
 // checkpoint state, writes no SUMMARY). When false it completes normally.
 // On a resume run (a CHECKPOINT artefact already exists) it always completes.
 let EXEC_CHECKPOINT_MODE = false;
+// When true, the fake codebase-query subagent returns empty output with a
+// "failed" stopReason (query-mode failure-path test).
+let QUERY_FAIL_MODE = false;
 
 // A two-task plan so a checkpoint at task 1 is in-range (1 < task_count=2).
 const PLAN_2_TASKS = `---
@@ -104,6 +107,7 @@ function makeSubagents() {
       const label = req.label;
       let text = "done";
       let structured;
+      let stopReason = "completed";
       if (label.startsWith("planner") && !label.includes("revise")) {
         await fs.writeText({ targetKey: `${CWD}/.planning/phases/01-auth/01-auth-01-PLAN.md` }, FENCED_PLAN);
         text = "## PLANNING COMPLETE";
@@ -145,8 +149,15 @@ function makeSubagents() {
           await fs.writeText({ targetKey: `${CWD}/.planning/codebase/${d}.md` }, lines.join("\n"));
         }
         text = `## Mapping Complete\n**Focus:** ${focus}\nDocuments written.`;
+      } else if (label.startsWith("codebase-query")) {
+        if (QUERY_FAIL_MODE) {
+          text = "";
+          stopReason = "failed";
+        } else {
+          text = "The auth flow uses JWT via lib/auth.js.\n\nSources:\n- ARCHITECTURE.md (map)\n- lib/auth.js (codebase)";
+        }
       }
-      return { result: { output: [{ type: "text", text }], stopReason: "completed", structured }, dispose: () => {} };
+      return { result: { output: [{ type: "text", text }], stopReason, structured }, dispose: () => {} };
     },
   };
 }
@@ -687,5 +698,15 @@ describe("gsd_map_codebase", () => {
     assert.match(res, /Codebase mapping complete/);
     // all forbidden -> whole repo -> all 7 docs
     for (const d of DOCS) assert(fs.files.has(`${CWD}/.planning/codebase/${d}.md`));
+  });
+
+  test("query mode with an existing map returns the subagent's answer with a Sources section", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ query: "How is auth handled?" }, exec);
+    assert.match(res, /JWT/);
+    assert.match(res, /Sources/);
+    assert.match(res, /ARCHITECTURE\.md/);
+    assert.equal([...fs.files.keys()].filter((k) => k.startsWith(`${CWD}/.planning/codebase/`)).length, 1);
   });
 });
