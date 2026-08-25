@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v1.4
 milestone_name: job-runtime
-status: execute
+status: ship
 active_phase: 9
-next_action: execute-phase
+next_action: ship-phase
 next_phases: [9]
 progress:
   total_phases: 9
   completed_phases: 8
   total_plans: 2
-  completed_plans: 18
+  completed_plans: 20
   percent: 89
 current_phase: 9
 current_phase_name: job-runtime
-current_plan: 1
-last_updated: "2026-08-25T05:13:16.001Z"
+current_plan: 2
+last_updated: "2026-08-25T05:16:29.047Z"
 state_head: null
 last_activity: 2026-08-25
 stopped_at: "Phase 7 shipped — PR #8"

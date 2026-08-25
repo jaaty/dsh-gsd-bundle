@@ -1,0 +1,22 @@
+[
+  {
+    "id": "JOB-01",
+    "kind": "subagent",
+    "plan": "GSD-09-job-runtime-01",
+    "phase": 9,
+    "status": "done",
+    "started": "2026-08-25T05:13:29.773Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-25T05:14:35.413Z"
+  },
+  {
+    "id": "JOB-02",
+    "kind": "subagent",
+    "plan": "GSD-09-job-runtime-02",
+    "phase": 9,
+    "status": "done",
+    "started": "2026-08-25T05:14:38.151Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-25T05:15:40.558Z"
+  }
+]

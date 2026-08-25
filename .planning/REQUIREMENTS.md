@@ -30,5 +30,5 @@
 
 ## JOB
 
-- [ ] JOB-01: A job can be launched to run asynchronously and its lifecycle tracked through running → done/failed states in the async-jobs manifest.
-- [ ] JOB-02: The runtime collects and surfaces a job's result when it finishes, and gsd_status reflects real asynchronous job state rather than a registry-only record.
+- [x] JOB-01: A job can be launched to run asynchronously and its lifecycle tracked through running → done/failed states in the async-jobs manifest.
+- [x] JOB-02: The runtime collects and surfaces a job's result when it finishes, and gsd_status reflects real asynchronous job state rather than a registry-only record.
