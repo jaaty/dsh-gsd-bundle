@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 
 import { GsdState } from "../lib/state.js";
 import { resolvePlanDep, parseFrontmatter } from "../lib/_shared.js";
+import { CODEBASE_QUERY_PROMPT } from "../lib/_agents.js";
 import { FakeFs, stateCtx } from "./helpers/fake-fs.mjs";
 import { buildProject, FENCED_PLAN, FENCELESS_PLAN, FENCED_SUMMARY, VERIFICATION_PASSED } from "./helpers/project.mjs";
 
@@ -708,5 +709,50 @@ describe("gsd_map_codebase", () => {
     assert.match(res, /Sources/);
     assert.match(res, /ARCHITECTURE\.md/);
     assert.equal([...fs.files.keys()].filter((k) => k.startsWith(`${CWD}/.planning/codebase/`)).length, 1);
+  });
+
+  test("query mode with no map returns a notice and never throws", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ query: "q" }, exec);
+    assert.match(res, /No .planning\/codebase\/ map exists yet/);
+    await assert.doesNotReject(() => t.execute({ query: "q" }, exec));
+  });
+
+  test("query subagent failure returns a clear failure message and never throws", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
+    QUERY_FAIL_MODE = true;
+    try {
+      const res = await t.execute({ query: "q" }, exec);
+      assert.match(res, /query failed/);
+      await assert.doesNotReject(() => t.execute({ query: "q" }, exec));
+    } finally {
+      QUERY_FAIL_MODE = false;
+    }
+  });
+
+  test("query mode ignores fast/focus/paths/force and writes no map docs", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ query: "q", fast: true, focus: "arch", paths: ["lib/"], force: true }, exec);
+    assert.match(res, /JWT/);
+    assert.equal([...fs.files.keys()].filter((k) => k.startsWith(`${CWD}/.planning/codebase/`)).length, 1);
+  });
+
+  test("empty or whitespace query falls through to full mapping", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ query: "   " }, exec);
+    assert.doesNotMatch(res, /JWT/);
+    assert.doesNotMatch(res, /No .planning\/codebase\/ map exists yet/);
+    assert.match(res, /Codebase mapping complete/);
+  });
+
+  test("query arg is present in the compiled schema", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    assert.equal(t.parameters.properties.query.type, "string");
+  });
+
+  test("CODEBASE_QUERY_PROMPT carries the FORBIDDEN FILES rule", async () => {
+    assert.match(CODEBASE_QUERY_PROMPT, /FORBIDDEN FILES/);
   });
 });
