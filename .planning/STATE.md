@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v1.5
 milestone_name: codebase-query
-status: ship
-active_phase: 10
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [10]
 progress:
   total_phases: 10
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 2
   completed_plans: 22
-  percent: 90
+  percent: 100
 current_phase: 10
 current_phase_name: codebase-query
 current_plan: 2
-last_updated: "2026-08-25T05:54:52.057Z"
+last_updated: "2026-08-25T05:55:25.767Z"
 state_head: null
 last_activity: 2026-08-25
-stopped_at: "Phase 9 shipped — PR #11"
+stopped_at: "Phase 10 shipped — PR #13"
 paused_at: null
 ---
 # GSD STATE
@@ -62,6 +62,7 @@ _No active phase._
 - Phase 10: CONTEXT.md sealed — 5 decisions
 - Phase 10: planned — 2 plan(s) across 2 wave(s).
 - quick 2026-08-25-readme-docs-release: Update the project's README and documentation to (1) fix drift from all the changes made across the 9 shipped phases, and (2) prepare the project for public release and listing in the dsh plugin ecosystem.
+- Phase 10 shipped — PR #13 (https://github.com/jaaty/dsh-gsd-bundle/pull/13)
 
 ### Blockers / Concerns
 _none_
