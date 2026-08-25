@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { GsdState } from "../lib/state.js";
 import { resolvePlanDep, parseFrontmatter } from "../lib/_shared.js";
 import { CODEBASE_QUERY_PROMPT } from "../lib/_agents.js";
+import { apply as applyCommands } from "../lib/commands.js";
 import { FakeFs, stateCtx } from "./helpers/fake-fs.mjs";
 import { buildProject, FENCED_PLAN, FENCELESS_PLAN, FENCED_SUMMARY, VERIFICATION_PASSED } from "./helpers/project.mjs";
 
@@ -754,5 +755,22 @@ describe("gsd_map_codebase", () => {
 
   test("CODEBASE_QUERY_PROMPT carries the FORBIDDEN FILES rule", async () => {
     assert.match(CODEBASE_QUERY_PROMPT, /FORBIDDEN FILES/);
+  });
+
+  test("slash command --query builds a tool call with the query string", async () => {
+    const registered = [];
+    const c = {
+      effect: (fn) => fn(),
+      commands: { register: (cmd) => { registered.push(cmd); return () => {}; } },
+    };
+    applyCommands(c, {});
+    const cmd = registered.find((x) => x.name === "gsd-map-codebase");
+    assert.ok(cmd, "gsd-map-codebase command should be registered");
+    let sentText = "";
+    const agent = { followup: (msg) => { sentText = msg.content[0].text; } };
+    const res = cmd.handler({ rawInput: "--query how is auth handled", agent });
+    assert.match(sentText, /how is auth handled/);
+    assert.match(sentText, /gsd_map_codebase/);
+    assert.equal(res.kind, "success");
   });
 });
