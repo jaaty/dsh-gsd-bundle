@@ -1,6 +1,6 @@
-# Roadmap — ship-gates (v1.3)
+# Roadmap — job-runtime (v1.4)
 
-8 phase(s) | requirements mapped per phase
+9 phase(s) | requirements mapped per phase
 
 | # | Phase | Goal | Requirements |
 |---|-------|------|--------------|
@@ -12,16 +12,18 @@
 | 06 | [x] loop-robustness | Fix the planner depends_on project-code-prefix bug and route gsd_quick's TASK.md write through the gsd artefact model. | DUR-05 … DUR-06 |
 | 07 | [x] uat-conversation | Implement the conversational UAT loop: an executor stopping at a checkpoint:decision or checkpoint:human-action task surfaces a human-facing question, and gsd_execute pauses the phase, waits for the human's answer, and resumes the checkpointed plan with that answer applied so the phase completes. | UAT-01 … UAT-02 |
 | 08 | [x] capability-gates | Implement the capability-gate gatekeeper in gsd_ship: before creating the PR, gsd_ship runs a set of capability gates (security, broken-windows, TDD-audit), reports each gate's pass/fail status, and refuses to ship when any required gate fails with a clear report of what failed and why. | CAP-01 … CAP-02 |
+| 09 | job-runtime | Implement a real background-job runtime: a job runner that actually executes a job asynchronously, tracks its lifecycle (running → done/failed) in the async-jobs manifest, collects and surfaces the result when it finishes, and reflects real async state through gsd_status. | JOB-01 … JOB-02 |
 
 ## Progress
 
 | # | Phase | Status | Date |
 |---|-------|--------|------|
-| 01 | live-mount | [x] Complete | 2026-08-24 |
-| 02 | service-tools | [x] Complete | 2026-08-24 |
-| 03 | loop-e2e | [x] Complete | 2026-08-24 |
-| 04 | checkpoint-resume | [x] Complete | 2026-08-24 |
-| 05 | window-ledger | [x] Complete | 2026-08-24 |
-| 06 | loop-robustness | [x] Complete | 2026-08-24 |
-| 07 | uat-conversation | [x] Complete | 2026-08-24 |
-| 08 | capability-gates | [x] Complete | 2026-08-24 |
+| 01 | live-mount | [x] Complete | 2026-08-25 |
+| 02 | service-tools | [x] Complete | 2026-08-25 |
+| 03 | loop-e2e | [x] Complete | 2026-08-25 |
+| 04 | checkpoint-resume | [x] Complete | 2026-08-25 |
+| 05 | window-ledger | [x] Complete | 2026-08-25 |
+| 06 | loop-robustness | [x] Complete | 2026-08-25 |
+| 07 | uat-conversation | [x] Complete | 2026-08-25 |
+| 08 | capability-gates | [x] Complete | 2026-08-25 |
+| 09 | job-runtime | pending |  |
