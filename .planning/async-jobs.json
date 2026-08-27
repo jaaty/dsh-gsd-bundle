@@ -128,5 +128,25 @@
     "started": "2026-08-27T03:53:46.254Z",
     "result": "SUMMARY written",
     "completed": "2026-08-27T03:54:23.310Z"
+  },
+  {
+    "id": "JOB-14",
+    "kind": "subagent",
+    "plan": "GSD-16-context-budget-01",
+    "phase": 16,
+    "status": "done",
+    "started": "2026-08-27T04:46:47.684Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-27T04:48:39.539Z"
+  },
+  {
+    "id": "JOB-15",
+    "kind": "subagent",
+    "plan": "GSD-16-context-budget-02",
+    "phase": 16,
+    "status": "done",
+    "started": "2026-08-27T04:49:09.612Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-27T04:52:27.073Z"
   }
 ]
