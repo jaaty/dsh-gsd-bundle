@@ -10,12 +10,12 @@ progress:
   total_phases: 16
   completed_phases: 12
   total_plans: 2
-  completed_plans: 27
+  completed_plans: 29
   percent: 75
 current_phase: 13
 current_phase_name: gate-dispatch
-current_plan: 1
-last_updated: "2026-08-27T00:52:00.000Z"
+current_plan: 2
+last_updated: "2026-08-27T01:30:34.000Z"
 state_head: null
 last_activity: 2026-08-27
 stopped_at: "Phase 12 shipped — PR #15"
@@ -72,6 +72,7 @@ _No active phase._
 - Phase 13: CONTEXT.md sealed — 5 decisions
 - Phase 13: planned — 2 plan(s) across 2 wave(s); checker issues remain after 3 iterations (manual review).
 - Phase 13: plan 01 executed — GATE_DISPATCH dispatcher map + D-04 fail-fast guard; 190 tests green.
+- Phase 13: plan 02 executed — structured planScope derivation (plan.phase/plan.plan, zero-padded) + listPlans phase field; 190 tests green.
 
 ### Blockers / Concerns
 _none_
