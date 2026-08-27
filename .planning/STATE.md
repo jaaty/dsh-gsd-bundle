@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v1.6
 milestone_name: code-quality-hardening
-status: idle
-active_phase: null
-next_action: null
-next_phases: [12]
+status: execute
+active_phase: 13
+next_action: execute-phase
+next_phases: [13]
 progress:
   total_phases: 16
   completed_phases: 12
   total_plans: 2
-  completed_plans: 26
+  completed_plans: 27
   percent: 75
-current_phase: 12
-current_phase_name: single-source-constants
+current_phase: 13
+current_phase_name: gate-dispatch
 current_plan: 1
-last_updated: "2026-08-27T00:35:51.108Z"
+last_updated: "2026-08-27T00:52:00.000Z"
 state_head: null
 last_activity: 2026-08-27
 stopped_at: "Phase 12 shipped — PR #15"
@@ -69,6 +69,9 @@ _No active phase._
 - Phase 12: CONTEXT.md sealed — 4 decisions
 - Phase 12: planned — 2 plan(s) across 1 wave(s).
 - Phase 12 shipped — PR #15 (https://github.com/jaaty/dsh-gsd-bundle/pull/15)
+- Phase 13: CONTEXT.md sealed — 5 decisions
+- Phase 13: planned — 2 plan(s) across 2 wave(s); checker issues remain after 3 iterations (manual review).
+- Phase 13: plan 01 executed — GATE_DISPATCH dispatcher map + D-04 fail-fast guard; 190 tests green.
 
 ### Blockers / Concerns
 _none_
