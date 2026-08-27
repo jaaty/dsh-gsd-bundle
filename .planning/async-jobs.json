@@ -68,5 +68,25 @@
     "started": "2026-08-27T00:31:22.438Z",
     "result": "SUMMARY written",
     "completed": "2026-08-27T00:32:15.459Z"
+  },
+  {
+    "id": "JOB-08",
+    "kind": "subagent",
+    "plan": "GSD-13-gate-dispatch-01",
+    "phase": 13,
+    "status": "done",
+    "started": "2026-08-27T01:28:33.686Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-27T01:29:35.279Z"
+  },
+  {
+    "id": "JOB-09",
+    "kind": "subagent",
+    "plan": "GSD-13-gate-dispatch-02",
+    "phase": 13,
+    "status": "done",
+    "started": "2026-08-27T01:29:36.934Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-27T01:30:49.835Z"
   }
 ]

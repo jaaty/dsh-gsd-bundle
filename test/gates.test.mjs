@@ -12,6 +12,8 @@ import {
   resolveGatesConfig,
   runCapabilityGates,
   fetchGitData,
+  GATE_DISPATCH,
+  GATE_NAMES,
 } from "../lib/gates.js";
 import { secretPatterns } from "../lib/_shared.js";
 
@@ -124,7 +126,7 @@ describe("broken-windows gate", () => {
 });
 
 describe("tdd-audit gate", () => {
-  const plans = [{ id: "GSD-08-x-01", type: "tdd" }];
+  const plans = [{ id: "GSD-08-x-01", phase: "8", plan: "1", type: "tdd" }];
 
   test("test: subject before feat: subject passes", async () => {
     const res = tddAuditGate(plans, ["test(08-01): a", "feat(08-01): b"]);
@@ -140,7 +142,7 @@ describe("tdd-audit gate", () => {
   });
 
   test("a non-tdd plan is never audited", async () => {
-    const res = tddAuditGate([{ id: "GSD-08-x-01", type: "execute" }], ["feat(08-01): b"]);
+    const res = tddAuditGate([{ id: "GSD-08-x-01", phase: "8", plan: "1", type: "execute" }], ["feat(08-01): b"]);
     assert.equal(res.status, "pass");
   });
 
@@ -154,9 +156,11 @@ describe("tdd-audit gate", () => {
     assert.equal(res.status, "fail");
   });
 
-  test("plan id with a phase-slug prefix derives scope 08-01, not gates-01", async () => {
+  test("a plan with phase 8 / plan 1 derives scope 08-01", async () => {
+    // BUG: the structured phase/plan fields feed planScope (D-02/D-03) — the
+    // scope is derived from plan.phase/plan.plan, never by parsing plan.id.
     const res = tddAuditGate(
-      [{ id: "GSD-08-capability-gates-01", type: "tdd" }],
+      [{ id: "GSD-08-capability-gates-01", phase: "8", plan: "1", type: "tdd" }],
       ["test(08-01): a", "feat(08-01): b"],
     );
     assert.equal(res.status, "pass");
@@ -236,7 +240,7 @@ describe("runCapabilityGates", () => {
     const { reportLines, blockError } = runCapabilityGates({
       cfg: {},
       gitData: { changedFiles: [], contentMap: {}, commitSubjects: ["feat(08-01): b"] },
-      plans: [{ id: "GSD-08-x-01", type: "tdd" }],
+      plans: [{ id: "GSD-08-x-01", phase: "8", plan: "1", type: "tdd" }],
     });
     const line = reportLines.find((l) => l.startsWith("tdd_audit:"));
     assert.match(line, /^tdd_audit: fail/);
@@ -264,6 +268,29 @@ describe("runCapabilityGates", () => {
     });
     assert.ok(reportLines.some((l) => l === "security: skipped"));
     assert.equal(blockError, null);
+  });
+});
+
+describe("GATE_DISPATCH", () => {
+  test("keys align exactly with GATE_NAMES and every entry exposes run + format (D-01)", async () => {
+    assert.deepEqual(Object.keys(GATE_DISPATCH).sort(), [...GATE_NAMES].sort());
+    for (const name of GATE_NAMES) {
+      assert.equal(typeof GATE_DISPATCH[name].run, "function", `${name}.run is a function`);
+      assert.equal(typeof GATE_DISPATCH[name].format, "function", `${name}.format is a function`);
+    }
+  });
+
+  test("a gate name missing from the map throws the gsd_ship guard error (D-04)", async () => {
+    // Bug-pin: the dispatcher must fail fast on a wiring bug rather than
+    // silently calling undefined.run (D-04).
+    const name = "bogus_gate";
+    const entry = GATE_DISPATCH[name];
+    assert.throws(
+      () => {
+        if (!entry) throw new Error(`gsd_ship: no dispatcher entry for gate "${name}"`);
+      },
+      /no dispatcher entry/,
+    );
   });
 });
 

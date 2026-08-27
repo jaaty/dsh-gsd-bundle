@@ -119,6 +119,11 @@ describe("planIndex", () => {
     const fenceless = plans.find((p) => p.id === "01-auth-02");
     assert.deepEqual(fenced.requirements, ["AUTH-01"]);
     assert.equal(fenced.type, "tdd");
+    // BUG: the structured `phase` field is the source for planScope (D-02) —
+    // it must be emitted by listPlans alongside `plan`. The value "1" is tied to
+    // the listPlans(CWD, 1) call below; if the fixture phase number ever changes,
+    // update this assertion to match the actual phaseNum argument.
+    assert.equal(fenced.phase, "1");
     assert.equal(fenced.wave, 1);
     assert.equal(fenced.gap_closure, true);
     assert.deepEqual(fenceless.requirements, ["TODO-01"]);
