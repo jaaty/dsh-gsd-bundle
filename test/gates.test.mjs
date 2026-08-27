@@ -5,7 +5,6 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  secretPatterns,
   globToRegex,
   securityGate,
   brokenWindowsGate,
@@ -14,6 +13,7 @@ import {
   runCapabilityGates,
   fetchGitData,
 } from "../lib/gates.js";
+import { secretPatterns } from "../lib/_shared.js";
 
 describe("security gate", () => {
   test("globToRegex('.env') matches a/.env and .env but not a/.env.example", async () => {

@@ -58,5 +58,15 @@
     "started": "2026-08-27T00:17:24.694Z",
     "result": "SUMMARY written",
     "completed": "2026-08-27T00:17:46.788Z"
+  },
+  {
+    "id": "JOB-07",
+    "kind": "subagent",
+    "plan": "GSD-12-single-source-constants-02",
+    "phase": 12,
+    "status": "done",
+    "started": "2026-08-27T00:31:22.438Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-27T00:32:15.459Z"
   }
 ]

@@ -15,7 +15,7 @@
 | 09 | [x] job-runtime | Implement a real background-job runtime: a job runner that actually executes a job asynchronously, tracks its lifecycle (running → done/failed) in the async-jobs manifest, collects and surfaces the result when it finishes, and reflects real async state through gsd_status. | JOB-01 … JOB-02 |
 | 10 | [x] codebase-query | Implement a query/intel mode for the codebase mapper: a gsd_map_codebase --query path that answers a question against the existing .planning/codebase/ map and the codebase itself without a full re-scan, surfaced through gsd_map_codebase and returning a targeted answer. | CBQ-01 … CBQ-02 |
 | 11 | [x] phase-dir-resolution | Resolve the phase directory and base once per tool invocation and pass them down, removing the repeated readRoadmap/readConfig and the duplicated base derivation. | CQ-01 |
-| 12 | single-source-constants | Make GATE_NAMES and the secret-file list single-source and route cwdOf through the shared helper. | CQ-02 |
+| 12 | [x] single-source-constants | Make GATE_NAMES and the secret-file list single-source and route cwdOf through the shared helper. | CQ-02 |
 | 13 | gate-dispatch | Replace the gate name condition chain with an explicit dispatcher map and derive the commit scope from structured plan fields. | CQ-03 |
 | 14 | execute-checkpoint | Extract the checkpoint prepare/process logic in gsd_execute into helpers and reuse the planIndex runnable set. | CQ-04 |
 | 15 | ship-robustness | Make git/gh calls async and report preflight failures with their real cause. | CQ-05 |
@@ -36,7 +36,7 @@
 | 09 | job-runtime | [x] Complete | 2026-08-27 |
 | 10 | codebase-query | [x] Complete | 2026-08-27 |
 | 11 | phase-dir-resolution | [x] Complete | 2026-08-27 |
-| 12 | single-source-constants | pending |  |
+| 12 | single-source-constants | [x] Complete | 2026-08-27 |
 | 13 | gate-dispatch | pending |  |
 | 14 | execute-checkpoint | pending |  |
 | 15 | ship-robustness | pending |  |
