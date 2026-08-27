@@ -37,3 +37,12 @@
 
 - [x] CBQ-01: A query can be asked against the mapped codebase and answered from the existing .planning/codebase/ map plus the codebase itself, without triggering a full re-scan.
 - [x] CBQ-02: The query path is surfaced through gsd_map_codebase (a --query argument) and returns a targeted answer to the question.
+
+## CQ
+
+- [x] CQ-01: The phase directory and base are resolved once per tool invocation and passed down, not re-derived on every artefact access.
+- [ ] CQ-02: Shared constants (gate names, secret-file list) live in one place and are reused, and cwdOf is routed through the shared helper.
+- [ ] CQ-03: The gate dispatch uses an explicit dispatcher map, and the commit scope is derived from structured plan fields, not string parsing.
+- [ ] CQ-04: The checkpoint prepare/process logic in gsd_execute is extracted into helpers with no duplicated validation, and the planIndex runnable set is reused.
+- [ ] CQ-05: git/gh calls are async and preflight failures report their real cause.
+- [ ] CQ-06: planningContext truncates against a total budget and surfaces truncation, plus small dedup fixes.
