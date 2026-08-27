@@ -25,7 +25,7 @@ describe("CAP-01 gate report", () => {
     const { reportLines, blockError } = runCapabilityGates({
       cfg: {},
       gitData: CLEAN,
-      plans: [{ id: "GSD-08-x-01", type: "execute" }],
+      plans: [{ id: "GSD-08-x-01", phase: "8", plan: "1", type: "execute" }],
       skipGates: [],
     });
     assert.equal(reportLines.length, 3, "one report line per gate");
@@ -45,7 +45,7 @@ describe("CAP-01 gate report", () => {
         contentMap: { "src/a.js": "// TODO later" },
         commitSubjects: [],
       },
-      plans: [{ id: "GSD-08-x-01", type: "execute" }],
+      plans: [{ id: "GSD-08-x-01", phase: "8", plan: "1", type: "execute" }],
       skipGates: [],
     });
     assert.equal(reportLines.length, 3);
@@ -58,7 +58,7 @@ describe("CAP-01 gate report", () => {
     const { reportLines } = runCapabilityGates({
       cfg: {},
       gitData: { changedFiles: ["a/.env"], contentMap: { "a/.env": "x" }, commitSubjects: [] },
-      plans: [{ id: "GSD-08-x-01", type: "execute" }],
+      plans: [{ id: "GSD-08-x-01", phase: "8", plan: "1", type: "execute" }],
       skipGates: [],
     });
     assert.ok(reportLines.some((l) => l.startsWith("security: fail")), reportLines.join("\n"));
@@ -97,7 +97,7 @@ describe("CAP-02 blocking", () => {
     const { blockError } = runCapabilityGates({
       cfg: {},
       gitData: { changedFiles: [], contentMap: {}, commitSubjects: ["feat(08-01): b"] },
-      plans: [{ id: "GSD-08-x-01", type: "tdd" }],
+      plans: [{ id: "GSD-08-x-01", phase: "8", plan: "1", type: "tdd" }],
       skipGates: [],
     });
     assert.ok(blockError, "blockError is non-null");
@@ -191,7 +191,7 @@ describe("skip + tdd enforcement", () => {
     const { reportLines, blockError } = runCapabilityGates({
       cfg: {},
       gitData: { changedFiles: [], contentMap: {}, commitSubjects: ["feat(08-01): b"] },
-      plans: [{ id: "GSD-08-x-01", type: "tdd" }],
+      plans: [{ id: "GSD-08-x-01", phase: "8", plan: "1", type: "tdd" }],
       skipGates: [],
     });
     assert.ok(reportLines.some((l) => l.startsWith("tdd_audit: fail")), reportLines.join("\n"));
@@ -202,7 +202,7 @@ describe("skip + tdd enforcement", () => {
     const { reportLines, blockError } = runCapabilityGates({
       cfg: {},
       gitData: { changedFiles: [], contentMap: {}, commitSubjects: ["test(08-01): a", "feat(08-01): b"] },
-      plans: [{ id: "GSD-08-x-01", type: "tdd" }],
+      plans: [{ id: "GSD-08-x-01", phase: "8", plan: "1", type: "tdd" }],
       skipGates: [],
     });
     assert.ok(reportLines.includes("tdd_audit: pass"), reportLines.join("\n"));

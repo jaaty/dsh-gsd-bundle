@@ -126,7 +126,7 @@ describe("broken-windows gate", () => {
 });
 
 describe("tdd-audit gate", () => {
-  const plans = [{ id: "GSD-08-x-01", type: "tdd" }];
+  const plans = [{ id: "GSD-08-x-01", phase: "8", plan: "1", type: "tdd" }];
 
   test("test: subject before feat: subject passes", async () => {
     const res = tddAuditGate(plans, ["test(08-01): a", "feat(08-01): b"]);
@@ -142,7 +142,7 @@ describe("tdd-audit gate", () => {
   });
 
   test("a non-tdd plan is never audited", async () => {
-    const res = tddAuditGate([{ id: "GSD-08-x-01", type: "execute" }], ["feat(08-01): b"]);
+    const res = tddAuditGate([{ id: "GSD-08-x-01", phase: "8", plan: "1", type: "execute" }], ["feat(08-01): b"]);
     assert.equal(res.status, "pass");
   });
 
@@ -156,9 +156,11 @@ describe("tdd-audit gate", () => {
     assert.equal(res.status, "fail");
   });
 
-  test("plan id with a phase-slug prefix derives scope 08-01, not gates-01", async () => {
+  test("a plan with phase 8 / plan 1 derives scope 08-01", async () => {
+    // BUG: the structured phase/plan fields feed planScope (D-02/D-03) — the
+    // scope is derived from plan.phase/plan.plan, never by parsing plan.id.
     const res = tddAuditGate(
-      [{ id: "GSD-08-capability-gates-01", type: "tdd" }],
+      [{ id: "GSD-08-capability-gates-01", phase: "8", plan: "1", type: "tdd" }],
       ["test(08-01): a", "feat(08-01): b"],
     );
     assert.equal(res.status, "pass");
@@ -238,7 +240,7 @@ describe("runCapabilityGates", () => {
     const { reportLines, blockError } = runCapabilityGates({
       cfg: {},
       gitData: { changedFiles: [], contentMap: {}, commitSubjects: ["feat(08-01): b"] },
-      plans: [{ id: "GSD-08-x-01", type: "tdd" }],
+      plans: [{ id: "GSD-08-x-01", phase: "8", plan: "1", type: "tdd" }],
     });
     const line = reportLines.find((l) => l.startsWith("tdd_audit:"));
     assert.match(line, /^tdd_audit: fail/);
