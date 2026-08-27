@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v1.6
 milestone_name: code-quality-hardening
-status: execute
+status: ship
 active_phase: 15
-next_action: execute-phase
+next_action: ship-phase
 next_phases: [15]
 progress:
   total_phases: 16
   completed_phases: 14
   total_plans: 2
-  completed_plans: 34
+  completed_plans: 35
   percent: 88
 current_phase: 15
 current_phase_name: ship-robustness
-current_plan: 1
-last_updated: "2026-08-27T03:53:30.916Z"
+current_plan: 2
+last_updated: "2026-08-27T04:17:12.598Z"
 state_head: null
 last_activity: 2026-08-27
 stopped_at: "Phase 14 shipped — PR #17"

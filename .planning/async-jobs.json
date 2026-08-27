@@ -108,5 +108,25 @@
     "started": "2026-08-27T01:53:29.267Z",
     "result": "SUMMARY written",
     "completed": "2026-08-27T01:54:28.542Z"
+  },
+  {
+    "id": "JOB-12",
+    "kind": "subagent",
+    "plan": "GSD-15-ship-robustness-01",
+    "phase": 15,
+    "status": "done",
+    "started": "2026-08-27T03:52:04.209Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-27T03:53:30.888Z"
+  },
+  {
+    "id": "JOB-13",
+    "kind": "subagent",
+    "plan": "GSD-15-ship-robustness-02",
+    "phase": 15,
+    "status": "done",
+    "started": "2026-08-27T03:53:46.254Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-27T03:54:23.310Z"
   }
 ]
