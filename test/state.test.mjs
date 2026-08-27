@@ -525,6 +525,84 @@ describe("quick-record accessor (DUR-06, D-04/D-05)", () => {
     assert.equal(fs.files.get(`${CWD}/.planning/quick/2026-08-24-fix-typo/TASK.md`), "# entry");
   });
 });
+describe("phaseDirAndBase + resolve-once (CQ-01)", () => {
+  // Wrap the service's _phaseDirName with a call counter. phaseDirAndBase routes
+  // every accessor through this single method, so counting its invocations proves
+  // each accessor resolves the phase dir/base exactly once (CQ-01, D-04).
+  function spyPhaseDirName(svc) {
+    const orig = svc._phaseDirName.bind(svc);
+    let calls = 0;
+    svc._phaseDirName = async (...a) => {
+      calls += 1;
+      return orig(...a);
+    };
+    return { get calls() { return calls; } };
+  }
+
+  test("phaseDirAndBase returns { dir, base } for a roadmap phase (D-01)", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const { dir, base } = await svc.phaseDirAndBase(CWD, 1);
+    assert.equal(base, "01-auth");
+    assert.equal(dir, `${CWD}/.planning/phases/01-auth`);
+  });
+
+  test("phaseDirAndBase preserves the phase-N fallback for an absent phase (D-03)", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const { dir, base } = await svc.phaseDirAndBase(CWD, 9);
+    assert.equal(base, "09-phase-9");
+    assert.equal(dir, `${CWD}/.planning/phases/09-phase-9`);
+  });
+
+  test("writeArtifact resolves dir/base exactly once", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const count = spyPhaseDirName(svc);
+    await svc.writeArtifact(CWD, 1, "PLAN-01", FENCED_PLAN);
+    assert.ok(count.calls === 1);
+  });
+
+  test("readArtifact resolves dir/base exactly once", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    await svc.writeArtifact(CWD, 1, "PLAN-01", FENCED_PLAN);
+    const count = spyPhaseDirName(svc);
+    await svc.readArtifact(CWD, 1, "PLAN-01");
+    assert.ok(count.calls === 1);
+  });
+
+  test("hasArtifact resolves dir/base exactly once", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    await svc.writeArtifact(CWD, 1, "PLAN-01", FENCED_PLAN);
+    const count = spyPhaseDirName(svc);
+    await svc.hasArtifact(CWD, 1, "PLAN-01");
+    assert.ok(count.calls === 1);
+  });
+
+  test("removeArtifact resolves dir/base exactly once", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    await svc.writeArtifact(CWD, 1, "PLAN-01", FENCED_PLAN);
+    const count = spyPhaseDirName(svc);
+    await svc.removeArtifact(CWD, 1, "PLAN-01");
+    assert.ok(count.calls === 1);
+  });
+
+  test("listPlans resolves dir/base once plus one per-plan hasArtifact (D-04)", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    await svc.writeArtifact(CWD, 1, "PLAN-01", FENCED_PLAN);
+    await svc.writeArtifact(CWD, 1, "PLAN-02", FENCELESS_PLAN);
+    const count = spyPhaseDirName(svc);
+    const plans = await svc.listPlans(CWD, 1);
+    assert.equal(plans.length, 2);
+    // 1 for listPlans' own resolution + 2 for the per-plan hasArtifact calls
+    // (which are legitimate separate accessor invocations, not eliminated).
+    assert.ok(count.calls === 3);
+  });
+});
 function awaitBuild(fs) {
   return buildProject(fs, CWD);
 }
