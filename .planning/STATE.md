@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v1.6
 milestone_name: code-quality-hardening
-status: ship
-active_phase: 15
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [15]
 progress:
   total_phases: 16
-  completed_phases: 14
+  completed_phases: 15
   total_plans: 2
   completed_plans: 35
-  percent: 88
+  percent: 94
 current_phase: 15
 current_phase_name: ship-robustness
 current_plan: 2
-last_updated: "2026-08-27T04:17:12.598Z"
+last_updated: "2026-08-27T04:20:07.157Z"
 state_head: null
 last_activity: 2026-08-27
-stopped_at: "Phase 14 shipped — PR #17"
+stopped_at: "Phase 15 shipped — PR #18"
 paused_at: null
 ---
 # GSD STATE
@@ -83,6 +83,7 @@ _No active phase._
 - Phase 15: planned — 2 plan(s) across 2 wave(s); checker issues remain after 3 iterations (manual review).
 - Phase 15: plan 01 executed — async git/gh helpers (promisify(execFile)) + real-cause preflight reporting; 199 tests green.
 - Phase 15: plan 02 executed — preflightError + ship.js async static tests, async-gitFn fetchGitData test; 206 tests green.
+- Phase 15 shipped — PR #18 (https://github.com/jaaty/dsh-gsd-bundle/pull/18)
 
 ### Blockers / Concerns
 _none_
