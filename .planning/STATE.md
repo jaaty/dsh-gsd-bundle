@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v1.6
 milestone_name: code-quality-hardening
-status: ship
-active_phase: 16
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [16]
 progress:
-  total_phases: 16
-  completed_phases: 15
+  total_phases: 17
+  completed_phases: 16
   total_plans: 2
   completed_plans: 37
   percent: 94
 current_phase: 16
 current_phase_name: context-budget
 current_plan: 2
-last_updated: "2026-08-27T04:58:36.684Z"
+last_updated: "2026-08-27T05:05:50.538Z"
 state_head: null
 last_activity: 2026-08-27
-stopped_at: "Phase 15 shipped — PR #18"
+stopped_at: "Phase 16 shipped — PR #19"
 paused_at: null
 ---
 # GSD STATE
@@ -86,6 +86,7 @@ _No active phase._
 - Phase 15 shipped — PR #18 (https://github.com/jaaty/dsh-gsd-bundle/pull/18)
 - Phase 16: CONTEXT.md sealed — 8 decisions
 - Phase 16: planned — 2 plan(s) across 2 wave(s).
+- Phase 16 shipped — PR #19 (https://github.com/jaaty/dsh-gsd-bundle/pull/19)
 
 ### Blockers / Concerns
 _none_
