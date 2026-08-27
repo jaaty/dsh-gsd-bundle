@@ -351,6 +351,24 @@ describe("fetchGitData", () => {
     await fetchGitData(dir, git, "develop");
     assert.equal(used, "develop");
   });
+
+  test("works with an async gitFn returning Promises", async () => {
+    // Same canned values as the sync fakeGitFn, but each call returns a Promise
+    // to prove the awaited gitFn path works for async fns (D-02, D-06).
+    const asyncGitFn = (cwd, args) => {
+      switch (args[0] + ":" + (args[1] || "")) {
+        case "symbolic-ref:refs/remotes/origin/HEAD": return Promise.resolve("origin/main");
+        case "merge-base:HEAD": return Promise.resolve("abc123");
+        case "diff:--name-only": return Promise.resolve("src/a.js\nb/.env");
+        case "log:--format=%s": return Promise.resolve("test(08-01): a\nfeat(08-01): b");
+        default: return Promise.resolve("");
+      }
+    };
+    const dir = process.cwd();
+    const res = await fetchGitData(dir, asyncGitFn, undefined);
+    assert.deepEqual(res.changedFiles, ["src/a.js", "b/.env"]);
+    assert.deepEqual(res.commitSubjects, ["test(08-01): a", "feat(08-01): b"]);
+  });
 });
 
 describe("gsd_ship capability-gate wiring (static)", () => {

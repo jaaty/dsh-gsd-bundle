@@ -44,6 +44,6 @@
 - [x] CQ-02: Shared constants (gate names, secret-file list) live in one place and are reused, and cwdOf is routed through the shared helper.
 - [x] CQ-03: The gate dispatch uses an explicit dispatcher map, and the commit scope is derived from structured plan fields, not string parsing.
 - [x] CQ-04: The checkpoint prepare/process logic in gsd_execute is extracted into helpers with no duplicated validation, and the planIndex runnable set is reused.
-- [ ] CQ-05: git/gh calls are async and preflight failures report their real cause.
+- [x] CQ-05: git/gh calls are async and preflight failures report their real cause.
 - [ ] CQ-06: planningContext truncates against a total budget and surfaces truncation, plus small dedup fixes.
 - [ ] CQ-07: Each phase runs on its own feature branch (phase-<N>) acquired at the start of gsd_discuss, and every phase tool commits its planning artefacts to that branch, so gsd_ship preflight passes on a clean feature branch without manual intervention.

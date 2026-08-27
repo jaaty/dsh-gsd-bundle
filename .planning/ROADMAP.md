@@ -18,7 +18,7 @@
 | 12 | [x] single-source-constants | Make GATE_NAMES and the secret-file list single-source and route cwdOf through the shared helper. | CQ-02 |
 | 13 | [x] gate-dispatch | Replace the gate name condition chain with an explicit dispatcher map and derive the commit scope from structured plan fields. | CQ-03 |
 | 14 | [x] execute-checkpoint | Extract the checkpoint prepare/process logic in gsd_execute into helpers and reuse the planIndex runnable set. | CQ-04 |
-| 15 | ship-robustness | Make git/gh calls async and report preflight failures with their real cause. | CQ-05 |
+| 15 | [x] ship-robustness | Make git/gh calls async and report preflight failures with their real cause. | CQ-05 |
 | 16 | context-budget | Give planningContext a total truncation budget and surface truncation, plus small dedup fixes. | CQ-06 |
 | 17 | phase-branch-isolation | Acquire a per-phase feature branch at gsd_discuss and have each phase tool commit its planning artefacts, so gsd_ship preflight passes on a clean feature branch. | CQ-07 |
 
@@ -40,6 +40,6 @@
 | 12 | single-source-constants | [x] Complete | 2026-08-27 |
 | 13 | gate-dispatch | [x] Complete | 2026-08-27 |
 | 14 | execute-checkpoint | [x] Complete | 2026-08-27 |
-| 15 | ship-robustness | pending |  |
+| 15 | ship-robustness | [x] Complete | 2026-08-27 |
 | 16 | context-budget | pending |  |
 | 17 | phase-branch-isolation | pending |  |
