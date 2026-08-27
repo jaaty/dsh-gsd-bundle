@@ -12,6 +12,8 @@ import {
   resolveGatesConfig,
   runCapabilityGates,
   fetchGitData,
+  GATE_DISPATCH,
+  GATE_NAMES,
 } from "../lib/gates.js";
 import { secretPatterns } from "../lib/_shared.js";
 
@@ -264,6 +266,29 @@ describe("runCapabilityGates", () => {
     });
     assert.ok(reportLines.some((l) => l === "security: skipped"));
     assert.equal(blockError, null);
+  });
+});
+
+describe("GATE_DISPATCH", () => {
+  test("keys align exactly with GATE_NAMES and every entry exposes run + format (D-01)", async () => {
+    assert.deepEqual(Object.keys(GATE_DISPATCH).sort(), [...GATE_NAMES].sort());
+    for (const name of GATE_NAMES) {
+      assert.equal(typeof GATE_DISPATCH[name].run, "function", `${name}.run is a function`);
+      assert.equal(typeof GATE_DISPATCH[name].format, "function", `${name}.format is a function`);
+    }
+  });
+
+  test("a gate name missing from the map throws the gsd_ship guard error (D-04)", async () => {
+    // Bug-pin: the dispatcher must fail fast on a wiring bug rather than
+    // silently calling undefined.run (D-04).
+    const name = "bogus_gate";
+    const entry = GATE_DISPATCH[name];
+    assert.throws(
+      () => {
+        if (!entry) throw new Error(`gsd_ship: no dispatcher entry for gate "${name}"`);
+      },
+      /no dispatcher entry/,
+    );
   });
 });
 
