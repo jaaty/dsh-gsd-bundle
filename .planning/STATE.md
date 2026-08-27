@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v1.6
 milestone_name: code-quality-hardening
-status: idle
-active_phase: null
-next_action: null
-next_phases: [14]
+status: execute
+active_phase: 15
+next_action: execute-phase
+next_phases: [15]
 progress:
   total_phases: 16
   completed_phases: 14
   total_plans: 2
   completed_plans: 33
   percent: 88
-current_phase: 14
-current_phase_name: execute-checkpoint
+current_phase: 15
+current_phase_name: ship-robustness
 current_plan: 2
-last_updated: "2026-08-27T02:24:35.135Z"
+last_updated: "2026-08-27T03:50:03.186Z"
 state_head: null
 last_activity: 2026-08-27
 stopped_at: "Phase 14 shipped — PR #17"
@@ -79,6 +79,9 @@ _No active phase._
 - Phase 14: plan 01 executed — extracted checkpoint prepare/process helpers into lib/_checkpoint.js + unit tests; 199 tests green.
 - Phase 14: plan 02 executed — wired prepareCheckpoint/processCheckpoint into gsd_execute + reused idx.runnable in the wave loop; 199 tests green.
 - Phase 14 shipped — PR #17 (https://github.com/jaaty/dsh-gsd-bundle/pull/17)
+- Phase 15: CONTEXT.md sealed — 6 decisions
+- Phase 15: planned — 2 plan(s) across 2 wave(s); checker issues remain after 3 iterations (manual review).
+- Phase 15: plan 01 executed — async git/gh helpers (promisify(execFile)) + real-cause preflight reporting; 199 tests green.
 
 ### Blockers / Concerns
 _none_
