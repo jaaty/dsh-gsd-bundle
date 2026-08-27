@@ -10,12 +10,12 @@ progress:
   total_phases: 16
   completed_phases: 13
   total_plans: 2
-  completed_plans: 31
+  completed_plans: 32
   percent: 81
 current_phase: 14
 current_phase_name: execute-checkpoint
 current_plan: 2
-last_updated: "2026-08-27T01:51:26.416Z"
+last_updated: "2026-08-27T01:54:13.000Z"
 state_head: null
 last_activity: 2026-08-27
 stopped_at: "Phase 13 shipped — PR #16"
@@ -77,6 +77,7 @@ _No active phase._
 - Phase 14: CONTEXT.md sealed — 5 decisions
 - Phase 14: planned — 2 plan(s) across 2 wave(s).
 - Phase 14: plan 01 executed — extracted checkpoint prepare/process helpers into lib/_checkpoint.js + unit tests; 199 tests green.
+- Phase 14: plan 02 executed — wired prepareCheckpoint/processCheckpoint into gsd_execute + reused idx.runnable in the wave loop; 199 tests green.
 
 ### Blockers / Concerns
 _none_
