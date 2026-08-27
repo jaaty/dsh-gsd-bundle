@@ -10,12 +10,12 @@ progress:
   total_phases: 16
   completed_phases: 14
   total_plans: 2
-  completed_plans: 33
+  completed_plans: 34
   percent: 88
 current_phase: 15
 current_phase_name: ship-robustness
-current_plan: 2
-last_updated: "2026-08-27T03:50:03.186Z"
+current_plan: 1
+last_updated: "2026-08-27T03:53:30.916Z"
 state_head: null
 last_activity: 2026-08-27
 stopped_at: "Phase 14 shipped — PR #17"
@@ -82,6 +82,7 @@ _No active phase._
 - Phase 15: CONTEXT.md sealed — 6 decisions
 - Phase 15: planned — 2 plan(s) across 2 wave(s); checker issues remain after 3 iterations (manual review).
 - Phase 15: plan 01 executed — async git/gh helpers (promisify(execFile)) + real-cause preflight reporting; 199 tests green.
+- Phase 15: plan 02 executed — preflightError + ship.js async static tests, async-gitFn fetchGitData test; 206 tests green.
 
 ### Blockers / Concerns
 _none_
