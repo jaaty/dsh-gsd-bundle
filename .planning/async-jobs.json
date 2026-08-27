@@ -88,5 +88,25 @@
     "started": "2026-08-27T01:29:36.934Z",
     "result": "SUMMARY written",
     "completed": "2026-08-27T01:30:49.835Z"
+  },
+  {
+    "id": "JOB-10",
+    "kind": "subagent",
+    "plan": "GSD-14-execute-checkpoint-01",
+    "phase": 14,
+    "status": "done",
+    "started": "2026-08-27T01:52:41.150Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-27T01:53:27.493Z"
+  },
+  {
+    "id": "JOB-11",
+    "kind": "subagent",
+    "plan": "GSD-14-execute-checkpoint-02",
+    "phase": 14,
+    "status": "done",
+    "started": "2026-08-27T01:53:29.267Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-27T01:54:28.542Z"
   }
 ]
