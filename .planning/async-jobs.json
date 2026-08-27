@@ -38,5 +38,25 @@
     "started": "2026-08-25T05:52:52.505Z",
     "result": "SUMMARY written",
     "completed": "2026-08-25T05:54:14.563Z"
+  },
+  {
+    "id": "JOB-05",
+    "kind": "subagent",
+    "plan": "GSD-11-phase-dir-resolution-01",
+    "phase": 11,
+    "status": "done",
+    "started": "2026-08-27T00:16:01.931Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-27T00:17:22.676Z"
+  },
+  {
+    "id": "JOB-06",
+    "kind": "subagent",
+    "plan": "GSD-11-phase-dir-resolution-02",
+    "phase": 11,
+    "status": "done",
+    "started": "2026-08-27T00:17:24.694Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-27T00:17:46.788Z"
   }
 ]
