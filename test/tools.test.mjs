@@ -23,6 +23,12 @@ let ctx;
 // gsd_execute call (resume tests assert the exact prompt + spawn count).
 let executeSpawnCount = 0;
 const executeCaptured = [];
+// Captured query-mode subagent prompt texts (queryScope scoping test asserts on
+// the injected scope line while confirming the map docs still load in full).
+const queryCaptured = [];
+// Captured gsd-intel-updater subagent prompt texts (auto-detect test asserts the
+// auto-detected drifted path reached the updater).
+const updaterCaptured = [];
 // When true, the fake executor stops at a checkpoint (returns structured
 // checkpoint state, writes no SUMMARY). When false it completes normally.
 // On a resume run (a CHECKPOINT artefact already exists) it always completes.
@@ -30,6 +36,9 @@ let EXEC_CHECKPOINT_MODE = false;
 // When true, the fake codebase-query subagent returns empty output with a
 // "failed" stopReason (query-mode failure-path test).
 let QUERY_FAIL_MODE = false;
+// When true, the fake codebase-query subagent returns non-empty plain text but
+// NO structured output (query-mode R-4 fallback-path test).
+let QUERY_PLAIN_MODE = false;
 
 // A two-task plan so a checkpoint at task 1 is in-range (1 < task_count=2).
 const PLAN_2_TASKS = `---
@@ -136,6 +145,31 @@ function makeSubagents() {
         text = "status: passed, score: 2/2";
       } else if (label.startsWith("plan research")) {
         text = "# RESEARCH\n\n## Open Questions\n\n- none (RESOLVED)\n\nStandard.";
+      } else if (label === "gsd-intel-updater") {
+        updaterCaptured.push(req.prompt[0]?.text || "");
+        // Fake gsd-intel-updater: parse the "Affected documents:" lines from
+        // the prompt, rewrite each named .md doc with new >20-line content, and
+        // leave every other codebase doc byte-identical. Mirrors the real
+        // per-doc targeted-rewrite contract (CBQX-02/D-05).
+        const promptText = req.prompt[0]?.text || "";
+        const inAffected = promptText.split("\n").map((l) => l.trim());
+        const affected = [];
+        for (let i = 0; i < inAffected.length; i++) {
+          if (inAffected[i] === "Affected documents:") {
+            for (let j = i + 1; j < inAffected.length && inAffected[j].startsWith("- "); j++) {
+              const m = inAffected[j].match(/^-\s+(\S+?\.md)$/);
+              if (m) affected.push(m[1]);
+            }
+            break;
+          }
+        }
+        for (const doc of affected) {
+          const lines = [`# ${doc}`, "", `**Analysis Date:** 2026-08-28`, ""];
+          while (lines.length < 24) lines.push(`- ${doc} updated finding ${lines.length}.`);
+          lines.push("", `*${doc} analysis: 2026-08-28*`);
+          await fs.writeText({ targetKey: `${CWD}/.planning/codebase/${doc}` }, lines.join("\n"));
+        }
+        text = "## Update Complete\nAffected docs rewritten.";
       } else if (label.startsWith("map-codebase")) {
         // Fake gsd-codebase-mapper: writes the focus's documents directly,
         // each >20 lines so the orchestrator's verify step passes.
@@ -155,11 +189,16 @@ function makeSubagents() {
         }
         text = `## Mapping Complete\n**Focus:** ${focus}\nDocuments written.`;
       } else if (label.startsWith("codebase-query")) {
+        queryCaptured.push(req.prompt[0]?.text || "");
         if (QUERY_FAIL_MODE) {
           text = "";
           stopReason = "failed";
+        } else if (QUERY_PLAIN_MODE) {
+          // non-empty plain text but NO structured output (R-4 fallback path)
+          text = "plain answer";
         } else {
           text = "The auth flow uses JWT via lib/auth.js.\n\nSources:\n- ARCHITECTURE.md (map)\n- lib/auth.js (codebase)";
+          structured = { answer: "The auth flow uses JWT via lib/auth.js.", sources: [{ kind: "map", path: "ARCHITECTURE.md" }, { kind: "codebase", path: "lib/auth.js" }], confidence: 0.9 };
         }
       }
       return { result: { output: [{ type: "text", text }], stopReason, structured }, dispose: () => {} };
@@ -820,19 +859,39 @@ describe("gsd_map_codebase", () => {
 
   const DOCS = ["STACK", "INTEGRATIONS", "ARCHITECTURE", "STRUCTURE", "CONVENTIONS", "TESTING", "CONCERNS"];
 
+  // The tool now returns a structured object on every path (CBQX-03/D-06);
+  // tests assert on its rendered text via this helper.
+  const renderResult = (res) => (res && typeof res === "object" && typeof res.text === "string") ? res.text : String(res);
+
   test("full mode spawns 4 mappers and writes all 7 documents", async () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ force: true }, exec);
-    assert.match(res, /Codebase mapping complete/);
+    assert.match(renderResult(res), /Codebase mapping complete/);
     for (const d of DOCS) assert(fs.files.has(`${CWD}/.planning/codebase/${d}.md`), `${d}.md should be written`);
-    assert.doesNotMatch(res, /thin documents/);
-    assert.doesNotMatch(res, /missing documents/);
+    assert.doesNotMatch(renderResult(res), /thin documents/);
+    assert.doesNotMatch(renderResult(res), /missing documents/);
+  });
+
+  test("full mode with force=true writes a content-hashed .map-manifest.json", async () => {
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ force: true }, exec);
+    const key = `${CWD}/.planning/codebase/.map-manifest.json`;
+    assert(fs.files.has(key), ".map-manifest.json should be written after a force mapping");
+    const manifest = JSON.parse(fs.files.get(key));
+    assert.ok(Array.isArray(manifest), "manifest should be an array of records");
+    assert.ok(manifest.length > 0, "manifest should not be empty");
+    for (const rec of manifest) {
+      assert.equal(typeof rec.path, "string");
+      assert.equal(typeof rec.size, "number");
+      assert.equal(typeof rec.hash, "string");
+    }
   });
 
   test("fast mode focus arch writes only ARCHITECTURE.md and STRUCTURE.md", async () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ fast: true, focus: "arch", force: true }, exec);
-    assert.match(res, /Codebase mapping complete/);
+    assert.match(renderResult(res), /Codebase mapping complete/);
     assert(fs.files.has(`${CWD}/.planning/codebase/ARCHITECTURE.md`));
     assert(fs.files.has(`${CWD}/.planning/codebase/STRUCTURE.md`));
     assert(!fs.files.has(`${CWD}/.planning/codebase/STACK.md`), "tech docs must not be written in fast arch mode");
@@ -849,16 +908,40 @@ describe("gsd_map_codebase", () => {
     await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old\n");
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({}, exec);
-    assert.match(res, /already exists/);
-    assert.match(res, /STACK\.md/);
-    assert.doesNotMatch(res, /Codebase mapping complete/);
+    assert.match(renderResult(res), /already exists/);
+    assert.match(renderResult(res), /STACK\.md/);
+    assert.doesNotMatch(renderResult(res), /Codebase mapping complete/);
+  });
+
+  test("existing map with a drifted tree reports a drift summary (added)", async () => {
+    // first force-map to persist a manifest reflecting the current tree
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ force: true }, exec);
+    // drift: add a new file under src/
+    await fs.writeText({ targetKey: `${CWD}/src/new.js` }, "// new\n");
+    const res = await t.execute({}, exec);
+    assert.match(renderResult(res), /already exists/);
+    assert.match(renderResult(res), /Drift detected/);
+    assert.match(renderResult(res), /added/);
+    assert.match(renderResult(res), /src\/new\.js/);
+    assert.doesNotMatch(renderResult(res), /Codebase mapping complete/);
+  });
+
+  test("existing map with an unchanged tree returns no drift summary", async () => {
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ force: true }, exec); // persists a manifest
+    const res = await t.execute({}, exec);  // unchanged tree
+    assert.match(renderResult(res), /already exists/);
+    assert.doesNotMatch(renderResult(res), /Drift detected/);
   });
 
   test("force=true refreshes an existing map", async () => {
     await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old\n");
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ force: true }, exec);
-    assert.match(res, /Codebase mapping complete/);
+    assert.match(renderResult(res), /Codebase mapping complete/);
     for (const d of DOCS) assert(fs.files.has(`${CWD}/.planning/codebase/${d}.md`));
   });
 
@@ -866,13 +949,45 @@ describe("gsd_map_codebase", () => {
     await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old\n");
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ paths: ["lib/"] }, exec);
-    assert.match(res, /Codebase mapping complete/);
+    assert.match(renderResult(res), /Codebase mapping complete/);
+  });
+
+  test("fast mode focus arch writes the drift manifest", async () => {
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ fast: true, focus: "arch", force: true }, exec);
+    assert(fs.files.has(`${CWD}/.planning/codebase/.map-manifest.json`), "fast mode should persist the manifest");
+  });
+
+  test("paths incremental remap writes the drift manifest", async () => {
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ paths: ["lib/"] }, exec);
+    assert(fs.files.has(`${CWD}/.planning/codebase/.map-manifest.json`), "paths remap should persist the manifest");
+  });
+
+  test("manifest excludes node_modules, .planning, .git, lockfiles, and empty dirs (D-03)", async () => {
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    await fs.writeText({ targetKey: `${CWD}/node_modules/app.js` }, "module\n");
+    await fs.writeText({ targetKey: `${CWD}/.planning/STATE.md` }, "# state\n");
+    await fs.writeText({ targetKey: `${CWD}/package-lock.json` }, "{}");
+    fs.dirs.add(`${CWD}/empty`); // an empty directory must not appear either
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ force: true }, exec);
+    const manifest = await svc.readCodebaseManifest(CWD);
+    assert.ok(Array.isArray(manifest) && manifest.length > 0, "manifest should be non-empty");
+    const lockRe = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|npm-shrinkwrap\.json|bun\.lockb?|composer\.lock|Gemfile\.lock|poetry\.lock|Cargo\.lock)$/;
+    const bad = manifest.filter((r) =>
+      r.path.includes("node_modules") || r.path.includes(".planning") || r.path.includes(".git") || lockRe.test(r.path)
+    );
+    assert.deepEqual(bad, [], "no ignored path should appear in the manifest");
+    assert.ok(manifest.some((r) => r.path === "src/index.js"), "real source file should be in the manifest");
   });
 
   test("rejects forbidden path scope values and falls back to whole-repo", async () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ paths: ["../escape", "/abs", "lib/;rm"] }, exec);
-    assert.match(res, /Codebase mapping complete/);
+    assert.match(renderResult(res), /Codebase mapping complete/);
     // all forbidden -> whole repo -> all 7 docs
     for (const d of DOCS) assert(fs.files.has(`${CWD}/.planning/codebase/${d}.md`));
   });
@@ -881,16 +996,65 @@ describe("gsd_map_codebase", () => {
     await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ query: "How is auth handled?" }, exec);
-    assert.match(res, /JWT/);
-    assert.match(res, /Sources/);
-    assert.match(res, /ARCHITECTURE\.md/);
+    assert.match(renderResult(res), /JWT/);
+    assert.match(renderResult(res), /Sources/);
+    assert.match(renderResult(res), /ARCHITECTURE\.md/);
     assert.equal([...fs.files.keys()].filter((k) => k.startsWith(`${CWD}/.planning/codebase/`)).length, 1);
+  });
+
+  test("query mode returns a structured answer object {answer, sources, confidence} (CBQX-03)", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ query: "How is auth handled?" }, exec);
+    assert.equal(res.kind, "answer");
+    assert.match(res.answer, /JWT/);
+    assert.equal(res.sources.length, 2, "structured sources should be carried through");
+    assert.equal(res.sources[0].kind, "map");
+    assert.equal(res.sources[0].path, "ARCHITECTURE.md");
+    assert.equal(res.sources[1].kind, "codebase");
+    assert.equal(res.sources[1].path, "lib/auth.js");
+    assert.equal(res.confidence, 0.9);
+    // the rendered text is still readable and cites the sources
+    assert.match(renderResult(res), /Sources/);
+    assert.match(renderResult(res), /- map: `ARCHITECTURE\.md`/);
+  });
+
+  test("query mode falls back to a valid answer object when structured output is missing (R-4)", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
+    QUERY_PLAIN_MODE = true;
+    try {
+      const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+      const res = await t.execute({ query: "q" }, exec);
+      assert.equal(res.kind, "answer");
+      assert.match(res.answer, /plain answer/);
+      assert.deepEqual(res.sources, [], "no structured output => empty sources");
+      assert.equal(res.confidence, 0, "no structured output => confidence 0");
+      assert.ok(Number.isFinite(res.confidence), "confidence must never be NaN");
+    } finally {
+      QUERY_PLAIN_MODE = false;
+    }
+  });
+
+  test("query mode with queryScope restricts targeted exploration but loads map docs fully (CBQX-04)", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n**Content:** how auth is wired via JWT\n");
+    queryCaptured.length = 0;
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ query: "How is auth handled?", queryScope: ["src/"] }, exec);
+    assert.equal(res.kind, "answer");
+    assert.match(res.answer, /JWT/);
+    assert.equal(queryCaptured.length, 1, "exactly one query subagent prompt should have been captured");
+    const prompt = queryCaptured[0];
+    assert.match(prompt, /restrict ONLY your targeted Glob\/Grep exploration/, "the scope instruction must be injected");
+    assert.match(prompt, /src\//, "the scope prefix must appear in the instruction");
+    // the map doc is still loaded fully as the primary source
+    assert.match(prompt, /ARCHITECTURE\.md/, "the map doc header must still be present");
+    assert.match(prompt, /how auth is wired via JWT/, "the map doc content must still be loaded in full");
   });
 
   test("query mode with no map returns a notice and never throws", async () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ query: "q" }, exec);
-    assert.match(res, /No .planning\/codebase\/ map exists yet/);
+    assert.match(renderResult(res), /No .planning\/codebase\/ map exists yet/);
     await assert.doesNotReject(() => t.execute({ query: "q" }, exec));
   });
 
@@ -900,7 +1064,7 @@ describe("gsd_map_codebase", () => {
     QUERY_FAIL_MODE = true;
     try {
       const res = await t.execute({ query: "q" }, exec);
-      assert.match(res, /query failed/);
+      assert.match(renderResult(res), /query failed/);
       await assert.doesNotReject(() => t.execute({ query: "q" }, exec));
     } finally {
       QUERY_FAIL_MODE = false;
@@ -911,16 +1075,75 @@ describe("gsd_map_codebase", () => {
     await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ query: "q", fast: true, focus: "arch", paths: ["lib/"], force: true }, exec);
-    assert.match(res, /JWT/);
+    assert.match(renderResult(res), /JWT/);
     assert.equal([...fs.files.keys()].filter((k) => k.startsWith(`${CWD}/.planning/codebase/`)).length, 1);
   });
 
   test("empty or whitespace query falls through to full mapping", async () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ query: "   " }, exec);
-    assert.doesNotMatch(res, /JWT/);
-    assert.doesNotMatch(res, /No .planning\/codebase\/ map exists yet/);
-    assert.match(res, /Codebase mapping complete/);
+    assert.doesNotMatch(renderResult(res), /JWT/);
+    assert.doesNotMatch(renderResult(res), /No .planning\/codebase\/ map exists yet/);
+    assert.match(renderResult(res), /Codebase mapping complete/);
+  });
+
+  test("gsd_intel_updater with no manifest returns a helpful notice and never throws", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_intel_updater");
+    const res = await t.execute({}, exec);
+    assert.match(renderResult(res), /No .planning\/codebase\/.map-manifest.json/);
+    await assert.doesNotReject(() => t.execute({}, exec));
+  });
+
+  test("gsd_intel_updater with a manifest but no drift returns a no-drift notice", async () => {
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ force: true }, exec); // persists the manifest
+    const upd = await registerTool("map-codebase", "gsd_intel_updater");
+    const res = await upd.t.execute({}, exec);
+    assert.equal(res.kind, "notice");
+    assert.match(renderResult(res), /No drift detected since the last map/);
+  });
+
+  test("gsd_intel_updater with drifted paths rewrites only affected docs (D-05)", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old STACK\n");
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# old ARCHITECTURE\n");
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/TESTING.md` }, "# old TESTING\n");
+    const testBefore = fs.files.get(`${CWD}/.planning/codebase/TESTING.md`);
+    const { t } = await registerTool("map-codebase", "gsd_intel_updater");
+    const res = await t.execute({ paths: ["src/lib/auth.ts"] }, exec);
+    assert.equal(res.kind, "updater");
+    assert.match(renderResult(res), /Targeted codebase update complete/);
+    assert.match(renderResult(res), /STACK\.md/);
+    assert.match(renderResult(res), /ARCHITECTURE\.md/);
+    // the unaffected doc is byte-identical before/after (D-05)
+    assert.equal(fs.files.get(`${CWD}/.planning/codebase/TESTING.md`), testBefore, "TESTING.md must be untouched");
+    // the affected docs were rewritten by the fake updater
+    assert.match(fs.files.get(`${CWD}/.planning/codebase/STACK.md`), /updated finding/);
+    assert.match(fs.files.get(`${CWD}/.planning/codebase/ARCHITECTURE.md`), /updated finding/);
+  });
+
+  test("gsd_intel_updater with no affected existing docs returns a notice", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_intel_updater");
+    const res = await t.execute({ paths: ["src/lib/auth.ts"] }, exec);
+    assert.equal(res.kind, "notice");
+    assert.match(renderResult(res), /No affected map documents to update/);
+  });
+
+  test("gsd_intel_updater auto-detects drifted paths from the manifest (D-04)", async () => {
+    // seed a map doc and a manifest whose recorded state predates a newer file
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old STACK\n");
+    await svc.writeCodebaseManifest(CWD, [{ path: "src/lib/auth.ts", size: 1, hash: "abc" }]);
+    await fs.writeText({ targetKey: `${CWD}/src/lib/auth.ts` }, "export const auth = 1;\n");
+    updaterCaptured.length = 0;
+    const { t } = await registerTool("map-codebase", "gsd_intel_updater");
+    const res = await t.execute({}, exec);
+    assert.equal(res.kind, "updater", "auto-detect should find drift and run the updater");
+    // the affected STACK.md was rewritten by the fake updater (proves auto-detect
+    // mapped the drifted src/lib/auth.ts to STACK)
+    assert.match(fs.files.get(`${CWD}/.planning/codebase/STACK.md`), /updated finding/);
+    // the auto-detected drifted path reached the updater subagent's prompt
+    assert.equal(updaterCaptured.length, 1, "exactly one updater prompt should have been captured");
+    assert.match(updaterCaptured[0], /src\/lib\/auth\.ts/);
   });
 
   test("query arg is present in the compiled schema", async () => {

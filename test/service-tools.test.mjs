@@ -225,3 +225,44 @@ describe("gsd_ship", () => {
     await assert.rejects(() => t.execute({ phase: 1 }, exec), /gsd_ship preflight failed:/);
   });
 });
+
+// Phase 19 (CBQX-01): the codebase-map drift manifest round-trips through
+// gsdState's artefact model (DUR-06 — write routes via _write → ctx.fs, never
+// raw node:fs). Follows the existing gsdState codebase-doc fixture pattern:
+// buildProject + FakeFs at CWD, service methods called via `svc`.
+describe("gsdState codebase-map manifest", () => {
+  beforeEach(async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    ctx = makeCtx();
+  });
+
+  test("returns null before any write and for a corrupt payload", async () => {
+    assert.equal(await svc.readCodebaseManifest(CWD), null);
+    // corrupt JSON -> null (tolerant, never throws)
+    fs.files.set(`${CWD}/.planning/codebase/.map-manifest.json`, "{ not valid json");
+    assert.equal(await svc.readCodebaseManifest(CWD), null);
+    // non-array JSON -> null
+    fs.files.set(`${CWD}/.planning/codebase/.map-manifest.json`, JSON.stringify({ paths: [] }));
+    assert.equal(await svc.readCodebaseManifest(CWD), null);
+  });
+
+  test("round-trips records through write -> read with no data loss", async () => {
+    const records = [
+      { path: "src/a.ts", size: 12, hash: "abc123" },
+      { path: "src/b.ts", size: 8, hash: "def456" },
+    ];
+    await svc.writeCodebaseManifest(CWD, records);
+    const read = await svc.readCodebaseManifest(CWD);
+    assert.deepEqual(read, records);
+    // manifest lands on FakeFs at the expected .planning artefact path
+    assert.ok(fs.files.has(`${CWD}/.planning/codebase/.map-manifest.json`));
+  });
+
+  test("a second write overwrites the previous manifest", async () => {
+    await svc.writeCodebaseManifest(CWD, [{ path: "a.ts", size: 1, hash: "h1" }]);
+    await svc.writeCodebaseManifest(CWD, [{ path: "b.ts", size: 2, hash: "h2" }]);
+    const read = await svc.readCodebaseManifest(CWD);
+    assert.deepEqual(read, [{ path: "b.ts", size: 2, hash: "h2" }]);
+  });
+});

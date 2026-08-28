@@ -82,11 +82,12 @@ describe("planningContext total-budget wiring (CQ-06, plan 02)", () => {
     assert.equal((src.match(/runChecker\(ctx, exec, s, cwd, args\.phase, plans, phase, contextMd, researchMd, reqs, log\)/g) || []).length, 2, "both runChecker call sites pass the shared log");
   });
 
-  test("map-codebase query mode surfaces truncation inline in the returned string", async () => {
+  test("map-codebase query mode surfaces truncation inline in the structured answer text", async () => {
     const src = await readLib("map-codebase.js");
-    // The query path returns r.output directly, so the truncation note must be
-    // appended to that returned string rather than a log array (D-05).
-    assert.match(src, /planning-context: truncated \$\{pc\.truncated\.length/, "query mode appends the truncation note to the returned output");
-    assert.match(src, /pc\.truncated\.length\s*\?\s*`\$\{r\.output\}/, "query mode conditionally annotates the returned answer");
+    // Query mode returns a structured answer object (CBQX-03); the truncation
+    // note is conditionally appended to that object's `text` field rather than a
+    // log array (D-05).
+    assert.match(src, /planning-context: truncated \$\{pc\.truncated\.length/, "query mode appends the truncation note to the structured answer text");
+    assert.match(src, /pc\.truncated\.length\s*\n\s*\?\s*`\\n\\nplanning-context: truncated/, "query mode conditionally annotates the structured answer text");
   });
 });
