@@ -148,5 +148,25 @@
     "started": "2026-08-27T04:49:09.612Z",
     "result": "SUMMARY written",
     "completed": "2026-08-27T04:52:27.073Z"
+  },
+  {
+    "id": "JOB-16",
+    "kind": "subagent",
+    "plan": "GSD-17-phase-branch-isolation-01",
+    "phase": 17,
+    "status": "done",
+    "started": "2026-08-28T04:45:06.706Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-28T04:46:02.335Z"
+  },
+  {
+    "id": "JOB-17",
+    "kind": "subagent",
+    "plan": "GSD-17-phase-branch-isolation-03",
+    "phase": 17,
+    "status": "done",
+    "started": "2026-08-28T04:46:05.241Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-28T04:46:56.826Z"
   }
 ]

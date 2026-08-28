@@ -1,0 +1,3 @@
+# Phase 17: phase-branch-isolation — Discussion Log
+
+Held a lightweight interview covering branch acquisition mechanics, commit strategy, git error handling, push timing, and edge cases. The user selected the recommended option in every dimension: create-if-missing/reuse-if-on-it branch acquisition with a loud failure only when on a different non-base branch; a shared auto-commit helper running one conventional commit per tool invocation; fail-loudly for branch acquire but best-effort for commit; defer push to gsd_ship; and all four edge-case behaviors (non-git no-op+warning, dirty-tree carried as-is, idempotent re-run overwrite, origin/HEAD fallback to main).

@@ -20,26 +20,26 @@
 | 14 | [x] execute-checkpoint | Extract the checkpoint prepare/process logic in gsd_execute into helpers and reuse the planIndex runnable set. | CQ-04 |
 | 15 | [x] ship-robustness | Make git/gh calls async and report preflight failures with their real cause. | CQ-05 |
 | 16 | [x] context-budget | Give planningContext a total truncation budget and surface truncation, plus small dedup fixes. | CQ-06 |
-| 17 | phase-branch-isolation | Acquire a per-phase feature branch at gsd_discuss and have each phase tool commit its planning artefacts, so gsd_ship preflight passes on a clean feature branch. | CQ-07 |
+| 17 | [x] phase-branch-isolation | Acquire a per-phase feature branch at gsd_discuss and have each phase tool commit its planning artefacts, so gsd_ship preflight passes on a clean feature branch. | CQ-07 |
 
 ## Progress
 
 | # | Phase | Status | Date |
 |---|-------|--------|------|
-| 01 | live-mount | [x] Complete | 2026-08-27 |
-| 02 | service-tools | [x] Complete | 2026-08-27 |
-| 03 | loop-e2e | [x] Complete | 2026-08-27 |
-| 04 | checkpoint-resume | [x] Complete | 2026-08-27 |
-| 05 | window-ledger | [x] Complete | 2026-08-27 |
-| 06 | loop-robustness | [x] Complete | 2026-08-27 |
-| 07 | uat-conversation | [x] Complete | 2026-08-27 |
-| 08 | capability-gates | [x] Complete | 2026-08-27 |
-| 09 | job-runtime | [x] Complete | 2026-08-27 |
-| 10 | codebase-query | [x] Complete | 2026-08-27 |
-| 11 | phase-dir-resolution | [x] Complete | 2026-08-27 |
-| 12 | single-source-constants | [x] Complete | 2026-08-27 |
-| 13 | gate-dispatch | [x] Complete | 2026-08-27 |
-| 14 | execute-checkpoint | [x] Complete | 2026-08-27 |
-| 15 | ship-robustness | [x] Complete | 2026-08-27 |
-| 16 | context-budget | [x] Complete | 2026-08-27 |
-| 17 | phase-branch-isolation | pending |  |
+| 01 | live-mount | [x] Complete | 2026-08-28 |
+| 02 | service-tools | [x] Complete | 2026-08-28 |
+| 03 | loop-e2e | [x] Complete | 2026-08-28 |
+| 04 | checkpoint-resume | [x] Complete | 2026-08-28 |
+| 05 | window-ledger | [x] Complete | 2026-08-28 |
+| 06 | loop-robustness | [x] Complete | 2026-08-28 |
+| 07 | uat-conversation | [x] Complete | 2026-08-28 |
+| 08 | capability-gates | [x] Complete | 2026-08-28 |
+| 09 | job-runtime | [x] Complete | 2026-08-28 |
+| 10 | codebase-query | [x] Complete | 2026-08-28 |
+| 11 | phase-dir-resolution | [x] Complete | 2026-08-28 |
+| 12 | single-source-constants | [x] Complete | 2026-08-28 |
+| 13 | gate-dispatch | [x] Complete | 2026-08-28 |
+| 14 | execute-checkpoint | [x] Complete | 2026-08-28 |
+| 15 | ship-robustness | [x] Complete | 2026-08-28 |
+| 16 | context-budget | [x] Complete | 2026-08-28 |
+| 17 | phase-branch-isolation | [x] Complete | 2026-08-28 |

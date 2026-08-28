@@ -5,20 +5,20 @@ milestone_name: code-quality-hardening
 status: idle
 active_phase: null
 next_action: null
-next_phases: [16]
+next_phases: [17]
 progress:
   total_phases: 17
-  completed_phases: 16
-  total_plans: 2
-  completed_plans: 37
-  percent: 94
-current_phase: 16
-current_phase_name: context-budget
-current_plan: 2
-last_updated: "2026-08-27T05:05:50.538Z"
+  completed_phases: 17
+  total_plans: 3
+  completed_plans: 40
+  percent: 100
+current_phase: 17
+current_phase_name: phase-branch-isolation
+current_plan: 3
+last_updated: "2026-08-28T04:48:53.378Z"
 state_head: null
-last_activity: 2026-08-27
-stopped_at: "Phase 16 shipped — PR #19"
+last_activity: 2026-08-28
+stopped_at: "Phase 17 shipped — PR #20"
 paused_at: null
 ---
 # GSD STATE
@@ -87,6 +87,9 @@ _No active phase._
 - Phase 16: CONTEXT.md sealed — 8 decisions
 - Phase 16: planned — 2 plan(s) across 2 wave(s).
 - Phase 16 shipped — PR #19 (https://github.com/jaaty/dsh-gsd-bundle/pull/19)
+- Phase 17: CONTEXT.md sealed — 10 decisions
+- Phase 17: planned — 3 plan(s) across 2 wave(s).
+- Phase 17 shipped — PR #20 (https://github.com/jaaty/dsh-gsd-bundle/pull/20)
 
 ### Blockers / Concerns
 _none_
