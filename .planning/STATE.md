@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v1.7
 milestone_name: job-intel-multiwindow
-status: idle
-active_phase: null
-next_action: null
-next_phases: [19]
+status: plan
+active_phase: 20
+next_action: plan-phase
+next_phases: [20]
 progress:
   total_phases: 20
   completed_phases: 19
   total_plans: 4
   completed_plans: 47
   percent: 95
-current_phase: 19
-current_phase_name: codebase-intel-extensions
+current_phase: 20
+current_phase_name: multi-window-topology
 current_plan: 4
-last_updated: "2026-08-28T06:11:42.655Z"
+last_updated: "2026-08-28T21:19:45.675Z"
 state_head: null
 last_activity: 2026-08-28
 stopped_at: "Phase 19 shipped — PR #22"
@@ -96,6 +96,7 @@ _No active phase._
 - Phase 19: CONTEXT.md sealed — 8 decisions
 - Phase 19: planned — 4 plan(s) across 4 wave(s).
 - Phase 19 shipped — PR #22 (https://github.com/jaaty/dsh-gsd-bundle/pull/22)
+- Phase 20: CONTEXT.md sealed — 11 decisions
 
 ### Blockers / Concerns
 _none_
