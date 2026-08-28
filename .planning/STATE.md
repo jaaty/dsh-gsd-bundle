@@ -15,7 +15,7 @@ progress:
 current_phase: 20
 current_phase_name: multi-window-topology
 current_plan: 2
-last_updated: "2026-08-28T21:59:24.845Z"
+last_updated: "2026-08-28T22:00:15.404Z"
 state_head: null
 last_activity: 2026-08-28
 stopped_at: "Milestone v1.7 released — v1.7.0 (all 20 phases shipped)"
@@ -101,6 +101,36 @@ _No active phase._
 - Phase 20: plan 03 executed — UI-SPEC / codebase-map / quick auto-commit via shared commitArtifacts seam (MW-03, D-09..D-12); 335 tests green.
 - Phase 20 shipped — PR #23 (https://github.com/jaaty/dsh-gsd-bundle/pull/23)
 - Milestone v1.7 released — v1.7.0 (all 20 phases shipped) — 20/20 phases shipped, PRs #1..#23, merged to main.
+- quick 2026-08-28-milestone-release-v1-7-0: Release milestone job-intel-multiwindow as v1.7.0. Orient against .planning/STATE.md first: the milestone is fully COMPLETE (20/20 phases shipped, PRs #1..#23, all merged to main), branch is main, working tree is clean, and there are currently no git tags. Do the full milestone release end to end and commit + tag atomically.
+
+STEPS (in this order):
+
+1) READ the project to confirm state before changing anything: read .planning/ROADMAP.md, .planning/STATE.md, package.json, and the README.md (note its current heading/version references). All 20 phases (01 live-mount … 20 multi-window-topology) are marked complete — confirm this before tagging.
+
+2) Bump the npm package version from 0.1.0 to 1.7.0 in package.json (the "version" field only — do not change name, exports, scripts, or dependencies).
+
+3) Update README.md so it reflects that milestone v1.7 is COMPLETE and released: if it lists phase/feature status, mark all 20 phases done; update any version reference to v1.7.0; add (or adjust) a short release/install note stating the milestone is complete. Keep the existing public-release/plugin-ecosystem framing intact. Do not rewrite unrelated content.
+
+4) Update .planning/ROADMAP.md to mark milestone job-intel-multiwindow v1.7 as released/complete (e.g. a status note that all 20 phases shipped and the milestone is released as v1.7.0), leaving the per-phase table accurate.
+
+5) Update .planning/STATE.md to record the milestone release: set the status/stopped_at to reflect "Milestone v1.7 released — v1.7.0 (all 20 phases shipped)" and append a recent decision line noting the milestone release. Use the project's normal STATE mutation conventions via the gsdState artefact model (writeArtifact/writeQuickRecord or a structured edit) rather than raw node:fs bypass.
+
+6) Run the test suite to confirm nothing broke: `node --test test/*.test.mjs` — it must pass (currently 338 tests green; this is a release-only change so it should stay green).
+
+7) Commit ALL of the above atomically with a single conventional-commit message, e.g. `chore(release): release milestone job-intel-multiwindow as v1.7.0` (stage the specific changed files: package.json, README.md, .planning/ROADMAP.md, .planning/STATE.md, plus the .planning/quick/<date>-<slug>/ record this task creates). Do NOT use `git add -A` blanket staging beyond those. Do not push force. Commit onto main (the current branch).
+
+8) Create an ANNOTATED git tag at the new commit: `git tag -a v1.7.0 -m "Milestone job-intel-multiwindow v1.7.0 — 20 phases shipped"`.
+
+9) Push the tag to origin: `git push origin v1.7.0` (and push main if it is not already up to date).
+
+10) Create a GitHub Release for tag v1.7.0 against the repository (origin https://github.com/jaaty/dsh-gsd-bundle) using the gh CLI, titled "v1.7.0" with release notes that enumerate the milestone: the goal (job-intel-multiwindow), that all 20 phases shipped (PRs #1..#23), and a short bulleted summary of the key delivered capabilities (mount/live-boot, phase-loop tooling, checkpoint-resume, window ledger WINDOWS.md + async-jobs manifest, conversational UAT loop, capability gates, real background-job runtime with subagent/timeout/retry, codebase-query intel mode with drift detection / targeted updater, phase-dir/const refactor cleanup, per-phase feature-branch isolation, and the phase-20 multi-window topology: parallel concurrent-phase branches on a shared base, early best-effort branch push, and auto-commit of out-of-flow artefacts). Use `gh release create v1.7.0 --notes-file <tmp>` and clean up the temp notes file.
+
+11) Write a one-line quick-task summary (this task tool records it) and verify the tag exists (`git tag` shows v1.7.0) and the release was created.
+
+IMPORTANT CONSTRAINTS:
+- All git/gh commands must use explicit argument arrays; never interpolate a model- or user-supplied value into a shell string (release notes file path can be a fixed .planning temp path). Do not push force, do not alter protected refs, do not run git clean/reset --hard.
+- If gh CLI is unavailable or unauthenticated, create the tag and push it, and report the gh release step as a warning with the real cause — do not silently skip or fake it.
+- The working tree must be left clean on main with the v1.7.0 tag pointing at the release commit.
 
 ### Blockers / Concerns
 _none_
