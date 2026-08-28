@@ -125,4 +125,39 @@ describe("commitArtifacts", () => {
     assert.deepEqual(res.staged, ["a.md"]);
     assert.match(res.warning, /git commit failed/);
   });
+
+  test("null phaseNum + message override commits with EXACTLY the override, no phase interpolation (D-12)", async () => {
+    const git = scriptedGit({
+      "add": "",
+      "diff": "map.md",
+      "commit": "",
+    });
+    const res = await commitArtifacts("/repo", null, { scope: "map", message: "docs(planning): codebase map" }, git);
+    assert.equal(res.committed, true);
+    assert.deepEqual(res.staged, ["map.md"]);
+    const commitCall = git.calls.find((c) => c[0] === "commit");
+    assert.equal(commitCall[1], "-m");
+    assert.equal(commitCall[2], "docs(planning): codebase map");
+    assert.match(commitCall[2], /^docs\(planning\): codebase map$/);
+    assert.doesNotMatch(commitCall[2], /null/, "override message must not interpolate a null phaseNum");
+  });
+
+  test("default call (no message override) still yields the unchanged default template (backward-compat, D-12)", async () => {
+    const git = scriptedGit({
+      "add": "",
+      "diff": "a.md",
+      "commit": "",
+    });
+    const res = await commitArtifacts("/repo", 17, { scope: "discuss", phaseName: "phase-branch-isolation" }, git);
+    assert.equal(res.committed, true);
+    const commitCall = git.calls.find((c) => c[0] === "commit");
+    assert.match(commitCall[2], /^docs\(planning\): phase 17 phase-branch-isolation discuss artefacts$/);
+  });
+
+  test("null phaseNum + override path still best-effort: reject on 'add' returns committed false, does NOT throw (D-06)", async () => {
+    const git = scriptedGit({}, { rejectArg: "add" });
+    const res = await commitArtifacts("/repo", null, { scope: "quick", message: "docs(planning): quick x" }, git);
+    assert.equal(res.committed, false);
+    assert.match(res.warning, /git add failed/);
+  });
 });
