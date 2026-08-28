@@ -21,6 +21,7 @@ import {
   renderAvailableSteps,
   NO_LOOP_NOTICE,
   renderNoLoopNotice,
+  renderPersonaBody,
 } from "../lib/_render.js";
 
 // Full set of all 10 descriptors, in CAPABILITY_KEYS order (frozen, like the
@@ -160,5 +161,61 @@ describe("renderAvailableSteps / NO_LOOP_NOTICE (D-08/D-06)", () => {
     assert.equal(renderAvailableSteps([]), `- ${NO_LOOP_NOTICE}`);
     assert.equal(renderNoLoopNotice(), NO_LOOP_NOTICE);
     assert.equal(NO_LOOP_NOTICE, "no available loop step");
+  });
+});
+
+describe("renderPersonaBody (D-01/D-02/D-06)", () => {
+  // Invariant proof: no gsd_* token whose capability is absent in the given
+  // descriptor set may be named in the rendered persona (never-instruct-a-
+  // missing-tool contract).
+  function assertNoAbsentTool(body, descriptors) {
+    const presentCaps = new Set((descriptors || []).map((d) => d.key));
+    const tokens = body.match(/gsd_[a-z_]+/g) || [];
+    for (const tok of tokens) {
+      const capKey = capabilityForTool(tok);
+      assert.notEqual(
+        capKey,
+        undefined,
+        `token ${tok} has no known capability mapping — persona named an unknown tool`,
+      );
+      assert.ok(
+        presentCaps.has(capKey),
+        `persona named ${tok} but capability ${capKey} is absent in this mount`,
+      );
+    }
+  }
+
+  test("static core + present steps render on the full set", () => {
+    const body = renderPersonaBody(FULL);
+    assert.ok(body.includes("Discuss"));
+    assert.ok(body.includes("Execute"));
+    assert.ok(body.includes("gsd_status")); // gsdOrient present
+    assert.ok(body.includes("gsd_quick")); // gsdQuick present
+    assertNoAbsentTool(body, FULL);
+  });
+
+  test("absent verify/quick step paragraphs and tools are omitted", () => {
+    const body = renderPersonaBody(without("gsdVerify", "gsdQuick"));
+    assert.ok(!body.includes("Verify:"));
+    assert.ok(!body.includes("gsd_verify"));
+    assert.ok(!body.includes("gsd_quick"));
+    // The fresh-context rule must drop the absent tool name.
+    assert.ok(!body.includes("the gsd_plan / gsd_execute / gsd_verify"));
+    assertNoAbsentTool(body, without("gsdVerify", "gsdQuick"));
+  });
+
+  test("zero-loop set shows the no-loop notice and never names a loop tool", () => {
+    const body = renderPersonaBody(NO_LOOP);
+    assert.ok(body.includes("No loop steps are currently available"));
+    assert.ok(!body.includes("gsd_discuss"));
+    assertNoAbsentTool(body, NO_LOOP);
+  });
+
+  test("partial spawner set lists only the present fresh-context tools", () => {
+    // Plan + Execute present, Verify absent -> only gsd_plan / gsd_execute named.
+    const body = renderPersonaBody(without("gsdVerify"));
+    assert.ok(body.includes("the gsd_plan / gsd_execute tools spawn them"));
+    assert.ok(!body.includes("gsd_verify"));
+    assertNoAbsentTool(body, without("gsdVerify"));
   });
 });
