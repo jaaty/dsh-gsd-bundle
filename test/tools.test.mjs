@@ -142,6 +142,30 @@ function makeSubagents() {
         text = "status: passed, score: 2/2";
       } else if (label.startsWith("plan research")) {
         text = "# RESEARCH\n\n## Open Questions\n\n- none (RESOLVED)\n\nStandard.";
+      } else if (label === "gsd-intel-updater") {
+        // Fake gsd-intel-updater: parse the "Affected documents:" lines from
+        // the prompt, rewrite each named .md doc with new >20-line content, and
+        // leave every other codebase doc byte-identical. Mirrors the real
+        // per-doc targeted-rewrite contract (CBQX-02/D-05).
+        const promptText = req.prompt[0]?.text || "";
+        const inAffected = promptText.split("\n").map((l) => l.trim());
+        const affected = [];
+        for (let i = 0; i < inAffected.length; i++) {
+          if (inAffected[i] === "Affected documents:") {
+            for (let j = i + 1; j < inAffected.length && inAffected[j].startsWith("- "); j++) {
+              const m = inAffected[j].match(/^-\s+(\S+?\.md)$/);
+              if (m) affected.push(m[1]);
+            }
+            break;
+          }
+        }
+        for (const doc of affected) {
+          const lines = [`# ${doc}`, "", `**Analysis Date:** 2026-08-28`, ""];
+          while (lines.length < 24) lines.push(`- ${doc} updated finding ${lines.length}.`);
+          lines.push("", `*${doc} analysis: 2026-08-28*`);
+          await fs.writeText({ targetKey: `${CWD}/.planning/codebase/${doc}` }, lines.join("\n"));
+        }
+        text = "## Update Complete\nAffected docs rewritten.";
       } else if (label.startsWith("map-codebase")) {
         // Fake gsd-codebase-mapper: writes the focus's documents directly,
         // each >20 lines so the orchestrator's verify step passes.
@@ -1074,6 +1098,31 @@ describe("gsd_map_codebase", () => {
     const res = await upd.t.execute({}, exec);
     assert.equal(res.kind, "notice");
     assert.match(renderResult(res), /No drift detected since the last map/);
+  });
+
+  test("gsd_intel_updater with drifted paths rewrites only affected docs (D-05)", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old STACK\n");
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# old ARCHITECTURE\n");
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/TESTING.md` }, "# old TESTING\n");
+    const testBefore = fs.files.get(`${CWD}/.planning/codebase/TESTING.md`);
+    const { t } = await registerTool("map-codebase", "gsd_intel_updater");
+    const res = await t.execute({ paths: ["src/lib/auth.ts"] }, exec);
+    assert.equal(res.kind, "updater");
+    assert.match(renderResult(res), /Targeted codebase update complete/);
+    assert.match(renderResult(res), /STACK\.md/);
+    assert.match(renderResult(res), /ARCHITECTURE\.md/);
+    // the unaffected doc is byte-identical before/after (D-05)
+    assert.equal(fs.files.get(`${CWD}/.planning/codebase/TESTING.md`), testBefore, "TESTING.md must be untouched");
+    // the affected docs were rewritten by the fake updater
+    assert.match(fs.files.get(`${CWD}/.planning/codebase/STACK.md`), /updated finding/);
+    assert.match(fs.files.get(`${CWD}/.planning/codebase/ARCHITECTURE.md`), /updated finding/);
+  });
+
+  test("gsd_intel_updater with no affected existing docs returns a notice", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_intel_updater");
+    const res = await t.execute({ paths: ["src/lib/auth.ts"] }, exec);
+    assert.equal(res.kind, "notice");
+    assert.match(renderResult(res), /No affected map documents to update/);
   });
 
   test("query arg is present in the compiled schema", async () => {
