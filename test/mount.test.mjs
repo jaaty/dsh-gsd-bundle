@@ -230,6 +230,34 @@ describe("mount: all 12 plugins activate", () => {
       assert.equal(typeof cap.order, "number", `${key}: order is not a number`);
     }
   });
+
+  test("absent capability leaves its slash command unregistered (DEGR-03)", async () => {
+    // Apply every plugin EXCEPT gsd-commands so all 10 capabilities are
+    // provided, then withdraw one capability from the provided store and apply
+    // gsd-commands: its sub-fiber for that capability must stay inactive (never
+    // register the command) while the other 11 commands register normally.
+    const ctx2 = makeMountCtx(fs);
+    for (const { id, sub } of PATCH_ROWS) {
+      if (sub === "commands") continue;
+      const mod = await import(`@dsh-gsd/bundle/${sub}`);
+      mod.apply(ctx2, {});
+    }
+    assert.ok(ctx2.provided.has("gsdQuick"), "gsdQuick capability was not provided");
+    ctx2.provided.delete("gsdQuick");
+
+    const commandsMod = await import(`@dsh-gsd/bundle/commands`);
+    commandsMod.apply(ctx2, {});
+
+    assert.ok(ctx2.commands.length === 11, `expected 11 commands, got ${ctx2.commands.length}`);
+    assert.ok(!ctx2.commands.some((c) => c.name === "gsd-quick"), "gsd-quick was registered despite gsdQuick being absent");
+    for (const expected of EXPECTED_COMMAND_NAMES) {
+      if (expected === "gsd-quick") continue;
+      assert.ok(
+        ctx2.commands.some((c) => c.name === expected),
+        `expected command ${expected} to be registered, got ${ctx2.commands.map((c) => c.name).join(", ")}`,
+      );
+    }
+  });
 });
 
 describe("mount: cordis.patch.yml rows resolve", () => {
