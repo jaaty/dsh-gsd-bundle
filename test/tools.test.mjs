@@ -3,12 +3,15 @@
 
 import { test, describe, beforeEach } from "node:test";
 import assert from "node:assert/strict";
+import path from "node:path";
+import os from "node:os";
+import { mkdtemp, rm } from "node:fs/promises";
 
 import { GsdState } from "../lib/state.js";
 import { resolvePlanDep, parseFrontmatter } from "../lib/_shared.js";
 import { CODEBASE_QUERY_PROMPT } from "../lib/_agents.js";
 import { apply as applyCommands } from "../lib/commands.js";
-import { FakeFs, stateCtx } from "./helpers/fake-fs.mjs";
+import { FakeFs, stateCtx, realFsAdapter } from "./helpers/fake-fs.mjs";
 import { buildProject, FENCED_PLAN, FENCELESS_PLAN, FENCED_SUMMARY, VERIFICATION_PASSED } from "./helpers/project.mjs";
 
 const CWD = "/project";
@@ -184,6 +187,18 @@ async function registerTool(pluginFile, toolName) {
   const t = tools.find((x) => x.name === toolName);
   assert.ok(t, `${toolName} not registered by ${pluginFile}`);
   return { t, c };
+}
+
+// Poll the async-jobs manifest until a job reaches a status, bounded (real fs).
+async function waitForJobStatus(s, cwd, id, status, timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const { entries } = await s.readJobs(cwd);
+    const e = entries.find((x) => x.id === id);
+    if (e && e.status === status) return e;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  return null;
 }
 
 describe("gsd_discuss", () => {
@@ -598,6 +613,18 @@ describe("gsd_status", () => {
     assert.match(res, /running/);
   });
 
+  test("a terminal job's reason and detail render inline in the Async Jobs line (D-08)", async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    await svc.appendJob(CWD, { kind: "subagent", status: "failed", result: "x", reason: { reason: "timeout", detail: "exceeded 60s" } });
+    const { t } = await registerTool("core-tools", "gsd_status");
+    const res = await t.execute({}, exec);
+    assert.match(res, /JOB-01/);
+    assert.match(res, /failed/);
+    assert.match(res, /\[reason: timeout\]/);
+    assert.match(res, /exceeded 60s/);
+  });
+
   test("a corrupt result file does not throw and leaves the job running", async () => {
     fs = new FakeFs();
     svc = await buildProject(fs, CWD);
@@ -633,6 +660,154 @@ describe("gsd_status", () => {
     assert.match(res, /corrupt/);
     assert.match(res, /WINDOWS\.md is corrupt/);
     assert.match(res, /Stopped at:/);
+  });
+});
+
+describe("gsd_job", () => {
+  beforeEach(async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    ctx = makeCtx();
+  });
+
+  // Launching a real subagent/shell job needs a real writable dir (the subagent
+  // settle writes its result file and shell jobs spawn a detached child), so
+  // those two tests build a real temp project with realFsAdapter, mirroring how
+  // jobs.test.mjs exercises the runtime. The pure-manifest actions (status /
+  // cancel / retry / schema) run against FakeFs via registerTool.
+  async function realToolCtx(tmp, subagents) {
+    const realFs = realFsAdapter();
+    const s2 = new GsdState(stateCtx(realFs), {});
+    await s2.initProject(tmp, { name: "T", purpose: "p", milestoneName: "M1", version: "v1.0", requirements: [], phases: [] });
+    const c = {
+      fs: realFs,
+      get: (n) =>
+        n === "gsdState" ? s2
+          : n === "subagents" ? subagents
+            : n === "tools" ? { register() {} } : undefined,
+      provide() {}, effect: () => () => {},
+    };
+    const tools = [];
+    c.tools = { register: (t) => tools.push(t) };
+    const mod = await import("../lib/core-tools.js");
+    mod.apply(c, {});
+    const t = tools.find((x) => x.name === "gsd_job");
+    const exec2 = { agent: { session: { header: { cwd: tmp } } }, signal: { aborted: false, addEventListener() {}, removeEventListener() {} } };
+    return { t, s: s2, fs: realFs, exec2 };
+  }
+
+  test("launch subagent records a job that reconciles to done with the subagent text", async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), "gsd-job-tool-"));
+    try {
+      const subagents = {
+        getProvider: (n) => (n === "spawn" ? { spawn: true } : undefined),
+        async start(_n, _req) {
+          return { result: Promise.resolve({ output: [{ type: "text", text: "agent summary" }], stopReason: "completed", structured: undefined }), dispose: () => {} };
+        },
+      };
+      const { t, s, exec2 } = await realToolCtx(tmp, subagents);
+      const res = await t.execute({ action: "launch", kind: "subagent", prompt: "summarize", label: "gsd-job-1" }, exec2);
+      assert.match(res, /JOB-01/);
+      assert.match(res, /subagent/);
+      const done = await waitForJobStatus(s, tmp, "JOB-01", "done");
+      assert.ok(done, "subagent job reaches done");
+      const status = await t.execute({ action: "status", id: "JOB-01" }, exec2);
+      assert.match(status, /done/);
+      assert.match(status, /agent summary/);
+    } finally {
+      await rm(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test("launch shell records and completes a shell job via the argv command", async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), "gsd-job-tool-"));
+    try {
+      const { t, s, fs: realFs, exec2 } = await realToolCtx(tmp, makeSubagents());
+      const res = await t.execute({ action: "launch", kind: "shell", argv: ["node", "-e", "process.exit(0)"] }, exec2);
+      assert.match(res, /JOB-01/);
+      // A shell job's manifest status only flips when reconcileJobs runs (the
+      // gsd_job status action reconciles first), so wait for the detached child
+      // to write its result file, then reconcile via action:status -> done.
+      const resultFile = `${tmp}/.planning/jobs/JOB-01.result.json`;
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        if (await realFs.stat(await realFs.resolve(resultFile))) break;
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      const status = await t.execute({ action: "status", id: "JOB-01" }, exec2);
+      assert.match(status, /done/);
+      const done = await waitForJobStatus(s, tmp, "JOB-01", "done");
+      assert.ok(done, "shell job reaches done after reconcile");
+    } finally {
+      await rm(tmp, { recursive: true, force: true });
+    }
+  });
+
+  test("status on an unknown id returns a not-found message and never throws", async () => {
+    const { t } = await registerTool("core-tools", "gsd_job");
+    let res;
+    await assert.doesNotReject(async () => { res = await t.execute({ action: "status", id: "JOB-99" }, exec); });
+    assert.match(res, /not found/);
+  });
+
+  test("cancel flips a running job to failed with reason 'cancelled'", async () => {
+    const { t } = await registerTool("core-tools", "gsd_job");
+    await svc.appendJob(CWD, { kind: "shell", status: "running" });
+    const res = await t.execute({ action: "cancel", id: "JOB-01" }, exec);
+    assert.match(res, /cancelled JOB-01/);
+    const { entries } = await svc.readJobs(CWD);
+    assert.equal(entries[0].status, "failed");
+    assert.equal(entries[0].reason.reason, "cancelled");
+  });
+
+  test("cancel on an unknown or already-done job returns a no-op message and never throws", async () => {
+    const { t } = await registerTool("core-tools", "gsd_job");
+    await svc.appendJob(CWD, { kind: "subagent", status: "done", result: "x" });
+    let res;
+    await assert.doesNotReject(async () => { res = await t.execute({ action: "cancel", id: "JOB-99" }, exec); });
+    assert.match(res, /not found/);
+    await assert.doesNotReject(async () => { res = await t.execute({ action: "cancel", id: "JOB-01" }, exec); });
+    assert.match(res, /terminal/);
+  });
+
+  test("retry creates a new attempt and marks the old entry 'retried'", async () => {
+    const { t } = await registerTool("core-tools", "gsd_job");
+    await svc.appendJob(CWD, { kind: "subagent", prompt: "x", status: "failed", attempts: 1, retryCount: 0, timeout: 5 });
+    const res = await t.execute({ action: "retry", id: "JOB-01" }, exec);
+    assert.match(res, /retried JOB-01 as JOB-02/);
+    const { entries } = await svc.readJobs(CWD);
+    assert.equal(entries.length, 2, "a retry appends a new attempt entry");
+    assert.equal(entries[0].reason.reason, "retried");
+    assert.equal(entries[1].id, "JOB-02");
+  });
+
+  test("retry beyond max_retries returns a refusal and adds no entry", async () => {
+    const { t } = await registerTool("core-tools", "gsd_job");
+    await svc.appendJob(CWD, { kind: "subagent", prompt: "x", status: "failed", attempts: 1, retryCount: 3, timeout: 5 });
+    let res;
+    await assert.doesNotReject(async () => { res = await t.execute({ action: "retry", id: "JOB-01" }, exec); });
+    assert.match(res, /max_retries exceeded/);
+    const { entries } = await svc.readJobs(CWD);
+    assert.equal(entries.length, 1, "no new attempt entry on a refusal");
+  });
+
+  test("an invalid action value is rejected by the schema with a clear message (D-05)", async () => {
+    // defineTool's enum arg-validation rejects a non-enum action BEFORE execute
+    // runs (a clear ToolArgsError naming the valid actions), so an unknown
+    // action never reaches the manifest and never throws a runtime error. The
+    // defensive "unknown action" branch in execute stays for completeness.
+    const { t } = await registerTool("core-tools", "gsd_job");
+    await assert.rejects(() => t.execute({ action: "bogus" }, exec), /must be one of \[.*"launch".*"status".*"cancel".*"retry"\]/);
+    await assert.rejects(() => t.execute({ action: "launch", kind: "bogus" }, exec), /kind.*must be one of/);
+  });
+
+  test("compiled schema exposes the action enum and job properties", async () => {
+    const { t } = await registerTool("core-tools", "gsd_job");
+    assert.deepEqual(t.parameters.properties.action.enum, ["launch", "status", "cancel", "retry"]);
+    assert.deepEqual(t.parameters.properties.kind.enum, ["shell", "subagent"]);
+    for (const p of ["kind", "id", "prompt", "argv", "timeout", "max_retries"]) {
+      assert.ok(t.parameters.properties[p], `${p} should be exposed in the gsd_job schema`);
+    }
   });
 });
 

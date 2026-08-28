@@ -47,3 +47,23 @@
 - [x] CQ-05: git/gh calls are async and preflight failures report their real cause.
 - [x] CQ-06: planningContext truncates against a total budget and surfaces truncation, plus small dedup fixes.
 - [x] CQ-07: Each phase runs on its own feature branch (phase-<N>) acquired at the start of gsd_discuss, and every phase tool commits its planning artefacts to that branch, so gsd_ship preflight passes on a clean feature branch without manual intervention.
+
+## JOBX
+
+- [x] JOBX-01: Launch background jobs that run a subagent (without awaiting the result), not just shell commands.
+- [x] JOBX-02: Support job timeouts and cancellation (currently jobs run until they exit).
+- [x] JOBX-03: Add a gsd_job tool to launch jobs interactively from the driving agent.
+- [x] JOBX-04: Add job retry and queueing.
+
+## CBQX
+
+- [ ] CBQX-01: Implement drift detection that notices when the codebase has changed since the last map.
+- [ ] CBQX-02: Implement targeted re-map / gsd-intel-updater that updates only the affected map docs.
+- [ ] CBQX-03: Return a structured answer object (answer + sources + confidence) instead of plain text.
+- [ ] CBQX-04: Add subtree query scoping via a queryScope/paths argument.
+
+## MW
+
+- [ ] MW-01: Support concurrent multi-window phases sharing one base branch, with a defined merge topology.
+- [ ] MW-02: Push the phase-N branch earlier than ship (at branch-acquire) for remote visibility during the phase.
+- [ ] MW-03: Auto-commit the out-of-flow artefacts (UI-SPEC / codebase-map / quick-task) onto the phase branch.

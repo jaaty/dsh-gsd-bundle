@@ -172,6 +172,7 @@ const EXPECTED_TOOL_NAMES = [
   "gsd_init", "gsd_status", "gsd_progress", "gsd_new_milestone",
   "gsd_discuss", "gsd_plan", "gsd_execute", "gsd_verify",
   "gsd_ship", "gsd_ui_phase", "gsd_quick", "gsd_map_codebase",
+  "gsd_job",
 ];
 
 // Expected registered command names (12) — from lib/commands.js:35-161 (D-03).
@@ -192,7 +193,7 @@ describe("mount: all 12 plugins activate", () => {
     await applyAll(ctx);
     assert.ok(ctx.provided.has("gsdState"), "gsdState service was not provided");
     assert.ok(ctx.provided.get("gsdState") instanceof GsdState, "gsdState is not a GsdState instance");
-    assert.ok(ctx.tools.length === 12, `expected 12 tools, got ${ctx.tools.length}`);
+    assert.ok(ctx.tools.length === 13, `expected 13 tools, got ${ctx.tools.length}`);
     assert.ok(ctx.commands.length === 12, `expected 12 commands, got ${ctx.commands.length}`);
     assert.ok(ctx.sections.length === 1, `expected 1 section, got ${ctx.sections.length}`);
     assert.ok(ctx.contexts.length === 1, `expected 1 context, got ${ctx.contexts.length}`);
@@ -310,10 +311,10 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
     assert.match(out, /no \.planning\/ project found/);
   });
 
-  test("all 12 registered tools have a valid compiled schema", () => {
+  test("all 13 registered tools have a valid compiled schema", () => {
     // apply() not throwing already proves defineTool compiled the schema (D-04);
     // assert the shape explicitly for every tool.
-    assert.equal(ctx.tools.length, 12);
+    assert.equal(ctx.tools.length, 13);
     for (const t of ctx.tools) {
       assert.equal(typeof t.name, "string", `${t.name}: name is not a string`);
       assert.equal(typeof t.description, "string", `${t.name}: description is not a string`);
