@@ -72,7 +72,7 @@
 
 - [x] DEGR-01: Every phase-loop step plugin (discuss, plan, execute, verify, ship, ui, quick, map-codebase, core-tools) publishes a capability service (e.g. gsdPlan) declaring the loop step it provides, in addition to registering its tool.
 - [ ] DEGR-02: The persona renders the phase loop and the runtime-context snapshot from the set of currently-available step capabilities, skipping absent steps and never instructing the agent to call a missing tool.
-- [ ] DEGR-03: The slash-command layer declares coeffects on the corresponding step capabilities so retiring a step plugin reactively unregisters its /gsd-* command (no dangling commands).
+- [x] DEGR-03: The slash-command layer declares coeffects on the corresponding step capabilities so retiring a step plugin reactively unregisters its /gsd-* command (no dangling commands).
 - [ ] DEGR-04: gsd_status and the STATE.md step machine route only through available steps, so the loop never advances into an absent step.
 - [ ] DEGR-05: An automated per-plugin removal test proves each single step plugin can be retired (effects reverted, no crash) with the remaining loop still functional end-to-end.
 - [ ] DEGR-06: The background-job live registry is effect-scoped to its owning fiber so unloading/HMR cancels running jobs.
