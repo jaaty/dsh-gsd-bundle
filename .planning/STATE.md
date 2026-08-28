@@ -108,6 +108,7 @@ _No active phase._
 - Phase 21: CONTEXT.md sealed — 12 decisions
 - Phase 21: planned — 4 plan(s) across 3 wave(s).
 - Phase 21: plan 01 executed — capability descriptor module (D-05/D-03/D-04/D-10/D-11); 349 tests green.
+- Phase 21: plan 04 executed — mount fake-ctx ctx.inject + 10-capability asserts (DEGR-01), absent-capability command test (DEGR-03), tools smoke regression fix; 350 tests green.
 
 ### Blockers / Concerns
 _none_
