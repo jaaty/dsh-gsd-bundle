@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v2.0
 milestone_name: graceful-removal
-status: execute
+status: verify
 active_phase: 21
-next_action: execute-phase
+next_action: verify-phase
 next_phases: [21]
 progress:
   total_phases: 24
   completed_phases: 20
   total_plans: 4
-  completed_plans: 53
+  completed_plans: 54
   percent: 83
 current_phase: 21
 current_phase_name: capability-services
-current_plan: 2
-last_updated: "2026-08-28T23:17:42.253Z"
+current_plan: 4
+last_updated: "2026-08-28T23:20:47.100Z"
 state_head: null
 last_activity: 2026-08-28
 stopped_at: "Milestone v1.7 released — v1.7.0 (all 20 phases shipped)"

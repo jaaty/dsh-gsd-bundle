@@ -278,5 +278,15 @@
     "started": "2026-08-28T23:12:30.753Z",
     "result": "SUMMARY written",
     "completed": "2026-08-28T23:15:12.043Z"
+  },
+  {
+    "id": "JOB-29",
+    "kind": "subagent",
+    "plan": "GSD-21-capability-services-04",
+    "phase": 21,
+    "status": "done",
+    "started": "2026-08-28T23:17:44.184Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-28T23:20:47.080Z"
   }
 ]
