@@ -238,5 +238,25 @@
     "started": "2026-08-28T05:58:58.824Z",
     "result": "SUMMARY written",
     "completed": "2026-08-28T06:04:15.132Z"
+  },
+  {
+    "id": "JOB-25",
+    "kind": "subagent",
+    "plan": "GSD-20-multi-window-topology-01",
+    "phase": 20,
+    "status": "done",
+    "started": "2026-08-28T21:48:33.385Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-28T21:49:43.062Z"
+  },
+  {
+    "id": "JOB-26",
+    "kind": "subagent",
+    "plan": "GSD-20-multi-window-topology-03",
+    "phase": 20,
+    "status": "done",
+    "started": "2026-08-28T21:49:45.382Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-28T21:51:54.572Z"
   }
 ]

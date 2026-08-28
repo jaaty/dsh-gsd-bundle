@@ -4,20 +4,31 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 import { ensurePhaseBranch, commitArtifacts } from "../lib/_git-artifacts.js";
 
+const readLib = (file) => readFile(new URL(`../lib/${file}`, import.meta.url), "utf8");
+
 // Build a scripted fake gitFn that records every args array it is called with.
-// `responses` maps the first argv (e.g. "rev-parse") to canned stdout; when the
-// first argv is not in responses (or `rejectAll` is true) the call rejects.
+// `responses` maps either the full args joined by space (first-class) or the
+// first argv (e.g. "rev-parse") to canned stdout — the full-args key is checked
+// first so the two distinct show-ref probes (refs/heads/phase-7 vs
+// refs/remotes/origin/phase-7) can be scripted independently; when neither key
+// is present (or `rejectAll` is true) the call rejects.
 function scriptedGit(responses = {}, { rejectAll = false, rejectArg } = {}) {
   const calls = [];
   const fn = async (_cwd, args) => {
     calls.push([...args]);
     if (rejectAll) throw new Error("git unavailable");
     if (rejectArg && rejectArg === args[0]) throw new Error(`${args[0]} failed`);
+    const joined = args.join(" ");
+    if (Object.prototype.hasOwnProperty.call(responses, joined)) {
+      const v = responses[joined];
+      return typeof v === "function" ? v() : v;
+    }
     const out = responses[args[0]];
-    if (out === undefined) throw new Error(`unexpected git call: ${args.join(" ")}`);
+    if (out === undefined) throw new Error(`unexpected git call: ${joined}`);
     return out;
   };
   fn.calls = calls;
@@ -42,22 +53,37 @@ describe("ensurePhaseBranch", () => {
       "rev-parse": "main",
       "symbolic-ref": "origin/main",
       "checkout": "",
+      "push": "up to date",
     });
     const res = await ensurePhaseBranch("/repo", 7, git);
     assert.equal(res.action, "created");
     assert.equal(res.branch, "phase-7");
-    assert.deepEqual(git.calls.at(-1), ["checkout", "-b", "phase-7"]);
+    assert.ok(hasCall(git.calls, "-b"), "checkout -b must be issued");
+    assert.ok(hasCall(git.calls, "push"), "early push must be issued on create");
+    assert.equal(res.push.ok, true);
   });
 
   test("on main with no origin/HEAD falls back to 'main' and still creates phase-7 (D-02)", async () => {
     const git = scriptedGit(
-      { "rev-parse": "main", "checkout": "" },
+      { "rev-parse": "main", "checkout": "", "push": "up to date" },
       { rejectArg: "symbolic-ref" }
     );
     const res = await ensurePhaseBranch("/repo", 7, git);
     assert.equal(res.action, "created");
     assert.equal(res.defaultBranch, "main");
-    assert.deepEqual(git.calls.at(-1), ["checkout", "-b", "phase-7"]);
+    assert.ok(hasCall(git.calls, "-b"), "checkout -b must be issued");
+    assert.ok(hasCall(git.calls, "push"), "early push must be issued on create");
+  });
+
+  test("create path: push failure is best-effort, returns created with a warning, does NOT throw (D-06)", async () => {
+    const git = scriptedGit(
+      { "rev-parse": "main", "symbolic-ref": "origin/main", "checkout": "" },
+      { rejectArg: "push" }
+    );
+    const res = await ensurePhaseBranch("/repo", 7, git);
+    assert.equal(res.action, "created");
+    assert.equal(res.push.ok, false);
+    assert.match(res.push.warning, /early push failed/);
   });
 
   test("on an unrelated feature branch 'foo' throws, mentioning the branch (D-01, D-05)", async () => {
@@ -66,6 +92,96 @@ describe("ensurePhaseBranch", () => {
       ensurePhaseBranch("/repo", 7, git),
       /"foo"/
     );
+  });
+
+  test("phase-7 exists locally: joins via git checkout phase-7, returns 'joined-local' (D-03)", async () => {
+    const git = scriptedGit({
+      "rev-parse": "main",
+      "symbolic-ref": "origin/main",
+      "show-ref --verify --quiet refs/heads/phase-7": "refs/heads/phase-7",
+      "checkout phase-7": "",
+      "push -u origin phase-7": "up to date",
+    });
+    const res = await ensurePhaseBranch("/repo", 7, git);
+    assert.equal(res.action, "joined-local");
+    assert.equal(res.branch, "phase-7");
+    assert.equal(res.defaultBranch, "main");
+    const co = git.calls.find((c) => c[0] === "checkout");
+    assert.deepEqual(co, ["checkout", "phase-7"], "local join checks out the bare branch, no -b");
+    assert.equal(hasCall(git.calls, "-b"), false, "join must not fork with checkout -b");
+    assert.ok(hasCall(git.calls, "push"), "early push must fire on joined-local");
+  });
+
+  test("phase-7 exists locally while on unrelated branch 'foo': joins, does NOT throw (OQ-2)", async () => {
+    const git = scriptedGit({
+      "rev-parse": "foo",
+      "symbolic-ref": "origin/main",
+      "show-ref --verify --quiet refs/heads/phase-7": "refs/heads/phase-7",
+      "checkout phase-7": "",
+      "push -u origin phase-7": "up to date",
+    });
+    const res = await ensurePhaseBranch("/repo", 7, git);
+    assert.equal(res.action, "joined-local");
+  });
+
+  test("new phase from an unrelated branch 'foo' with no existing phase-N still throws (D-08 create-path guard)", async () => {
+    const git = scriptedGit({ "rev-parse": "foo", "symbolic-ref": "origin/main" });
+    await assert.rejects(
+      ensurePhaseBranch("/repo", 7, git),
+      /"foo"/
+    );
+  });
+
+  test("phase-7 exists only as a remote tracking ref: joins via --track origin/phase-7, returns 'joined-remote' (D-03, OQ-3)", async () => {
+    const git = scriptedGit({
+      "rev-parse": "main",
+      "symbolic-ref": "origin/main",
+      "checkout --track origin/phase-7": "",
+      "push -u origin phase-7": "up to date",
+      // show-ref probes: the local one rejects (not provided), the remote one exists.
+      "show-ref --verify --quiet refs/remotes/origin/phase-7": "refs/remotes/origin/phase-7",
+    });
+    const res = await ensurePhaseBranch("/repo", 7, git);
+    assert.equal(res.action, "joined-remote");
+    assert.equal(res.branch, "phase-7");
+    const co = git.calls.find((c) => c[0] === "checkout");
+    assert.deepEqual(co, ["checkout", "--track", "origin/phase-7"]);
+    assert.equal(hasCall(git.calls, "--track"), true);
+    assert.equal(hasCall(git.calls, "-b"), false, "remote join must not fork with checkout -b");
+  });
+
+  test("tracking ref absent but best-effort fetch discovers it: fetches, then --track checkout, 'joined-remote' (OQ-3)", async () => {
+    // First remote probe fails (tracking ref not fetched yet) → triggers fetch;
+    // the re-probe after a successful fetch returns the ref.
+    let remoteProbes = 0;
+    const git = scriptedGit({
+      "rev-parse": "main",
+      "symbolic-ref": "origin/main",
+      "fetch origin phase-7 --no-tags": "",
+      "show-ref --verify --quiet refs/remotes/origin/phase-7": () => {
+        remoteProbes += 1;
+        if (remoteProbes === 1) throw new Error("tracking ref not fetched yet");
+        return "refs/remotes/origin/phase-7";
+      },
+      "checkout --track origin/phase-7": "",
+      "push -u origin phase-7": "up to date",
+    });
+    const res = await ensurePhaseBranch("/repo", 7, git);
+    assert.equal(res.action, "joined-remote");
+    assert.ok(hasCall(git.calls, "fetch"), "best-effort fetch must run to discover a remote phase-N");
+    assert.ok(hasCall(git.calls, "--track"), "then the --track checkout must run");
+    assert.equal(hasCall(git.calls, "-b"), false);
+  });
+
+  test("both probes fail and fetch fails: falls back to the create path without throwing (D-06 best-effort)", async () => {
+    const git = scriptedGit(
+      { "rev-parse": "main", "symbolic-ref": "origin/main", "checkout": "", "push -u origin phase-7": "up to date" },
+      { rejectArg: "fetch" }
+    );
+    const res = await ensurePhaseBranch("/repo", 7, git);
+    assert.equal(res.action, "created");
+    assert.equal(res.push.ok, true);
+    assert.ok(hasCall(git.calls, "-b"), "create path must run via checkout -b");
   });
 
   test("gitFn rejects on first rev-parse returns action 'noop' with a warning, does NOT throw (D-08)", async () => {
@@ -124,5 +240,64 @@ describe("commitArtifacts", () => {
     assert.equal(res.committed, false);
     assert.deepEqual(res.staged, ["a.md"]);
     assert.match(res.warning, /git commit failed/);
+  });
+
+  test("null phaseNum + message override commits with EXACTLY the override, no phase interpolation (D-12)", async () => {
+    const git = scriptedGit({
+      "add": "",
+      "diff": "map.md",
+      "commit": "",
+    });
+    const res = await commitArtifacts("/repo", null, { scope: "map", message: "docs(planning): codebase map" }, git);
+    assert.equal(res.committed, true);
+    assert.deepEqual(res.staged, ["map.md"]);
+    const commitCall = git.calls.find((c) => c[0] === "commit");
+    assert.equal(commitCall[1], "-m");
+    assert.equal(commitCall[2], "docs(planning): codebase map");
+    assert.match(commitCall[2], /^docs\(planning\): codebase map$/);
+    assert.doesNotMatch(commitCall[2], /null/, "override message must not interpolate a null phaseNum");
+  });
+
+  test("default call (no message override) still yields the unchanged default template (backward-compat, D-12)", async () => {
+    const git = scriptedGit({
+      "add": "",
+      "diff": "a.md",
+      "commit": "",
+    });
+    const res = await commitArtifacts("/repo", 17, { scope: "discuss", phaseName: "phase-branch-isolation" }, git);
+    assert.equal(res.committed, true);
+    const commitCall = git.calls.find((c) => c[0] === "commit");
+    assert.match(commitCall[2], /^docs\(planning\): phase 17 phase-branch-isolation discuss artefacts$/);
+  });
+
+  test("null phaseNum + override path still best-effort: reject on 'add' returns committed false, does NOT throw (D-06)", async () => {
+    const git = scriptedGit({}, { rejectArg: "add" });
+    const res = await commitArtifacts("/repo", null, { scope: "quick", message: "docs(planning): quick x" }, git);
+    assert.equal(res.committed, false);
+    assert.match(res.warning, /git add failed/);
+  });
+});
+
+describe("commitArtifacts backward-compat: phase-tool call sites unchanged (D-12)", () => {
+  const PHASE_TOOLS = [
+    { file: "discuss.js", scope: "discuss" },
+    { file: "plan.js", scope: "plan" },
+    { file: "execute.js", scope: "execute" },
+    { file: "verify.js", scope: "verify" },
+  ];
+
+  test("each phase tool calls commitArtifacts(cwd, args.phase, { scope, phaseName }) exactly once with no message override", async () => {
+    for (const { file, scope } of PHASE_TOOLS) {
+      const src = await readLib(file);
+      const callRe = new RegExp(
+        `commitArtifacts\\(cwd, args\\.phase, \\{ scope: "${scope}", phaseName: phase\\.name \\}\\)`,
+        "g",
+      );
+      assert.equal(
+        (src.match(callRe) || []).length,
+        1,
+        `${file} must call commitArtifacts with scope "${scope}" exactly once (no message: key, one call)`,
+      );
+    }
   });
 });
