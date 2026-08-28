@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v1.7
 milestone_name: job-intel-multiwindow
-status: verify
+status: ship
 active_phase: 19
-next_action: verify-phase
+next_action: ship-phase
 next_phases: [19]
 progress:
   total_phases: 20
@@ -15,7 +15,7 @@ progress:
 current_phase: 19
 current_phase_name: codebase-intel-extensions
 current_plan: 4
-last_updated: "2026-08-28T06:04:15.159Z"
+last_updated: "2026-08-28T06:06:34.531Z"
 state_head: null
 last_activity: 2026-08-28
 stopped_at: "Phase 18 shipped — PR #21"
