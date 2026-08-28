@@ -75,3 +75,54 @@ describe("ensurePhaseBranch", () => {
     assert.match(res.warning, /git unavailable or not a repository/);
   });
 });
+
+describe("commitArtifacts", () => {
+  test("happy path stages .planning, commits with conventional message, returns staged list (OQ-5)", async () => {
+    const git = scriptedGit({
+      "add": "",
+      "diff": "a.md\nb.md",
+      "commit": "",
+    });
+    const res = await commitArtifacts("/repo", 17, { scope: "discuss", phaseName: "phase-branch-isolation" }, git);
+    assert.equal(res.committed, true);
+    assert.deepEqual(res.staged, ["a.md", "b.md"]);
+    // The wholesale stage target must be exactly ".planning".
+    assert.ok(hasCall(git.calls, "add"));
+    const addCall = git.calls.find((c) => c.includes("add"));
+    assert.deepEqual(addCall, ["add", ".planning"]);
+    const commitCall = git.calls.find((c) => c[0] === "commit");
+    assert.equal(commitCall[0], "commit");
+    assert.equal(commitCall[1], "-m");
+    assert.match(commitCall[2], /^docs\(planning\): phase 17 phase-branch-isolation discuss artefacts$/);
+  });
+
+  test("nothing staged returns committed false with a warning and issues NO commit (D-06)", async () => {
+    const git = scriptedGit({
+      "add": "",
+      "diff": "",
+    });
+    const res = await commitArtifacts("/repo", 17, { scope: "discuss", phaseName: "phase-branch-isolation" }, git);
+    assert.equal(res.committed, false);
+    assert.deepEqual(res.staged, []);
+    assert.match(res.warning, /nothing staged/);
+    assert.equal(hasCall(git.calls, "commit"), false);
+  });
+
+  test("gitFn rejects on 'add' returns committed false, does NOT throw (D-06)", async () => {
+    const git = scriptedGit({}, { rejectArg: "add" });
+    const res = await commitArtifacts("/repo", 17, { scope: "plan", phaseName: "phase-branch-isolation" }, git);
+    assert.equal(res.committed, false);
+    assert.match(res.warning, /git add failed/);
+  });
+
+  test("gitFn rejects on 'commit' returns committed false, does NOT throw (D-06)", async () => {
+    const git = scriptedGit(
+      { "add": "", "diff": "a.md" },
+      { rejectArg: "commit" }
+    );
+    const res = await commitArtifacts("/repo", 17, { scope: "verify", phaseName: "phase-branch-isolation" }, git);
+    assert.equal(res.committed, false);
+    assert.deepEqual(res.staged, ["a.md"]);
+    assert.match(res.warning, /git commit failed/);
+  });
+});
