@@ -28,7 +28,7 @@ describe("cwdOf single-source (D-03)", () => {
     const src = await readLib("core-tools.js");
     assert.match(src, /import\s*\{\s*cwdOf\s*\}\s*from\s*["']\.\/_runner\.js["']/, "cwdOf imported from ./_runner.js");
     assert.doesNotMatch(src, /exec\?\.agent\?\.session\?\.header\?\.cwd/, "no inline exec?.agent?.session?.header?.cwd expression");
-    assert.equal((src.match(/cwdOf\(exec\)/g) || []).length, 4, "all four cwd sites route through cwdOf(exec)");
+    assert.equal((src.match(/cwdOf\(exec\)/g) || []).length, 5, "all five cwd sites route through cwdOf(exec)");
   });
 
   test("discuss.js imports cwdOf from _runner.js and has no inline cwd expression", async () => {
