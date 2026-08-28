@@ -14,6 +14,7 @@ import path from "node:path";
 
 import { FakeFs } from "./helpers/fake-fs.mjs";
 import { GsdState } from "../lib/state.js";
+import { CAPABILITY_KEYS } from "../lib/_capabilities.js";
 
 const CWD = "/project";
 
@@ -91,6 +92,21 @@ function makeMountCtx(fs) {
   // capture zero commands, so fn() MUST run here.
   ctx.effect = (fn, _label) => {
     const d = fn();
+    return typeof d === "function" ? d : () => {};
+  };
+  // Per-command sub-fiber API (Plan 03 / RESEARCH 1.6): ctx.inject(injectKeys,
+  // callback) mirrors ctx.effect's synchronous behaviour. The host "commands"
+  // service is always satisfied (the fake ctx provides ctx.commands); any other
+  // key resolves only if it exists in the provided store. When every inject key
+  // resolves the sub-fiber's apply runs synchronously; when any key is missing
+  // the sub-fiber stays inactive and the callback never runs — so that command
+  // is never registered (D-12 / DEGR-03 negative contract).
+  ctx.inject = (injectKeys, callback) => {
+    const missing = (injectKeys || []).some(
+      (k) => k !== "commands" && !provided.has(k),
+    );
+    if (missing) return () => {};
+    const d = callback(ctx);
     return typeof d === "function" ? d : () => {};
   };
   return ctx;
@@ -197,6 +213,50 @@ describe("mount: all 12 plugins activate", () => {
     assert.ok(ctx.commands.length === 12, `expected 12 commands, got ${ctx.commands.length}`);
     assert.ok(ctx.sections.length === 1, `expected 1 section, got ${ctx.sections.length}`);
     assert.ok(ctx.contexts.length === 1, `expected 1 context, got ${ctx.contexts.length}`);
+
+    // DEGR-01: all 10 capability services are provided with the documented
+    // descriptor shape (D-03: key/step/role/tools/commands/order). Built from
+    // CAPABILITY_KEYS so test and source never drift (D-02 camelCase keys).
+    assert.ok(CAPABILITY_KEYS.length === 10, `expected 10 capability keys, got ${CAPABILITY_KEYS.length}`);
+    for (const key of CAPABILITY_KEYS) {
+      const cap = ctx.provided.get(key);
+      assert.ok(cap, `capability ${key} was not provided`);
+      assert.equal(cap.key, key, `${key}: descriptor key does not match ${cap.key}`);
+      assert.equal(typeof cap.step, "string", `${key}: step is not a string`);
+      assert.equal(typeof cap.role, "string", `${key}: role is not a string`);
+      assert.ok(Array.isArray(cap.tools), `${key}: tools is not an array`);
+      assert.ok(cap.tools.length > 0, `${key}: tools is empty`);
+      assert.ok(Array.isArray(cap.commands), `${key}: commands is not an array`);
+      assert.equal(typeof cap.order, "number", `${key}: order is not a number`);
+    }
+  });
+
+  test("absent capability leaves its slash command unregistered (DEGR-03)", async () => {
+    // Apply every plugin EXCEPT gsd-commands so all 10 capabilities are
+    // provided, then withdraw one capability from the provided store and apply
+    // gsd-commands: its sub-fiber for that capability must stay inactive (never
+    // register the command) while the other 11 commands register normally.
+    const ctx2 = makeMountCtx(fs);
+    for (const { id, sub } of PATCH_ROWS) {
+      if (sub === "commands") continue;
+      const mod = await import(`@dsh-gsd/bundle/${sub}`);
+      mod.apply(ctx2, {});
+    }
+    assert.ok(ctx2.provided.has("gsdQuick"), "gsdQuick capability was not provided");
+    ctx2.provided.delete("gsdQuick");
+
+    const commandsMod = await import(`@dsh-gsd/bundle/commands`);
+    commandsMod.apply(ctx2, {});
+
+    assert.ok(ctx2.commands.length === 11, `expected 11 commands, got ${ctx2.commands.length}`);
+    assert.ok(!ctx2.commands.some((c) => c.name === "gsd-quick"), "gsd-quick was registered despite gsdQuick being absent");
+    for (const expected of EXPECTED_COMMAND_NAMES) {
+      if (expected === "gsd-quick") continue;
+      assert.ok(
+        ctx2.commands.some((c) => c.name === expected),
+        `expected command ${expected} to be registered, got ${ctx2.commands.map((c) => c.name).join(", ")}`,
+      );
+    }
   });
 });
 

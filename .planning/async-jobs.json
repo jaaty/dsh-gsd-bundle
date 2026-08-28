@@ -258,5 +258,35 @@
     "started": "2026-08-28T21:49:45.382Z",
     "result": "SUMMARY written",
     "completed": "2026-08-28T21:51:54.572Z"
+  },
+  {
+    "id": "JOB-27",
+    "kind": "subagent",
+    "plan": "GSD-21-capability-services-01",
+    "phase": 21,
+    "status": "done",
+    "started": "2026-08-28T23:11:03.500Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-28T23:12:26.705Z"
+  },
+  {
+    "id": "JOB-28",
+    "kind": "subagent",
+    "plan": "GSD-21-capability-services-02",
+    "phase": 21,
+    "status": "done",
+    "started": "2026-08-28T23:12:30.753Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-28T23:15:12.043Z"
+  },
+  {
+    "id": "JOB-29",
+    "kind": "subagent",
+    "plan": "GSD-21-capability-services-04",
+    "phase": 21,
+    "status": "done",
+    "started": "2026-08-28T23:17:44.184Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-28T23:20:47.080Z"
   }
 ]
