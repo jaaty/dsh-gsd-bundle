@@ -64,3 +64,32 @@ describe("out-of-flow auto-commit: map-codebase.js routes through commitArtifact
     );
   });
 });
+
+describe("out-of-flow auto-commit: quick.js routes the record through commitArtifacts (D-11/D-12)", () => {
+  test("quick.js imports commitArtifacts from ./_git-artifacts.js", async () => {
+    const src = await readLib("quick.js");
+    assert.match(src, IMPORT_RE, "quick.js must import commitArtifacts from ./_git-artifacts.js");
+  });
+
+  test("quick.js calls commitArtifacts with the quick scope and null phaseNum exactly once", async () => {
+    const src = await readLib("quick.js");
+    const callRe = /commitArtifacts\s*\(\s*cwd,\s*null,\s*\{\s*scope:\s*"quick"/g;
+    assert.equal(
+      (src.match(callRe) || []).length,
+      1,
+      'quick.js must call commitArtifacts(cwd, null, { scope: "quick" exactly once',
+    );
+  });
+
+  test("quick.js commitArtifacts call appears AFTER the writeQuickRecord (record-then-commit ordering)", async () => {
+    const src = await readLib("quick.js");
+    const writeIdx = src.indexOf("writeQuickRecord(cwd,");
+    const commitIdx = src.indexOf('{ scope: "quick"');
+    assert.notEqual(writeIdx, -1, "quick.js must write the quick record");
+    assert.notEqual(commitIdx, -1, "quick.js must contain its commitArtifacts call");
+    assert.ok(
+      commitIdx > writeIdx,
+      `quick.js: commitArtifacts (idx ${commitIdx}) must appear AFTER the writeQuickRecord (idx ${writeIdx})`,
+    );
+  });
+});
