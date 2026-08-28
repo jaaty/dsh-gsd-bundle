@@ -7,7 +7,7 @@ import path from "node:path";
 import os from "node:os";
 import { mkdtemp, rm } from "node:fs/promises";
 
-import { GsdState } from "../lib/state.js";
+import { GsdState, resolveJobsConfig } from "../lib/state.js";
 import { resolvePlanDep } from "../lib/_shared.js";
 import { FakeFs, stateCtx, realFsAdapter } from "./helpers/fake-fs.mjs";
 import {
@@ -423,6 +423,27 @@ describe("planning artefact round-trip", () => {
     assert.equal(cfg.context_window, 200000);
     assert.equal(cfg.workflow.use_worktrees, false);
     assert.equal(cfg.workflow.commit_docs, true);
+    assert.deepEqual(cfg.jobs, { timeout: 60, concurrency: 2, max_retries: 3 });
+  });
+
+  test("resolveJobsConfig returns defaults for an empty/absent jobs block (D-09)", () => {
+    assert.deepEqual(resolveJobsConfig(undefined), { timeout: 60, concurrency: 2, max_retries: 3 });
+    assert.deepEqual(resolveJobsConfig({}), { timeout: 60, concurrency: 2, max_retries: 3 });
+    assert.deepEqual(resolveJobsConfig({ jobs: {} }), { timeout: 60, concurrency: 2, max_retries: 3 });
+  });
+
+  test("resolveJobsConfig merges a partial jobs block, keeping defaults for the rest", () => {
+    assert.deepEqual(resolveJobsConfig({ jobs: { timeout: 5 } }), { timeout: 5, concurrency: 2, max_retries: 3 });
+    assert.deepEqual(resolveJobsConfig({ jobs: { concurrency: 1 } }), { timeout: 60, concurrency: 1, max_retries: 3 });
+  });
+
+  test("resolveJobsConfig honours all three when present", () => {
+    assert.deepEqual(resolveJobsConfig({ jobs: { timeout: 120, concurrency: 4, max_retries: 7 } }), { timeout: 120, concurrency: 4, max_retries: 7 });
+  });
+
+  test("resolveJobsConfig falls back per-key for non-numeric values without throwing", () => {
+    assert.deepEqual(resolveJobsConfig({ jobs: { timeout: "fast", concurrency: NaN, max_retries: null } }), { timeout: 60, concurrency: 2, max_retries: 3 });
+    assert.deepEqual(resolveJobsConfig({ jobs: { timeout: "5", max_retries: Infinity } }), { timeout: 60, concurrency: 2, max_retries: 3 });
   });
 });
 
@@ -515,6 +536,36 @@ describe("async-jobs registry accessors (DUR-04, D-04/D-06)", () => {
     const svc = await awaitBuild(fs);
     await fs.writeText({ targetKey: `${CWD}/.planning/async-jobs.json` }, `{"not":"an array"}`);
     assert.deepEqual(await svc.readJobs(CWD), { entries: [], corrupt: true });
+  });
+
+  test("updateJob persists a structured reason object verbatim and stamps completed (D-08)", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const j1 = await svc.appendJob(CWD, { kind: "shell", status: "running" });
+    const updated = await svc.updateJob(CWD, j1.id, { status: "failed", reason: { reason: "timeout", detail: "wall-clock 60s exceeded" } });
+    assert.equal(updated.status, "failed");
+    assert.deepEqual(updated.reason, { reason: "timeout", detail: "wall-clock 60s exceeded" });
+    assert.ok(updated.completed);
+    const { entries } = await svc.readJobs(CWD);
+    assert.deepEqual(entries[0].reason, { reason: "timeout", detail: "wall-clock 60s exceeded" });
+  });
+
+  test("appendJob preserves an explicit started value instead of overwriting (OQ-5)", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const when = "2026-01-02T03:04:05.000Z";
+    const j = await svc.appendJob(CWD, { kind: "shell", status: "pending", started: when });
+    assert.equal(j.started, when);
+    const { entries } = await svc.readJobs(CWD);
+    assert.equal(entries[0].started, when);
+  });
+
+  test("appendJob with status pending and no started stamps a default started", async () => {
+    const fs = new FakeFs();
+    const svc = await awaitBuild(fs);
+    const j = await svc.appendJob(CWD, { kind: "shell", status: 'pending' });
+    assert.equal(j.status, "pending");
+    assert.ok(j.started);
   });
 });
 
