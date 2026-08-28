@@ -8,6 +8,10 @@ Discuss → (UI design, optional) → Plan → Execute → Verify → Ship
 
 Every unit of work is a **phase** that moves through these steps in order. State survives across sessions and context resets on disk under `.planning/`, with `STATE.md` as the navigation spine. Heavy work (research, planning, execution, verification) runs in **fresh-context subagents** spawned by the orchestrator, so the main session stays lean.
 
+## Release status
+
+**Milestone `job-intel-multiwindow` v1.7 is complete and released as `v1.7.0`** — all 20 phases shipped (PRs #1–#23, merged to `main`). The bundle covers the full GSD phase loop plus checkpoint-resume, the multi-window ledger and async-jobs manifest, the conversational UAT loop, capability gates, the real background-job runtime, codebase-query intel mode with drift detection / targeted updater, and phase-20 multi-window topology.
+
 ## Features
 
 - **The full GSD phase loop** as model-facing tools — `gsd_discuss` → `gsd_plan` → `gsd_execute` → `gsd_verify` → `gsd_ship`, plus `gsd_init` / `gsd_status` / `gsd_progress` / `gsd_new_milestone` for orientation and `gsd_quick` for sub-threshold tasks.
@@ -159,14 +163,14 @@ This is a faithful reimplementation of opengsd-core's **phase loop and artefact 
 - **No per-plan git worktrees.** Executors run on the shared working tree. The plan-checker's same-wave non-overlap guarantee (Dimension 3) makes the shared tree safe; the post-merge regression gate becomes a per-wave test run rather than a worktree merge.
 - **`gsd_run` is not wrapped.** The opengsd CLI query/check/state commands are reimplemented as in-process `gsdState` service methods (no separate `gsd_run` process).
 - **Capability gates** are implemented as a focused set — `security`, `broken_windows`, `tdd_audit` — run by `gsd_ship` before PR creation, with per-gate pass/fail reporting and a `skip_gates` escape hatch. The broader opengsd gate ecosystem (e.g. `ui.safety-gate`) is not ported.
-- **`gsd_map_codebase` `--query` intel mode** (the `intel.enabled` capability ecosystem — drift detection, `gsd-intel-updater`, the `query`/`status`/`diff`/`refresh` sub-commands) is **not yet implemented**. The full parallel map, `--fast` single-focus scan, and `--paths` incremental-remap scoping are all implemented; the existing-check's interactive refresh/update/skip choice is surfaced as `force` / `paths` parameters (a tool cannot hold a multi-turn interview).
+- **`gsd_map_codebase` `--query` intel mode** is implemented (the `intel.enabled` capability ecosystem — drift detection via the `.map-manifest.json`, the `gsd-intel-updater` targeted re-map, a structured answer object, and subtree `queryScope` scoping). The full parallel map, `--fast` single-focus scan, and `--paths` incremental-remap scoping are all implemented; the existing-check's interactive refresh/update/skip choice is surfaced as `force` / `paths` parameters (a tool cannot hold a multi-turn interview).
 - Slash-command-style flags (`--gaps`, `--tdd`, `--mvp`, `--no-tracer`, `--granularity`, `--wave`, `--gaps-only`) are exposed as tool parameters rather than a slash-command layer.
 
 The reference used to build this is in `gsd-core-reference.md` (compiled from the opengsd-core `next` branch).
 
 ## Status
 
-Validated: every plugin module loads and its `apply` registers its tools with valid schemas; the `cordis.patch.yml` merges cleanly over `dsh-base` and overrides the `agent-loop` row's config. A full live mount (resolving the subpath exports and activating the plugins) is verified, and the loop has been exercised end-to-end across the shipped phases (live-mount, service-tools, loop-e2e, checkpoint-resume, window-ledger, loop-robustness, uat-conversation, capability-gates, job-runtime).
+**Milestone v1.7 is complete and released** (`v1.7.0`): all 20 phases shipped — live-mount, service-tools, loop-e2e, checkpoint-resume, window-ledger, loop-robustness, uat-conversation, capability-gates, job-runtime, codebase-query, phase-dir-resolution, single-source-constants, gate-dispatch, execute-checkpoint, ship-robustness, context-budget, phase-branch-isolation, job-runtime-extensions, codebase-intel-extensions, multi-window-topology. Every plugin module loads and its `apply` registers its tools with valid schemas; the `cordis.patch.yml` merges cleanly over `dsh-base` and overrides the `agent-loop` row's config. A full live mount (resolving the subpath exports and activating the plugins) is verified, and the loop has been exercised end-to-end across the shipped phases.
 
 ## License
 

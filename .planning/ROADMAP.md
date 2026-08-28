@@ -1,5 +1,7 @@
 # Roadmap — job-intel-multiwindow (v1.7)
 
+> **Status: released.** Milestone `job-intel-multiwindow` v1.7 is complete — all 20 phases shipped (PRs #1–#23, merged to `main`) and the milestone is released as **`v1.7.0`**.
+
 20 phase(s) | requirements mapped per phase
 
 | # | Phase | Goal | Requirements |

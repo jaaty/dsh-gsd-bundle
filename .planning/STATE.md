@@ -2,7 +2,7 @@
 gsd_state_version: 1
 milestone: v1.7
 milestone_name: job-intel-multiwindow
-status: idle
+status: complete
 active_phase: null
 next_action: null
 next_phases: [20]
@@ -15,10 +15,10 @@ progress:
 current_phase: 20
 current_phase_name: multi-window-topology
 current_plan: 2
-last_updated: "2026-08-28T21:54:02.135Z"
+last_updated: "2026-08-28T21:59:24.845Z"
 state_head: null
 last_activity: 2026-08-28
-stopped_at: "Phase 20 shipped — PR #23"
+stopped_at: "Milestone v1.7 released — v1.7.0 (all 20 phases shipped)"
 paused_at: null
 ---
 # GSD STATE
@@ -100,6 +100,7 @@ _No active phase._
 - Phase 20: planned — 3 plan(s) across 2 wave(s).
 - Phase 20: plan 03 executed — UI-SPEC / codebase-map / quick auto-commit via shared commitArtifacts seam (MW-03, D-09..D-12); 335 tests green.
 - Phase 20 shipped — PR #23 (https://github.com/jaaty/dsh-gsd-bundle/pull/23)
+- Milestone v1.7 released — v1.7.0 (all 20 phases shipped) — 20/20 phases shipped, PRs #1..#23, merged to main.
 
 ### Blockers / Concerns
 _none_
