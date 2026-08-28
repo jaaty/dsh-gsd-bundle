@@ -18,6 +18,9 @@ import {
   loopSteps,
   informationEntries,
   effectiveRoutableStep,
+  renderAvailableSteps,
+  NO_LOOP_NOTICE,
+  renderNoLoopNotice,
 } from "../lib/_render.js";
 
 // Full set of all 10 descriptors, in CAPABILITY_KEYS order (frozen, like the
@@ -135,5 +138,27 @@ describe("effectiveRoutableStep (D-04/D-06/D-10)", () => {
   test("returns null when no loop step remains", () => {
     assert.equal(effectiveRoutableStep("execute-phase", NO_LOOP), null);
     assert.equal(effectiveRoutableStep("execute-phase", []), null);
+  });
+});
+
+describe("renderAvailableSteps / NO_LOOP_NOTICE (D-08/D-06)", () => {
+  test("lists loop steps ascending by order before informational entries", () => {
+    const out = renderAvailableSteps(FULL);
+    const lines = out.split("\n");
+    assert.ok(out.includes("discuss: gsdDiscuss (order 10)"));
+    assert.ok(out.includes("verify: gsdVerify (order 40)"));
+    assert.ok(out.includes("map-codebase: gsdMapCodebase"));
+    assert.ok(lines.includes("- orient: gsdOrient"));
+    assert.ok(lines.includes("- jobs: gsdJobs"));
+    // discuss precedes verify (order 10 before 40).
+    assert.ok(lines.indexOf(lines.find((l) => l.startsWith("- discuss:"))) < lines.indexOf(lines.find((l) => l.startsWith("- verify:"))));
+  });
+
+  test("zero-loop sets render the no-loop notice and do not throw", () => {
+    const out = renderAvailableSteps(NO_LOOP);
+    assert.ok(out.includes(`- ${NO_LOOP_NOTICE}`));
+    assert.equal(renderAvailableSteps([]), `- ${NO_LOOP_NOTICE}`);
+    assert.equal(renderNoLoopNotice(), NO_LOOP_NOTICE);
+    assert.equal(NO_LOOP_NOTICE, "no available loop step");
   });
 });
