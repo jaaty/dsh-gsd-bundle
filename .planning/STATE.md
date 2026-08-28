@@ -1,21 +1,21 @@
 ---
 gsd_state_version: 1
-milestone: v1.6
-milestone_name: code-quality-hardening
-status: idle
-active_phase: null
-next_action: null
-next_phases: [17]
+milestone: v1.7
+milestone_name: job-intel-multiwindow
+status: ship
+active_phase: 18
+next_action: ship-phase
+next_phases: [18]
 progress:
-  total_phases: 17
+  total_phases: 20
   completed_phases: 17
   total_plans: 3
-  completed_plans: 40
-  percent: 100
-current_phase: 17
-current_phase_name: phase-branch-isolation
+  completed_plans: 43
+  percent: 85
+current_phase: 18
+current_phase_name: job-runtime-extensions
 current_plan: 3
-last_updated: "2026-08-28T04:48:53.378Z"
+last_updated: "2026-08-28T05:30:29.653Z"
 state_head: null
 last_activity: 2026-08-28
 stopped_at: "Phase 17 shipped — PR #20"
@@ -90,6 +90,8 @@ _No active phase._
 - Phase 17: CONTEXT.md sealed — 10 decisions
 - Phase 17: planned — 3 plan(s) across 2 wave(s).
 - Phase 17 shipped — PR #20 (https://github.com/jaaty/dsh-gsd-bundle/pull/20)
+- Phase 18: CONTEXT.md sealed — 9 decisions
+- Phase 18: planned — 3 plan(s) across 3 wave(s).
 
 ### Blockers / Concerns
 _none_

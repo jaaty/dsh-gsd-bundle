@@ -1,6 +1,6 @@
-# Roadmap — code-quality-hardening (v1.6)
+# Roadmap — job-intel-multiwindow (v1.7)
 
-17 phase(s) | requirements mapped per phase
+20 phase(s) | requirements mapped per phase
 
 | # | Phase | Goal | Requirements |
 |---|-------|------|--------------|
@@ -21,6 +21,9 @@
 | 15 | [x] ship-robustness | Make git/gh calls async and report preflight failures with their real cause. | CQ-05 |
 | 16 | [x] context-budget | Give planningContext a total truncation budget and surface truncation, plus small dedup fixes. | CQ-06 |
 | 17 | [x] phase-branch-isolation | Acquire a per-phase feature branch at gsd_discuss and have each phase tool commit its planning artefacts, so gsd_ship preflight passes on a clean feature branch. | CQ-07 |
+| 18 | job-runtime-extensions | Extend the background-job runtime to launch subagent jobs, enforce timeouts/cancellation, expose a gsd_job launch tool, and support retry/queueing. | JOBX-01 … JOBX-02 … JOBX-03 … JOBX-04 |
+| 19 | codebase-intel-extensions | Extend gsd_map_codebase with drift detection, targeted re-map/updater, a structured answer object, and subtree query scoping. | CBQX-01 … CBQX-02 … CBQX-03 … CBQX-04 |
+| 20 | multi-window-topology | Support concurrent multi-window phases on a shared base branch with a merge topology, earlier phase-branch push, and auto-commit of out-of-flow artefacts. | MW-01 … MW-02 … MW-03 |
 
 ## Progress
 
@@ -43,3 +46,6 @@
 | 15 | ship-robustness | [x] Complete | 2026-08-28 |
 | 16 | context-budget | [x] Complete | 2026-08-28 |
 | 17 | phase-branch-isolation | [x] Complete | 2026-08-28 |
+| 18 | job-runtime-extensions | pending |  |
+| 19 | codebase-intel-extensions | pending |  |
+| 20 | multi-window-topology | pending |  |

@@ -168,5 +168,35 @@
     "started": "2026-08-28T04:46:05.241Z",
     "result": "SUMMARY written",
     "completed": "2026-08-28T04:46:56.826Z"
+  },
+  {
+    "id": "JOB-18",
+    "kind": "subagent",
+    "plan": "GSD-18-job-runtime-extensions-01",
+    "phase": 18,
+    "status": "done",
+    "started": "2026-08-28T05:14:27.761Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-28T05:15:55.149Z"
+  },
+  {
+    "id": "JOB-19",
+    "kind": "subagent",
+    "plan": "GSD-18-job-runtime-extensions-02",
+    "phase": 18,
+    "status": "done",
+    "started": "2026-08-28T05:16:15.427Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-28T05:21:12.638Z"
+  },
+  {
+    "id": "JOB-20",
+    "kind": "subagent",
+    "plan": "GSD-18-job-runtime-extensions-03",
+    "phase": 18,
+    "status": "done",
+    "started": "2026-08-28T05:21:18.463Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-28T05:26:49.099Z"
   }
 ]
