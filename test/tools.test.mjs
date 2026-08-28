@@ -829,6 +829,22 @@ describe("gsd_map_codebase", () => {
     assert.doesNotMatch(res, /missing documents/);
   });
 
+  test("full mode with force=true writes a content-hashed .map-manifest.json", async () => {
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ force: true }, exec);
+    const key = `${CWD}/.planning/codebase/.map-manifest.json`;
+    assert(fs.files.has(key), ".map-manifest.json should be written after a force mapping");
+    const manifest = JSON.parse(fs.files.get(key));
+    assert.ok(Array.isArray(manifest), "manifest should be an array of records");
+    assert.ok(manifest.length > 0, "manifest should not be empty");
+    for (const rec of manifest) {
+      assert.equal(typeof rec.path, "string");
+      assert.equal(typeof rec.size, "number");
+      assert.equal(typeof rec.hash, "string");
+    }
+  });
+
   test("fast mode focus arch writes only ARCHITECTURE.md and STRUCTURE.md", async () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ fast: true, focus: "arch", force: true }, exec);
