@@ -11,16 +11,21 @@ import { ensurePhaseBranch, commitArtifacts } from "../lib/_git-artifacts.js";
 const readLib = (file) => readFile(new URL(`../lib/${file}`, import.meta.url), "utf8");
 
 // Build a scripted fake gitFn that records every args array it is called with.
-// `responses` maps the first argv (e.g. "rev-parse") to canned stdout; when the
-// first argv is not in responses (or `rejectAll` is true) the call rejects.
+// `responses` maps either the full args joined by space (first-class) or the
+// first argv (e.g. "rev-parse") to canned stdout — the full-args key is checked
+// first so the two distinct show-ref probes (refs/heads/phase-7 vs
+// refs/remotes/origin/phase-7) can be scripted independently; when neither key
+// is present (or `rejectAll` is true) the call rejects.
 function scriptedGit(responses = {}, { rejectAll = false, rejectArg } = {}) {
   const calls = [];
   const fn = async (_cwd, args) => {
     calls.push([...args]);
     if (rejectAll) throw new Error("git unavailable");
     if (rejectArg && rejectArg === args[0]) throw new Error(`${args[0]} failed`);
+    const joined = args.join(" ");
+    if (Object.prototype.hasOwnProperty.call(responses, joined)) return responses[joined];
     const out = responses[args[0]];
-    if (out === undefined) throw new Error(`unexpected git call: ${args.join(" ")}`);
+    if (out === undefined) throw new Error(`unexpected git call: ${joined}`);
     return out;
   };
   fn.calls = calls;
@@ -79,6 +84,44 @@ describe("ensurePhaseBranch", () => {
   });
 
   test("on an unrelated feature branch 'foo' throws, mentioning the branch (D-01, D-05)", async () => {
+    const git = scriptedGit({ "rev-parse": "foo", "symbolic-ref": "origin/main" });
+    await assert.rejects(
+      ensurePhaseBranch("/repo", 7, git),
+      /"foo"/
+    );
+  });
+
+  test("phase-7 exists locally: joins via git checkout phase-7, returns 'joined-local' (D-03)", async () => {
+    const git = scriptedGit({
+      "rev-parse": "main",
+      "symbolic-ref": "origin/main",
+      "show-ref --verify --quiet refs/heads/phase-7": "refs/heads/phase-7",
+      "checkout phase-7": "",
+      "push -u origin phase-7": "up to date",
+    });
+    const res = await ensurePhaseBranch("/repo", 7, git);
+    assert.equal(res.action, "joined-local");
+    assert.equal(res.branch, "phase-7");
+    assert.equal(res.defaultBranch, "main");
+    const co = git.calls.find((c) => c[0] === "checkout");
+    assert.deepEqual(co, ["checkout", "phase-7"], "local join checks out the bare branch, no -b");
+    assert.equal(hasCall(git.calls, "-b"), false, "join must not fork with checkout -b");
+    assert.ok(hasCall(git.calls, "push"), "early push must fire on joined-local");
+  });
+
+  test("phase-7 exists locally while on unrelated branch 'foo': joins, does NOT throw (OQ-2)", async () => {
+    const git = scriptedGit({
+      "rev-parse": "foo",
+      "symbolic-ref": "origin/main",
+      "show-ref --verify --quiet refs/heads/phase-7": "refs/heads/phase-7",
+      "checkout phase-7": "",
+      "push -u origin phase-7": "up to date",
+    });
+    const res = await ensurePhaseBranch("/repo", 7, git);
+    assert.equal(res.action, "joined-local");
+  });
+
+  test("new phase from an unrelated branch 'foo' with no existing phase-N still throws (D-08 create-path guard)", async () => {
     const git = scriptedGit({ "rev-parse": "foo", "symbolic-ref": "origin/main" });
     await assert.rejects(
       ensurePhaseBranch("/repo", 7, git),
