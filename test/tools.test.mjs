@@ -30,6 +30,9 @@ let EXEC_CHECKPOINT_MODE = false;
 // When true, the fake codebase-query subagent returns empty output with a
 // "failed" stopReason (query-mode failure-path test).
 let QUERY_FAIL_MODE = false;
+// When true, the fake codebase-query subagent returns non-empty plain text but
+// NO structured output (query-mode R-4 fallback-path test).
+let QUERY_PLAIN_MODE = false;
 
 // A two-task plan so a checkpoint at task 1 is in-range (1 < task_count=2).
 const PLAN_2_TASKS = `---
@@ -158,8 +161,12 @@ function makeSubagents() {
         if (QUERY_FAIL_MODE) {
           text = "";
           stopReason = "failed";
+        } else if (QUERY_PLAIN_MODE) {
+          // non-empty plain text but NO structured output (R-4 fallback path)
+          text = "plain answer";
         } else {
           text = "The auth flow uses JWT via lib/auth.js.\n\nSources:\n- ARCHITECTURE.md (map)\n- lib/auth.js (codebase)";
+          structured = { answer: "The auth flow uses JWT via lib/auth.js.", sources: [{ kind: "map", path: "ARCHITECTURE.md" }, { kind: "codebase", path: "lib/auth.js" }], confidence: 0.9 };
         }
       }
       return { result: { output: [{ type: "text", text }], stopReason, structured }, dispose: () => {} };
@@ -961,6 +968,39 @@ describe("gsd_map_codebase", () => {
     assert.match(renderResult(res), /Sources/);
     assert.match(renderResult(res), /ARCHITECTURE\.md/);
     assert.equal([...fs.files.keys()].filter((k) => k.startsWith(`${CWD}/.planning/codebase/`)).length, 1);
+  });
+
+  test("query mode returns a structured answer object {answer, sources, confidence} (CBQX-03)", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ query: "How is auth handled?" }, exec);
+    assert.equal(res.kind, "answer");
+    assert.match(res.answer, /JWT/);
+    assert.equal(res.sources.length, 2, "structured sources should be carried through");
+    assert.equal(res.sources[0].kind, "map");
+    assert.equal(res.sources[0].path, "ARCHITECTURE.md");
+    assert.equal(res.sources[1].kind, "codebase");
+    assert.equal(res.sources[1].path, "lib/auth.js");
+    assert.equal(res.confidence, 0.9);
+    // the rendered text is still readable and cites the sources
+    assert.match(renderResult(res), /Sources/);
+    assert.match(renderResult(res), /- map: `ARCHITECTURE\.md`/);
+  });
+
+  test("query mode falls back to a valid answer object when structured output is missing (R-4)", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
+    QUERY_PLAIN_MODE = true;
+    try {
+      const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+      const res = await t.execute({ query: "q" }, exec);
+      assert.equal(res.kind, "answer");
+      assert.match(res.answer, /plain answer/);
+      assert.deepEqual(res.sources, [], "no structured output => empty sources");
+      assert.equal(res.confidence, 0, "no structured output => confidence 0");
+      assert.ok(Number.isFinite(res.confidence), "confidence must never be NaN");
+    } finally {
+      QUERY_PLAIN_MODE = false;
+    }
   });
 
   test("query mode with no map returns a notice and never throws", async () => {
