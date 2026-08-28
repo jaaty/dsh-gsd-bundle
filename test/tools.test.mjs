@@ -870,6 +870,30 @@ describe("gsd_map_codebase", () => {
     assert.doesNotMatch(res, /Codebase mapping complete/);
   });
 
+  test("existing map with a drifted tree reports a drift summary (added)", async () => {
+    // first force-map to persist a manifest reflecting the current tree
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ force: true }, exec);
+    // drift: add a new file under src/
+    await fs.writeText({ targetKey: `${CWD}/src/new.js` }, "// new\n");
+    const res = await t.execute({}, exec);
+    assert.match(res, /already exists/);
+    assert.match(res, /Drift detected/);
+    assert.match(res, /added/);
+    assert.match(res, /src\/new\.js/);
+    assert.doesNotMatch(res, /Codebase mapping complete/);
+  });
+
+  test("existing map with an unchanged tree returns no drift summary", async () => {
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ force: true }, exec); // persists a manifest
+    const res = await t.execute({}, exec);  // unchanged tree
+    assert.match(res, /already exists/);
+    assert.doesNotMatch(res, /Drift detected/);
+  });
+
   test("force=true refreshes an existing map", async () => {
     await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old\n");
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
