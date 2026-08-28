@@ -3,7 +3,7 @@
 // Proves the 12 cordis.patch.yml plugin rows activate inside a fake DSH host:
 // each subpath export resolves, apply() runs against one shared fake ctx, and
 // the full registration surface is captured (1 persona section, 1 runtime-
-// context provider, gsdState service, 12 gsd_* tools, 12 /gsd-* commands).
+// context provider, gsdState service, 13 gsd_* tools, 12 /gsd-* commands).
 // Offline only (D-01/D-02): FakeFs + fake-ctx, no live DSH boot, no LLM/git/gh.
 
 import { test, describe, beforeEach } from "node:test";
@@ -167,12 +167,12 @@ const EXPECTED_INSERT_ROWS = PATCH_ROWS.map(({ id, sub }) => ({
   spec: `@dsh-gsd/bundle/${sub}`,
 }));
 
-// Expected registered tool names (12) — verified against the real modules.
+// Expected registered tool names (13) — verified against the real modules.
 const EXPECTED_TOOL_NAMES = [
   "gsd_init", "gsd_status", "gsd_progress", "gsd_new_milestone",
   "gsd_discuss", "gsd_plan", "gsd_execute", "gsd_verify",
   "gsd_ship", "gsd_ui_phase", "gsd_quick", "gsd_map_codebase",
-  "gsd_job",
+  "gsd_job", "gsd_intel_updater",
 ];
 
 // Expected registered command names (12) — from lib/commands.js:35-161 (D-03).
@@ -193,7 +193,7 @@ describe("mount: all 12 plugins activate", () => {
     await applyAll(ctx);
     assert.ok(ctx.provided.has("gsdState"), "gsdState service was not provided");
     assert.ok(ctx.provided.get("gsdState") instanceof GsdState, "gsdState is not a GsdState instance");
-    assert.ok(ctx.tools.length === 13, `expected 13 tools, got ${ctx.tools.length}`);
+    assert.ok(ctx.tools.length === 14, `expected 14 tools, got ${ctx.tools.length}`);
     assert.ok(ctx.commands.length === 12, `expected 12 commands, got ${ctx.commands.length}`);
     assert.ok(ctx.sections.length === 1, `expected 1 section, got ${ctx.sections.length}`);
     assert.ok(ctx.contexts.length === 1, `expected 1 context, got ${ctx.contexts.length}`);
@@ -232,7 +232,7 @@ describe("mount: cordis.patch.yml rows resolve", () => {
       assert.equal(typeof mod.apply, "function", `${id}: apply is not a function`);
     }
 
-    // Cross-check captured tool names against the expected 12.
+    // Cross-check captured tool names against the expected 13.
     const fs = new FakeFs();
     const ctx = makeMountCtx(fs);
     await applyAll(ctx);
@@ -311,10 +311,10 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
     assert.match(out, /no \.planning\/ project found/);
   });
 
-  test("all 13 registered tools have a valid compiled schema", () => {
+  test("all 14 registered tools have a valid compiled schema", () => {
     // apply() not throwing already proves defineTool compiled the schema (D-04);
     // assert the shape explicitly for every tool.
-    assert.equal(ctx.tools.length, 13);
+    assert.equal(ctx.tools.length, 14);
     for (const t of ctx.tools) {
       assert.equal(typeof t.name, "string", `${t.name}: name is not a string`);
       assert.equal(typeof t.description, "string", `${t.name}: description is not a string`);

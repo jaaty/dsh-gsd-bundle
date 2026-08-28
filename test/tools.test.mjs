@@ -26,6 +26,9 @@ const executeCaptured = [];
 // Captured query-mode subagent prompt texts (queryScope scoping test asserts on
 // the injected scope line while confirming the map docs still load in full).
 const queryCaptured = [];
+// Captured gsd-intel-updater subagent prompt texts (auto-detect test asserts the
+// auto-detected drifted path reached the updater).
+const updaterCaptured = [];
 // When true, the fake executor stops at a checkpoint (returns structured
 // checkpoint state, writes no SUMMARY). When false it completes normally.
 // On a resume run (a CHECKPOINT artefact already exists) it always completes.
@@ -143,6 +146,7 @@ function makeSubagents() {
       } else if (label.startsWith("plan research")) {
         text = "# RESEARCH\n\n## Open Questions\n\n- none (RESOLVED)\n\nStandard.";
       } else if (label === "gsd-intel-updater") {
+        updaterCaptured.push(req.prompt[0]?.text || "");
         // Fake gsd-intel-updater: parse the "Affected documents:" lines from
         // the prompt, rewrite each named .md doc with new >20-line content, and
         // leave every other codebase doc byte-identical. Mirrors the real
@@ -1123,6 +1127,23 @@ describe("gsd_map_codebase", () => {
     const res = await t.execute({ paths: ["src/lib/auth.ts"] }, exec);
     assert.equal(res.kind, "notice");
     assert.match(renderResult(res), /No affected map documents to update/);
+  });
+
+  test("gsd_intel_updater auto-detects drifted paths from the manifest (D-04)", async () => {
+    // seed a map doc and a manifest whose recorded state predates a newer file
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old STACK\n");
+    await svc.writeCodebaseManifest(CWD, [{ path: "src/lib/auth.ts", size: 1, hash: "abc" }]);
+    await fs.writeText({ targetKey: `${CWD}/src/lib/auth.ts` }, "export const auth = 1;\n");
+    updaterCaptured.length = 0;
+    const { t } = await registerTool("map-codebase", "gsd_intel_updater");
+    const res = await t.execute({}, exec);
+    assert.equal(res.kind, "updater", "auto-detect should find drift and run the updater");
+    // the affected STACK.md was rewritten by the fake updater (proves auto-detect
+    // mapped the drifted src/lib/auth.ts to STACK)
+    assert.match(fs.files.get(`${CWD}/.planning/codebase/STACK.md`), /updated finding/);
+    // the auto-detected drifted path reached the updater subagent's prompt
+    assert.equal(updaterCaptured.length, 1, "exactly one updater prompt should have been captured");
+    assert.match(updaterCaptured[0], /src\/lib\/auth\.ts/);
   });
 
   test("query arg is present in the compiled schema", async () => {
