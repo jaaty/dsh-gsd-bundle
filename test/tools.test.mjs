@@ -1157,9 +1157,17 @@ describe("gsd_map_codebase", () => {
 
   test("slash command --query builds a tool call with the query string", async () => {
     const registered = [];
+    const provided = new Map([["gsdMapCodebase", { key: "gsdMapCodebase" }]]);
     const c = {
-      effect: (fn) => fn(),
       commands: { register: (cmd) => { registered.push(cmd); return () => {}; } },
+      // Presence-gated per-command sub-fiber API (Plan 03): "commands" is always
+      // satisfied; the capability key resolves only if provided.
+      inject: (keys, callback) => {
+        const missing = keys.some((k) => k !== "commands" && !provided.has(k));
+        if (missing) return () => {};
+        const d = callback(c);
+        return typeof d === "function" ? d : () => {};
+      },
     };
     applyCommands(c, {});
     const cmd = registered.find((x) => x.name === "gsd-map-codebase");
