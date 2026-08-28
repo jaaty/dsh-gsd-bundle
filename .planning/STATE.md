@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v2.0
 milestone_name: graceful-removal
-status: plan
+status: execute
 active_phase: 21
-next_action: plan-phase
+next_action: execute-phase
 next_phases: [21]
 progress:
   total_phases: 24
@@ -15,7 +15,7 @@ progress:
 current_phase: 21
 current_phase_name: capability-services
 current_plan: 2
-last_updated: "2026-08-28T22:56:12.356Z"
+last_updated: "2026-08-28T23:10:09.400Z"
 state_head: null
 last_activity: 2026-08-28
 stopped_at: "Milestone v1.7 released — v1.7.0 (all 20 phases shipped)"
@@ -106,6 +106,7 @@ _No active phase._
 - If gh CLI is unavailable or unauthenticated, create the tag and push it, and report the gh release step as a warning with the real cause — do not silently skip or fake it.
 - The working tree must be left clean on main with the v1.7.0 tag pointing at the release commit.
 - Phase 21: CONTEXT.md sealed — 12 decisions
+- Phase 21: planned — 4 plan(s) across 3 wave(s).
 
 ### Blockers / Concerns
 _none_
