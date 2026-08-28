@@ -1,8 +1,6 @@
-# Roadmap — job-intel-multiwindow (v1.7)
+# Roadmap — graceful-removal (v2.0)
 
-> **Status: released.** Milestone `job-intel-multiwindow` v1.7 is complete — all 20 phases shipped (PRs #1–#23, merged to `main`) and the milestone is released as **`v1.7.0`**.
-
-20 phase(s) | requirements mapped per phase
+24 phase(s) | requirements mapped per phase
 
 | # | Phase | Goal | Requirements |
 |---|-------|------|--------------|
@@ -26,6 +24,10 @@
 | 18 | [x] job-runtime-extensions | Extend the background-job runtime to launch subagent jobs, enforce timeouts/cancellation, expose a gsd_job launch tool, and support retry/queueing. | JOBX-01 … JOBX-02 … JOBX-03 … JOBX-04 |
 | 19 | [x] codebase-intel-extensions | Extend gsd_map_codebase with drift detection, targeted re-map/updater, a structured answer object, and subtree query scoping. | CBQX-01 … CBQX-02 … CBQX-03 … CBQX-04 |
 | 20 | [x] multi-window-topology | Support concurrent multi-window phases on a shared base branch with a merge topology, earlier phase-branch push, and auto-commit of out-of-flow artefacts. | MW-01 … MW-02 … MW-03 |
+| 21 | capability-services | Each step plugin publishes a capability service declaring the loop step it provides, and the persona and slash-command layer declare coeffects on the capabilities they need. | DEGR-01 … DEGR-03 |
+| 22 | reactive-loop-rendering | Re-render the persona, runtime-context snapshot, and gsd_status from the available step capabilities so absent steps are skipped and no missing tool is ever instructed. | DEGR-02 … DEGR-04 |
+| 23 | removal-verification | Add an automated per-plugin removal test proving every single step plugin can be retired with its effects reverted and the remaining loop still functional end-to-end. | DEGR-05 |
+| 24 | composability-hardening | Effect-scope the background-job live registry to its owning fiber and declare the subagents coeffect in every consuming plugin so temporal and spatial composability hold for the job runtime and subagent paths. | DEGR-06 … DEGR-07 |
 
 ## Progress
 
@@ -51,3 +53,7 @@
 | 18 | job-runtime-extensions | [x] Complete | 2026-08-28 |
 | 19 | codebase-intel-extensions | [x] Complete | 2026-08-28 |
 | 20 | multi-window-topology | [x] Complete | 2026-08-28 |
+| 21 | capability-services | pending |  |
+| 22 | reactive-loop-rendering | pending |  |
+| 23 | removal-verification | pending |  |
+| 24 | composability-hardening | pending |  |
