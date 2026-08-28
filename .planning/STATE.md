@@ -107,6 +107,7 @@ _No active phase._
 - The working tree must be left clean on main with the v1.7.0 tag pointing at the release commit.
 - Phase 21: CONTEXT.md sealed — 12 decisions
 - Phase 21: planned — 4 plan(s) across 3 wave(s).
+- Phase 21: plan 01 executed — capability descriptor module (D-05/D-03/D-04/D-10/D-11); 349 tests green.
 
 ### Blockers / Concerns
 _none_
