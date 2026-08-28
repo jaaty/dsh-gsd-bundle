@@ -820,13 +820,17 @@ describe("gsd_map_codebase", () => {
 
   const DOCS = ["STACK", "INTEGRATIONS", "ARCHITECTURE", "STRUCTURE", "CONVENTIONS", "TESTING", "CONCERNS"];
 
+  // The tool now returns a structured object on every path (CBQX-03/D-06);
+  // tests assert on its rendered text via this helper.
+  const renderResult = (res) => (res && typeof res === "object" && typeof res.text === "string") ? res.text : String(res);
+
   test("full mode spawns 4 mappers and writes all 7 documents", async () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ force: true }, exec);
-    assert.match(res, /Codebase mapping complete/);
+    assert.match(renderResult(res), /Codebase mapping complete/);
     for (const d of DOCS) assert(fs.files.has(`${CWD}/.planning/codebase/${d}.md`), `${d}.md should be written`);
-    assert.doesNotMatch(res, /thin documents/);
-    assert.doesNotMatch(res, /missing documents/);
+    assert.doesNotMatch(renderResult(res), /thin documents/);
+    assert.doesNotMatch(renderResult(res), /missing documents/);
   });
 
   test("full mode with force=true writes a content-hashed .map-manifest.json", async () => {
@@ -848,7 +852,7 @@ describe("gsd_map_codebase", () => {
   test("fast mode focus arch writes only ARCHITECTURE.md and STRUCTURE.md", async () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ fast: true, focus: "arch", force: true }, exec);
-    assert.match(res, /Codebase mapping complete/);
+    assert.match(renderResult(res), /Codebase mapping complete/);
     assert(fs.files.has(`${CWD}/.planning/codebase/ARCHITECTURE.md`));
     assert(fs.files.has(`${CWD}/.planning/codebase/STRUCTURE.md`));
     assert(!fs.files.has(`${CWD}/.planning/codebase/STACK.md`), "tech docs must not be written in fast arch mode");
@@ -865,9 +869,9 @@ describe("gsd_map_codebase", () => {
     await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old\n");
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({}, exec);
-    assert.match(res, /already exists/);
-    assert.match(res, /STACK\.md/);
-    assert.doesNotMatch(res, /Codebase mapping complete/);
+    assert.match(renderResult(res), /already exists/);
+    assert.match(renderResult(res), /STACK\.md/);
+    assert.doesNotMatch(renderResult(res), /Codebase mapping complete/);
   });
 
   test("existing map with a drifted tree reports a drift summary (added)", async () => {
@@ -878,11 +882,11 @@ describe("gsd_map_codebase", () => {
     // drift: add a new file under src/
     await fs.writeText({ targetKey: `${CWD}/src/new.js` }, "// new\n");
     const res = await t.execute({}, exec);
-    assert.match(res, /already exists/);
-    assert.match(res, /Drift detected/);
-    assert.match(res, /added/);
-    assert.match(res, /src\/new\.js/);
-    assert.doesNotMatch(res, /Codebase mapping complete/);
+    assert.match(renderResult(res), /already exists/);
+    assert.match(renderResult(res), /Drift detected/);
+    assert.match(renderResult(res), /added/);
+    assert.match(renderResult(res), /src\/new\.js/);
+    assert.doesNotMatch(renderResult(res), /Codebase mapping complete/);
   });
 
   test("existing map with an unchanged tree returns no drift summary", async () => {
@@ -890,15 +894,15 @@ describe("gsd_map_codebase", () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     await t.execute({ force: true }, exec); // persists a manifest
     const res = await t.execute({}, exec);  // unchanged tree
-    assert.match(res, /already exists/);
-    assert.doesNotMatch(res, /Drift detected/);
+    assert.match(renderResult(res), /already exists/);
+    assert.doesNotMatch(renderResult(res), /Drift detected/);
   });
 
   test("force=true refreshes an existing map", async () => {
     await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old\n");
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ force: true }, exec);
-    assert.match(res, /Codebase mapping complete/);
+    assert.match(renderResult(res), /Codebase mapping complete/);
     for (const d of DOCS) assert(fs.files.has(`${CWD}/.planning/codebase/${d}.md`));
   });
 
@@ -906,7 +910,7 @@ describe("gsd_map_codebase", () => {
     await fs.writeText({ targetKey: `${CWD}/.planning/codebase/STACK.md` }, "# old\n");
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ paths: ["lib/"] }, exec);
-    assert.match(res, /Codebase mapping complete/);
+    assert.match(renderResult(res), /Codebase mapping complete/);
   });
 
   test("fast mode focus arch writes the drift manifest", async () => {
@@ -944,7 +948,7 @@ describe("gsd_map_codebase", () => {
   test("rejects forbidden path scope values and falls back to whole-repo", async () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ paths: ["../escape", "/abs", "lib/;rm"] }, exec);
-    assert.match(res, /Codebase mapping complete/);
+    assert.match(renderResult(res), /Codebase mapping complete/);
     // all forbidden -> whole repo -> all 7 docs
     for (const d of DOCS) assert(fs.files.has(`${CWD}/.planning/codebase/${d}.md`));
   });
@@ -953,16 +957,16 @@ describe("gsd_map_codebase", () => {
     await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ query: "How is auth handled?" }, exec);
-    assert.match(res, /JWT/);
-    assert.match(res, /Sources/);
-    assert.match(res, /ARCHITECTURE\.md/);
+    assert.match(renderResult(res), /JWT/);
+    assert.match(renderResult(res), /Sources/);
+    assert.match(renderResult(res), /ARCHITECTURE\.md/);
     assert.equal([...fs.files.keys()].filter((k) => k.startsWith(`${CWD}/.planning/codebase/`)).length, 1);
   });
 
   test("query mode with no map returns a notice and never throws", async () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ query: "q" }, exec);
-    assert.match(res, /No .planning\/codebase\/ map exists yet/);
+    assert.match(renderResult(res), /No .planning\/codebase\/ map exists yet/);
     await assert.doesNotReject(() => t.execute({ query: "q" }, exec));
   });
 
@@ -972,7 +976,7 @@ describe("gsd_map_codebase", () => {
     QUERY_FAIL_MODE = true;
     try {
       const res = await t.execute({ query: "q" }, exec);
-      assert.match(res, /query failed/);
+      assert.match(renderResult(res), /query failed/);
       await assert.doesNotReject(() => t.execute({ query: "q" }, exec));
     } finally {
       QUERY_FAIL_MODE = false;
@@ -983,16 +987,16 @@ describe("gsd_map_codebase", () => {
     await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n");
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ query: "q", fast: true, focus: "arch", paths: ["lib/"], force: true }, exec);
-    assert.match(res, /JWT/);
+    assert.match(renderResult(res), /JWT/);
     assert.equal([...fs.files.keys()].filter((k) => k.startsWith(`${CWD}/.planning/codebase/`)).length, 1);
   });
 
   test("empty or whitespace query falls through to full mapping", async () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ query: "   " }, exec);
-    assert.doesNotMatch(res, /JWT/);
-    assert.doesNotMatch(res, /No .planning\/codebase\/ map exists yet/);
-    assert.match(res, /Codebase mapping complete/);
+    assert.doesNotMatch(renderResult(res), /JWT/);
+    assert.doesNotMatch(renderResult(res), /No .planning\/codebase\/ map exists yet/);
+    assert.match(renderResult(res), /Codebase mapping complete/);
   });
 
   test("query arg is present in the compiled schema", async () => {
