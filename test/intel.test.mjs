@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 
 import {
   buildManifest, compareManifest, clampConfidence,
-  IGNORE_PREFIXES, IGNORE_LOCKFILES,
+  changedFilesToDocs, IGNORE_PREFIXES, IGNORE_LOCKFILES,
 } from "../lib/_intel.js";
 
 describe("buildManifest", () => {
@@ -126,6 +126,42 @@ describe("clampConfidence", () => {
     assert.equal(clampConfidence(NaN), 0);
     assert.equal(clampConfidence(Infinity), 0);
     assert.equal(clampConfidence("high"), 0);
+  });
+});
+
+describe("changedFilesToDocs", () => {
+  test("src/lib/auth.ts yields STACK, ARCHITECTURE, STRUCTURE, CONVENTIONS", () => {
+    const docs = changedFilesToDocs(["src/lib/auth.ts"]);
+    assert.deepEqual(docs, ["ARCHITECTURE", "CONVENTIONS", "STACK", "STRUCTURE"]);
+  });
+
+  test("test/auth.test.ts yields TESTING plus the code rule docs", () => {
+    const docs = changedFilesToDocs(["test/auth.test.ts"]);
+    assert.ok(docs.includes("TESTING"));
+    assert.ok(docs.includes("STRUCTURE"));
+    assert.ok(docs.includes("CONVENTIONS"));
+  });
+
+  test("package.json yields STACK", () => {
+    assert.deepEqual(changedFilesToDocs(["package.json"]), ["STACK"]);
+  });
+
+  test("overlapping rules are deduped (src/app.ts -> one occurrence of each doc)", () => {
+    const docs = changedFilesToDocs(["src/app.ts"]);
+    // both the src/** rule and the .ts rule match src/app.ts
+    assert.deepEqual(docs, ["ARCHITECTURE", "CONVENTIONS", "STACK", "STRUCTURE"]);
+  });
+
+  test("config/docker/github files map to their docs", () => {
+    assert.deepEqual(changedFilesToDocs(["Dockerfile"]), ["INTEGRATIONS"]);
+    assert.deepEqual(changedFilesToDocs([".github/workflows/ci.yml"]), ["INTEGRATIONS"]);
+    assert.deepEqual(changedFilesToDocs(["db/migrations/001.sql"]), ["ARCHITECTURE"]);
+    assert.deepEqual(changedFilesToDocs(["README.md"]), ["CONVENTIONS"]);
+  });
+
+  test("empty input yields empty set", () => {
+    assert.deepEqual(changedFilesToDocs([]), []);
+    assert.deepEqual(changedFilesToDocs(undefined), []);
   });
 });
 
