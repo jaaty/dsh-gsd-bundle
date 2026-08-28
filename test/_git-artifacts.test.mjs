@@ -45,22 +45,37 @@ describe("ensurePhaseBranch", () => {
       "rev-parse": "main",
       "symbolic-ref": "origin/main",
       "checkout": "",
+      "push": "up to date",
     });
     const res = await ensurePhaseBranch("/repo", 7, git);
     assert.equal(res.action, "created");
     assert.equal(res.branch, "phase-7");
-    assert.deepEqual(git.calls.at(-1), ["checkout", "-b", "phase-7"]);
+    assert.ok(hasCall(git.calls, "-b"), "checkout -b must be issued");
+    assert.ok(hasCall(git.calls, "push"), "early push must be issued on create");
+    assert.equal(res.push.ok, true);
   });
 
   test("on main with no origin/HEAD falls back to 'main' and still creates phase-7 (D-02)", async () => {
     const git = scriptedGit(
-      { "rev-parse": "main", "checkout": "" },
+      { "rev-parse": "main", "checkout": "", "push": "up to date" },
       { rejectArg: "symbolic-ref" }
     );
     const res = await ensurePhaseBranch("/repo", 7, git);
     assert.equal(res.action, "created");
     assert.equal(res.defaultBranch, "main");
-    assert.deepEqual(git.calls.at(-1), ["checkout", "-b", "phase-7"]);
+    assert.ok(hasCall(git.calls, "-b"), "checkout -b must be issued");
+    assert.ok(hasCall(git.calls, "push"), "early push must be issued on create");
+  });
+
+  test("create path: push failure is best-effort, returns created with a warning, does NOT throw (D-06)", async () => {
+    const git = scriptedGit(
+      { "rev-parse": "main", "symbolic-ref": "origin/main", "checkout": "" },
+      { rejectArg: "push" }
+    );
+    const res = await ensurePhaseBranch("/repo", 7, git);
+    assert.equal(res.action, "created");
+    assert.equal(res.push.ok, false);
+    assert.match(res.push.warning, /early push failed/);
   });
 
   test("on an unrelated feature branch 'foo' throws, mentioning the branch (D-01, D-05)", async () => {
