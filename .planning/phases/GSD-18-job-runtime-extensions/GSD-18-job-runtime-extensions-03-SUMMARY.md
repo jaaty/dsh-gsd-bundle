@@ -73,4 +73,4 @@ None. No TODO/FIXME/placeholder/skipped tests introduced.
 
 - `lib/core-tools.js` registers `gsd_job` and the `jobLine` helper; `test/tools.test.mjs` adds the gsd_job + gsd_status-reason tests; `test/ship.test.mjs` and `test/mount.test.mjs` static counts updated.
 - Full test suite green (280 pass).
-- Commit `9d4b9a1` contains only the plan-03 files (lib/core-tools.js, test/tools.test.mjs, test/ship.test.mjs, test/mount.test.mjs, and this SUMMARY); the orchestrator-owned `.planning/STATE.md`/ROADMAP/WINDOWS/async-jobs changes were left uncommitted, matching plan 02's executor behaviour.
+- Commit `7507c2c` contains only the plan-03 files (lib/core-tools.js, test/tools.test.mjs, test/ship.test.mjs, test/mount.test.mjs, and this SUMMARY); the orchestrator-owned `.planning/STATE.md`/ROADMAP/WINDOWS/async-jobs changes were left uncommitted, matching plan 02's executor behaviour.
