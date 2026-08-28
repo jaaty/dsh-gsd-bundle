@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v2.0
 milestone_name: graceful-removal
-status: idle
-active_phase: null
-next_action: null
-next_phases: [21]
+status: plan
+active_phase: 22
+next_action: plan-phase
+next_phases: [22]
 progress:
   total_phases: 24
   completed_phases: 21
   total_plans: 4
   completed_plans: 54
   percent: 88
-current_phase: 21
-current_phase_name: capability-services
+current_phase: 22
+current_phase_name: reactive-loop-rendering
 current_plan: 4
-last_updated: "2026-08-28T23:32:27.181Z"
+last_updated: "2026-08-28T23:41:17.760Z"
 state_head: null
 last_activity: 2026-08-28
 stopped_at: "Phase 21 shipped — PR #24"
@@ -110,6 +110,7 @@ _No active phase._
 - Phase 21: plan 01 executed — capability descriptor module (D-05/D-03/D-04/D-10/D-11); 349 tests green.
 - Phase 21: plan 04 executed — mount fake-ctx ctx.inject + 10-capability asserts (DEGR-01), absent-capability command test (DEGR-03), tools smoke regression fix; 350 tests green.
 - Phase 21 shipped — PR #24 (https://github.com/jaaty/dsh-gsd-bundle/pull/24)
+- Phase 22: CONTEXT.md sealed — 11 decisions
 
 ### Blockers / Concerns
 _none_
