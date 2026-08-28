@@ -98,6 +98,7 @@ _No active phase._
 - Phase 19 shipped — PR #22 (https://github.com/jaaty/dsh-gsd-bundle/pull/22)
 - Phase 20: CONTEXT.md sealed — 11 decisions
 - Phase 20: planned — 3 plan(s) across 2 wave(s).
+- Phase 20: plan 03 executed — UI-SPEC / codebase-map / quick auto-commit via shared commitArtifacts seam (MW-03, D-09..D-12); 335 tests green.
 
 ### Blockers / Concerns
 _none_
