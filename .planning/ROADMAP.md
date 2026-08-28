@@ -23,7 +23,7 @@
 | 17 | [x] phase-branch-isolation | Acquire a per-phase feature branch at gsd_discuss and have each phase tool commit its planning artefacts, so gsd_ship preflight passes on a clean feature branch. | CQ-07 |
 | 18 | [x] job-runtime-extensions | Extend the background-job runtime to launch subagent jobs, enforce timeouts/cancellation, expose a gsd_job launch tool, and support retry/queueing. | JOBX-01 … JOBX-02 … JOBX-03 … JOBX-04 |
 | 19 | [x] codebase-intel-extensions | Extend gsd_map_codebase with drift detection, targeted re-map/updater, a structured answer object, and subtree query scoping. | CBQX-01 … CBQX-02 … CBQX-03 … CBQX-04 |
-| 20 | multi-window-topology | Support concurrent multi-window phases on a shared base branch with a merge topology, earlier phase-branch push, and auto-commit of out-of-flow artefacts. | MW-01 … MW-02 … MW-03 |
+| 20 | [x] multi-window-topology | Support concurrent multi-window phases on a shared base branch with a merge topology, earlier phase-branch push, and auto-commit of out-of-flow artefacts. | MW-01 … MW-02 … MW-03 |
 
 ## Progress
 
@@ -48,4 +48,4 @@
 | 17 | phase-branch-isolation | [x] Complete | 2026-08-28 |
 | 18 | job-runtime-extensions | [x] Complete | 2026-08-28 |
 | 19 | codebase-intel-extensions | [x] Complete | 2026-08-28 |
-| 20 | multi-window-topology | pending |  |
+| 20 | multi-window-topology | [x] Complete | 2026-08-28 |
