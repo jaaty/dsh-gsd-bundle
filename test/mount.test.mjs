@@ -85,7 +85,11 @@ function makeMountCtx(fs) {
       if (n === "gsdState") gsdStateSvc = svc;
     },
     get: (n) =>
-      n === "gsdState" ? gsdStateSvc : n === "subagents" ? makeSubagents() : undefined,
+      n === "gsdState"
+        ? gsdStateSvc
+        : n === "subagents"
+          ? makeSubagents()
+          : provided.get(n),
   };
   // Invoke the effect callback synchronously (R-3); return its disposer if any.
   // gsd-commands wraps registration in ctx.effect(fn) — a no-op effect would
@@ -323,8 +327,17 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
     const section = ctx.sections[0];
     assert.equal(section.name, "gsd:persona");
     assert.ok(section.order === -100, `expected order -100, got ${section.order}`);
-    assert.match(section.text, /Discuss/);
-    assert.match(section.text, /Ship/);
+    // The body is a per-assembly function (RESEARCH OQ-1) — evaluate it with a
+    // context object before asserting (mirrors the gsd:state context provider).
+    assert.equal(typeof section.text, "function", "persona section text must be an assembly-fresh function");
+    const body = section.text({ agent: { session: { header: { cwd: CWD } } } });
+    assert.equal(typeof body, "string");
+    assert.match(body, /Discuss/);
+    assert.match(body, /Ship/);
+    // The full-set mount provides every capability, so the step paragraphs and
+    // the orient surface must name their tools.
+    assert.match(body, /gsd_status/);
+    assert.match(body, /gsd_quick/);
   });
 
   test("runtime-context provider is gsd:state (order 10)", () => {
