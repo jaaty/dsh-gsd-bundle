@@ -57,8 +57,8 @@
 
 ## CBQX
 
-- [ ] CBQX-01: Implement drift detection that notices when the codebase has changed since the last map.
-- [ ] CBQX-02: Implement targeted re-map / gsd-intel-updater that updates only the affected map docs.
+- [x] CBQX-01: Implement drift detection that notices when the codebase has changed since the last map.
+- [x] CBQX-02: Implement targeted re-map / gsd-intel-updater that updates only the affected map docs.
 - [ ] CBQX-03: Return a structured answer object (answer + sources + confidence) instead of plain text.
 - [ ] CBQX-04: Add subtree query scoping via a queryScope/paths argument.
 
