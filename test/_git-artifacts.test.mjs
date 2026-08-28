@@ -4,8 +4,11 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 import { ensurePhaseBranch, commitArtifacts } from "../lib/_git-artifacts.js";
+
+const readLib = (file) => readFile(new URL(`../lib/${file}`, import.meta.url), "utf8");
 
 // Build a scripted fake gitFn that records every args array it is called with.
 // `responses` maps the first argv (e.g. "rev-parse") to canned stdout; when the
@@ -159,5 +162,29 @@ describe("commitArtifacts", () => {
     const res = await commitArtifacts("/repo", null, { scope: "quick", message: "docs(planning): quick x" }, git);
     assert.equal(res.committed, false);
     assert.match(res.warning, /git add failed/);
+  });
+});
+
+describe("commitArtifacts backward-compat: phase-tool call sites unchanged (D-12)", () => {
+  const PHASE_TOOLS = [
+    { file: "discuss.js", scope: "discuss" },
+    { file: "plan.js", scope: "plan" },
+    { file: "execute.js", scope: "execute" },
+    { file: "verify.js", scope: "verify" },
+  ];
+
+  test("each phase tool calls commitArtifacts(cwd, args.phase, { scope, phaseName }) exactly once with no message override", async () => {
+    for (const { file, scope } of PHASE_TOOLS) {
+      const src = await readLib(file);
+      const callRe = new RegExp(
+        `commitArtifacts\\(cwd, args\\.phase, \\{ scope: "${scope}", phaseName: phase\\.name \\}\\)`,
+        "g",
+      );
+      assert.equal(
+        (src.match(callRe) || []).length,
+        1,
+        `${file} must call commitArtifacts with scope "${scope}" exactly once (no message: key, one call)`,
+      );
+    }
   });
 });
