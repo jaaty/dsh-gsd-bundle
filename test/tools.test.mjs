@@ -909,6 +909,38 @@ describe("gsd_map_codebase", () => {
     assert.match(res, /Codebase mapping complete/);
   });
 
+  test("fast mode focus arch writes the drift manifest", async () => {
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ fast: true, focus: "arch", force: true }, exec);
+    assert(fs.files.has(`${CWD}/.planning/codebase/.map-manifest.json`), "fast mode should persist the manifest");
+  });
+
+  test("paths incremental remap writes the drift manifest", async () => {
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ paths: ["lib/"] }, exec);
+    assert(fs.files.has(`${CWD}/.planning/codebase/.map-manifest.json`), "paths remap should persist the manifest");
+  });
+
+  test("manifest excludes node_modules, .planning, .git, lockfiles, and empty dirs (D-03)", async () => {
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    await fs.writeText({ targetKey: `${CWD}/node_modules/app.js` }, "module\n");
+    await fs.writeText({ targetKey: `${CWD}/.planning/STATE.md` }, "# state\n");
+    await fs.writeText({ targetKey: `${CWD}/package-lock.json` }, "{}");
+    fs.dirs.add(`${CWD}/empty`); // an empty directory must not appear either
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ force: true }, exec);
+    const manifest = await svc.readCodebaseManifest(CWD);
+    assert.ok(Array.isArray(manifest) && manifest.length > 0, "manifest should be non-empty");
+    const lockRe = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|npm-shrinkwrap\.json|bun\.lockb?|composer\.lock|Gemfile\.lock|poetry\.lock|Cargo\.lock)$/;
+    const bad = manifest.filter((r) =>
+      r.path.includes("node_modules") || r.path.includes(".planning") || r.path.includes(".git") || lockRe.test(r.path)
+    );
+    assert.deepEqual(bad, [], "no ignored path should appear in the manifest");
+    assert.ok(manifest.some((r) => r.path === "src/index.js"), "real source file should be in the manifest");
+  });
+
   test("rejects forbidden path scope values and falls back to whole-repo", async () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     const res = await t.execute({ paths: ["../escape", "/abs", "lib/;rm"] }, exec);
