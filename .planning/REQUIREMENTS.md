@@ -66,4 +66,4 @@
 
 - [ ] MW-01: Support concurrent multi-window phases sharing one base branch, with a defined merge topology.
 - [ ] MW-02: Push the phase-N branch earlier than ship (at branch-acquire) for remote visibility during the phase.
-- [ ] MW-03: Auto-commit the out-of-flow artefacts (UI-SPEC / codebase-map / quick-task) onto the phase branch.
+- [x] MW-03: Auto-commit the out-of-flow artefacts (UI-SPEC / codebase-map / quick-task) onto the phase branch.

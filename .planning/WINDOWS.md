@@ -191,3 +191,11 @@
 - opened: 2026-08-28T06:04:15.140Z
 - closed: 2026-08-28T06:04:15.140Z
 - summary: Executed 1/4 plans
+
+## WIN-25
+- id: WIN-25
+- phase: 20
+- step: execute
+- opened: 2026-08-28T21:49:43.072Z
+- closed: 2026-08-28T21:49:43.072Z
+- summary: Executed 1/3 plans
