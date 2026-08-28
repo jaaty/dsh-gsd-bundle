@@ -23,6 +23,9 @@ let ctx;
 // gsd_execute call (resume tests assert the exact prompt + spawn count).
 let executeSpawnCount = 0;
 const executeCaptured = [];
+// Captured query-mode subagent prompt texts (queryScope scoping test asserts on
+// the injected scope line while confirming the map docs still load in full).
+const queryCaptured = [];
 // When true, the fake executor stops at a checkpoint (returns structured
 // checkpoint state, writes no SUMMARY). When false it completes normally.
 // On a resume run (a CHECKPOINT artefact already exists) it always completes.
@@ -158,6 +161,7 @@ function makeSubagents() {
         }
         text = `## Mapping Complete\n**Focus:** ${focus}\nDocuments written.`;
       } else if (label.startsWith("codebase-query")) {
+        queryCaptured.push(req.prompt[0]?.text || "");
         if (QUERY_FAIL_MODE) {
           text = "";
           stopReason = "failed";
@@ -1001,6 +1005,22 @@ describe("gsd_map_codebase", () => {
     } finally {
       QUERY_PLAIN_MODE = false;
     }
+  });
+
+  test("query mode with queryScope restricts targeted exploration but loads map docs fully (CBQX-04)", async () => {
+    await fs.writeText({ targetKey: `${CWD}/.planning/codebase/ARCHITECTURE.md` }, "# Architecture\n\n**Analysis Date:** 2026-08-22\n**Content:** how auth is wired via JWT\n");
+    queryCaptured.length = 0;
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    const res = await t.execute({ query: "How is auth handled?", queryScope: ["src/"] }, exec);
+    assert.equal(res.kind, "answer");
+    assert.match(res.answer, /JWT/);
+    assert.equal(queryCaptured.length, 1, "exactly one query subagent prompt should have been captured");
+    const prompt = queryCaptured[0];
+    assert.match(prompt, /restrict ONLY your targeted Glob\/Grep exploration/, "the scope instruction must be injected");
+    assert.match(prompt, /src\//, "the scope prefix must appear in the instruction");
+    // the map doc is still loaded fully as the primary source
+    assert.match(prompt, /ARCHITECTURE\.md/, "the map doc header must still be present");
+    assert.match(prompt, /how auth is wired via JWT/, "the map doc content must still be loaded in full");
   });
 
   test("query mode with no map returns a notice and never throws", async () => {
