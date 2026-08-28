@@ -23,7 +23,10 @@ function scriptedGit(responses = {}, { rejectAll = false, rejectArg } = {}) {
     if (rejectAll) throw new Error("git unavailable");
     if (rejectArg && rejectArg === args[0]) throw new Error(`${args[0]} failed`);
     const joined = args.join(" ");
-    if (Object.prototype.hasOwnProperty.call(responses, joined)) return responses[joined];
+    if (Object.prototype.hasOwnProperty.call(responses, joined)) {
+      const v = responses[joined];
+      return typeof v === "function" ? v() : v;
+    }
     const out = responses[args[0]];
     if (out === undefined) throw new Error(`unexpected git call: ${joined}`);
     return out;
@@ -127,6 +130,58 @@ describe("ensurePhaseBranch", () => {
       ensurePhaseBranch("/repo", 7, git),
       /"foo"/
     );
+  });
+
+  test("phase-7 exists only as a remote tracking ref: joins via --track origin/phase-7, returns 'joined-remote' (D-03, OQ-3)", async () => {
+    const git = scriptedGit({
+      "rev-parse": "main",
+      "symbolic-ref": "origin/main",
+      "checkout --track origin/phase-7": "",
+      "push -u origin phase-7": "up to date",
+      // show-ref probes: the local one rejects (not provided), the remote one exists.
+      "show-ref --verify --quiet refs/remotes/origin/phase-7": "refs/remotes/origin/phase-7",
+    });
+    const res = await ensurePhaseBranch("/repo", 7, git);
+    assert.equal(res.action, "joined-remote");
+    assert.equal(res.branch, "phase-7");
+    const co = git.calls.find((c) => c[0] === "checkout");
+    assert.deepEqual(co, ["checkout", "--track", "origin/phase-7"]);
+    assert.equal(hasCall(git.calls, "--track"), true);
+    assert.equal(hasCall(git.calls, "-b"), false, "remote join must not fork with checkout -b");
+  });
+
+  test("tracking ref absent but best-effort fetch discovers it: fetches, then --track checkout, 'joined-remote' (OQ-3)", async () => {
+    // First remote probe fails (tracking ref not fetched yet) → triggers fetch;
+    // the re-probe after a successful fetch returns the ref.
+    let remoteProbes = 0;
+    const git = scriptedGit({
+      "rev-parse": "main",
+      "symbolic-ref": "origin/main",
+      "fetch origin phase-7 --no-tags": "",
+      "show-ref --verify --quiet refs/remotes/origin/phase-7": () => {
+        remoteProbes += 1;
+        if (remoteProbes === 1) throw new Error("tracking ref not fetched yet");
+        return "refs/remotes/origin/phase-7";
+      },
+      "checkout --track origin/phase-7": "",
+      "push -u origin phase-7": "up to date",
+    });
+    const res = await ensurePhaseBranch("/repo", 7, git);
+    assert.equal(res.action, "joined-remote");
+    assert.ok(hasCall(git.calls, "fetch"), "best-effort fetch must run to discover a remote phase-N");
+    assert.ok(hasCall(git.calls, "--track"), "then the --track checkout must run");
+    assert.equal(hasCall(git.calls, "-b"), false);
+  });
+
+  test("both probes fail and fetch fails: falls back to the create path without throwing (D-06 best-effort)", async () => {
+    const git = scriptedGit(
+      { "rev-parse": "main", "symbolic-ref": "origin/main", "checkout": "", "push -u origin phase-7": "up to date" },
+      { rejectArg: "fetch" }
+    );
+    const res = await ensurePhaseBranch("/repo", 7, git);
+    assert.equal(res.action, "created");
+    assert.equal(res.push.ok, true);
+    assert.ok(hasCall(git.calls, "-b"), "create path must run via checkout -b");
   });
 
   test("gitFn rejects on first rev-parse returns action 'noop' with a warning, does NOT throw (D-08)", async () => {
