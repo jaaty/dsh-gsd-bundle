@@ -41,3 +41,26 @@ describe("out-of-flow auto-commit: ui.js routes UI-SPEC through commitArtifacts 
     );
   });
 });
+
+describe("out-of-flow auto-commit: map-codebase.js routes through commitArtifacts (D-11/D-12)", () => {
+  test("map-codebase.js imports commitArtifacts from ./_git-artifacts.js", async () => {
+    const src = await readLib("map-codebase.js");
+    assert.match(src, IMPORT_RE, "map-codebase.js must import commitArtifacts from ./_git-artifacts.js");
+  });
+
+  test("map-codebase.js bespoke gitAddCommit commit is gone", async () => {
+    const src = await readLib("map-codebase.js");
+    assert.doesNotMatch(src, /gitAddCommit/, "map-codebase.js must not define/call the bespoke gitAddCommit");
+    assert.doesNotMatch(src, /execFileSync\s*\(\s*["']git["']/, "map-codebase.js must not shell out to git synchronously");
+  });
+
+  test("map-codebase.js routes its commit through commitArtifacts with a codebase-map message override exactly once", async () => {
+    const src = await readLib("map-codebase.js");
+    const callRe = /commitArtifacts\s*\(\s*cwd,\s*null,\s*\{\s*scope:\s*"map",\s*message:\s*"docs\(planning\):\s*codebase map"\s*\}\s*\)/g;
+    assert.equal(
+      (src.match(callRe) || []).length,
+      1,
+      'map-codebase.js must call commitArtifacts(cwd, null, { scope: "map", message: "docs(planning): codebase map" }) exactly once',
+    );
+  });
+});
