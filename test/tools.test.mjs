@@ -1059,6 +1059,23 @@ describe("gsd_map_codebase", () => {
     assert.match(renderResult(res), /Codebase mapping complete/);
   });
 
+  test("gsd_intel_updater with no manifest returns a helpful notice and never throws", async () => {
+    const { t } = await registerTool("map-codebase", "gsd_intel_updater");
+    const res = await t.execute({}, exec);
+    assert.match(renderResult(res), /No .planning\/codebase\/.map-manifest.json/);
+    await assert.doesNotReject(() => t.execute({}, exec));
+  });
+
+  test("gsd_intel_updater with a manifest but no drift returns a no-drift notice", async () => {
+    await fs.writeText({ targetKey: `${CWD}/src/index.js` }, "export const x = 1;\n");
+    const { t } = await registerTool("map-codebase", "gsd_map_codebase");
+    await t.execute({ force: true }, exec); // persists the manifest
+    const upd = await registerTool("map-codebase", "gsd_intel_updater");
+    const res = await upd.t.execute({}, exec);
+    assert.equal(res.kind, "notice");
+    assert.match(renderResult(res), /No drift detected since the last map/);
+  });
+
   test("query arg is present in the compiled schema", async () => {
     const { t } = await registerTool("map-codebase", "gsd_map_codebase");
     assert.equal(t.parameters.properties.query.type, "string");
