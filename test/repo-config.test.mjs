@@ -40,16 +40,20 @@ const EXPECTED_TOPICS = [
   "coding-agent",
 ];
 
-// Shell out to "gh repo view --json <fields>" and return the parsed object.
-// On a non-zero exit, throw an Error carrying the real gh stderr so the
-// failure is loud and actionable (D-04) — never silently pass.
+// Shell out to "gh repo view <repo> --json <fields>" and return the parsed
+// object. The repo is passed EXPLICITLY (jaaty/dsh-gsd-bundle) rather than
+// relying on the cwd's git remote, so the test also passes in the gsd_ship
+// pre-ship-verify temp copy, which excludes the .git directory (no remote to
+// infer the repo from). On a non-zero exit, throw an Error carrying the real
+// gh stderr so the failure is loud and actionable (D-04) — never silently pass.
 function ghRepoView(fields) {
   let out;
   try {
-    out = execFileSync("gh", ["repo", "view", "--json", fields], {
-      cwd: ROOT,
-      encoding: "utf8",
-    });
+    out = execFileSync(
+      "gh",
+      ["repo", "view", "jaaty/dsh-gsd-bundle", "--json", fields],
+      { cwd: ROOT, encoding: "utf8" },
+    );
   } catch (err) {
     throw new Error(`gh repo view failed: ${err.stderr}`);
   }
