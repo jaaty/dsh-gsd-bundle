@@ -77,3 +77,11 @@
 - [x] DEGR-05: An automated per-plugin removal test proves each single step plugin can be retired (effects reverted, no crash) with the remaining loop still functional end-to-end.
 - [x] DEGR-06: The background-job live registry is effect-scoped to its owning fiber so unloading/HMR cancels running jobs.
 - [x] DEGR-07: Plugins consuming the subagents host service declare it in inject so reactive coeffect activation/deactivation holds.
+
+## PUB
+
+- [x] PUB-01: The repository includes an MIT LICENSE file so GitHub detects the license and users can legally use, modify, and redistribute the bundle.
+- [x] PUB-02: The README's attribution to opengsd-core is accurate and license-compliant, and the broken gsd-core-reference.md reference is fixed (the file is added with proper attribution, or the reference is removed).
+- [ ] PUB-03: The repository includes a CHANGELOG, a CONTRIBUTING.md, and a code of conduct, and the .planning/ directory keep-vs-gitignore-vs-curate decision is made and applied.
+- [ ] PUB-04: A CI workflow runs the test suite on pull requests, and a full-history secret scan confirms no credentials or tokens are exposed.
+- [ ] PUB-05: A research-backed distribution decision (npm publish vs clone-and-install-from-source) is documented, matching the behavior of other dsh plugins.
