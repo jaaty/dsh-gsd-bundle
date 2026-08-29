@@ -9,13 +9,13 @@ next_phases: [32]
 progress:
   total_phases: 34
   completed_phases: 30
-  total_plans: 71
-  completed_plans: 71
+  total_plans: 2
+  completed_plans: 72
   percent: 88
 current_phase: 32
 current_phase_name: security-policy-templates
-current_plan: null
-last_updated: "2026-08-29T18:57:37.345Z"
+current_plan: 1
+last_updated: "2026-08-29T19:00:25.483Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 30 shipped — PR #33"
