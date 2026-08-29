@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-08-29
+
+### Added
+
+- **Milestone `public-launch`** — makes the bundle publish-ready for npm: version bumped to 2.2.0, full npm metadata (repository, homepage, bugs, keywords, engines, author) added to the manifest, and the files whitelist expanded to ship every README-linked documentation file.
+  - **publishable-package** (PR #33): bumped the package to `2.2.0` (package.json + package-lock.json), added the missing npm metadata fields (`repository`, `homepage`, `bugs`, `keywords`, `engines`, `author`), and expanded the `files` whitelist to ship `DISTRIBUTION.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `CHANGELOG.md` alongside the existing lib/ and docs entries.
+
 ## [2.1.0] - 2026-08-29
 
 ### Added
