@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v2.1.0
 milestone_name: public-release-readiness
-status: verify
+status: execute
 active_phase: 26
-next_action: verify-phase
+next_action: execute-phase
 next_phases: [26]
 progress:
   total_phases: 28
   completed_phases: 25
   total_plans: 3
-  completed_plans: 68
+  completed_plans: 69
   percent: 89
 current_phase: 26
 current_phase_name: repo-hygiene
-current_plan: 3
-last_updated: "2026-08-29T03:56:06.846Z"
+current_plan: 2
+last_updated: "2026-08-29T03:56:48.137Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 25 shipped — PR #28"
