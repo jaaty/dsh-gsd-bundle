@@ -15,7 +15,7 @@ progress:
 current_phase: 26
 current_phase_name: repo-hygiene
 current_plan: 3
-last_updated: "2026-08-29T03:08:31.805Z"
+last_updated: "2026-08-29T03:14:53.748Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 25 shipped — PR #28"
@@ -130,6 +130,7 @@ _No active phase._
 - Phase 25: planned — 1 plan(s) across 1 wave(s).
 - Phase 25 shipped — PR #28 (https://github.com/jaaty/dsh-gsd-bundle/pull/28)
 - Phase 26: CONTEXT.md sealed — 9 decisions
+- Phase 26: planned — 3 plan(s) across 2 wave(s).
 - Phase 26: planned — 3 plan(s) across 2 wave(s).
 - Phase 26: planned — 3 plan(s) across 2 wave(s).
 - Phase 26: planned — 3 plan(s) across 2 wave(s).
