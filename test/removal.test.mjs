@@ -160,6 +160,17 @@ describe("removal: per-plugin retirement reverts effects and keeps the loop func
 
       // Functional depth (D-05): remaining offline-runnable step tools smoke.
       await smokeRemainingSteps(ctx, sub);
+
+      // execute/ship present + registered + schema-sound only (D-05): their
+      // git/gh/subagent paths are NOT driven offline.
+      for (const [name, cap] of [["gsd_execute", "gsdExecute"], ["gsd_ship", "gsdShip"]]) {
+        if (cap === capKey) continue;
+        const t = ctx.tools.find((x) => x.name === name);
+        assert.ok(t, `${name} not registered after retiring ${capKey}`);
+        assert.equal(typeof t.description, "string");
+        assert.ok(t.parameters && typeof t.parameters === "object");
+        assert.ok(t.output && t.output.schema, `${name} missing output.schema`);
+      }
     });
   }
 });
