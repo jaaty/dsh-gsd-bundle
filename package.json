@@ -81,7 +81,8 @@
     "DISTRIBUTION.md",
     "CONTRIBUTING.md",
     "CODE_OF_CONDUCT.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "SECURITY.md"
   ],
   "dsh": {
     "bundle": {

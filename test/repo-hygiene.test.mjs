@@ -86,8 +86,18 @@ test("README .planning/ artefacts section documents the curate decision (D-08)",
   );
 });
 
-test("volatile .planning/ files are untracked, durable ones tracked (D-06/D-07)", () => {
-  const tracked = gitLsFiles(".planning/");
+test("volatile .planning/ files are untracked, durable ones tracked (D-06/D-07)", (t) => {
+  let tracked;
+  try {
+    tracked = gitLsFiles(".planning/");
+  } catch {
+    // Not running inside a git repository (e.g. the gsd_ship pre-ship-verify
+    // gate copies the working tree into a temp dir excluding .git, then runs
+    // `npm test`). The tracking-state assertions are only meaningful in the
+    // real repo, so skip gracefully instead of failing the gate.
+    t.skip("not a git repository (pre-ship-verify temp copy)");
+    return;
+  }
   assert.ok(
     !tracked.includes(".planning/WINDOWS.md"),
     ".planning/WINDOWS.md is still tracked (should be gitignored)",

@@ -5,20 +5,20 @@ milestone_name: public-launch
 status: idle
 active_phase: null
 next_action: null
-next_phases: [31]
+next_phases: [32]
 progress:
   total_phases: 34
-  completed_phases: 31
-  total_plans: 1
-  completed_plans: 72
+  completed_phases: 32
+  total_plans: 2
+  completed_plans: 73
   percent: 91
-current_phase: 31
-current_phase_name: npm-publish
-current_plan: 1
-last_updated: "2026-08-29T18:49:31.661Z"
+current_phase: 32
+current_phase_name: security-policy-templates
+current_plan: 2
+last_updated: "2026-08-29T19:06:12.878Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 31 shipped — PR #34"
+stopped_at: "Phase 32 shipped — PR #35"
 paused_at: null
 ---
 # GSD STATE
@@ -160,6 +160,13 @@ _No active phase._
 - Phase 31: CONTEXT.md sealed — 9 decisions
 - Phase 31: planned — 1 plan(s) across 1 wave(s).
 - Phase 31 shipped — PR #34 (https://github.com/jaaty/dsh-gsd-bundle/pull/34)
+- Phase 32: CONTEXT.md sealed — 6 decisions
+- Phase 32: planned — 2 plan(s) across 2 wave(s).
+- Phase 32: plan 01 executed — SECURITY.md policy (D-01/D-02) + package.json files whitelist + README link (D-05); 3 commits, npm test green 415/415, SUMMARY.md written.
+- Phase 32: plan 02 executed — GitHub issue forms (bug_report.yml, feature_request.yml, config.yml) + PULL_REQUEST_TEMPLATE.md (D-03/D-04) + structural test test/security-policy.test.mjs (D-06); 3 commits, npm test green 426/426, SUMMARY.md written.
+- quick 2026-08-29-gitignore-npm-cache: Add `.npm-cache/` to the repo's `.gitignore` so the npm cache directory created by phase 31's `--cache` override (D-01) is never tracked. The `.gitignore` currently ignores `node_modules/` and the volatile `.planning/` files. Append a line `.npm-cache/` (with a short comment noting it is the alternate npm cache used by the publish/install `--cache` override) so `git status` is clean and gsd_ship preflight passes. Do not delete the directory from disk; only ignore it. Commit atomically.
+- quick 2026-08-29-repo-hygiene-git-skip: Fix test/repo-hygiene.test.mjs so the git-dependent test "volatile .planning/ files are untracked, durable ones tracked (D-06/D-07)" skips gracefully when not running inside a git repository, instead of failing. Root cause: the gsd_ship pre-ship-verify gate (phase 29, lib/preflight-verify.js copyTree) copies the working tree into a temp dir EXCLUDING the .git directory, then runs `npm test`. The repo-hygiene test shells out to `git ls-files .planning/` (via the gitLsFiles helper using execFileSync with cwd: ROOT), which throws "not a git repository" in the temp copy, failing the gate. The tracking-state assertions are only meaningful in the real repo, so the test should skip when git is unavailable. Change the test signature to accept the node:test context `(t)`, wrap the gitLsFiles call in a try/catch, and on failure call `t.skip("not a git repository (pre-ship-verify temp copy)")` and return, leaving the assertions untouched for the normal git-repo case. Do not change any other test or file. Verify with `npm test` (must pass 426/426 in the real repo) and confirm the pre-ship-verify temp-copy path no longer fails on this test. Commit atomically.
+- Phase 32 shipped — PR #35 (https://github.com/jaaty/dsh-gsd-bundle/pull/35)
 
 ### Blockers / Concerns
 _none_

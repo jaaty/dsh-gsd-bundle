@@ -1,0 +1,4 @@
+# Configuration for the issue templates in this directory.
+# blank_issues_enabled: true keeps the "blank issue" option available so
+# contributors are not forced into a template.
+blank_issues_enabled: true

@@ -223,7 +223,7 @@ The reference used to build this is the [opengsd-core](https://github.com/open-g
 
 ## Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, how to run the test suite, the PR/contribution workflow, and a short explanation of the GSD phase loop that drives this repo. All participants are expected to follow the [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). See [CHANGELOG.md](CHANGELOG.md) for the release history.
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, how to run the test suite, the PR/contribution workflow, and a short explanation of the GSD phase loop that drives this repo. All participants are expected to follow the [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). See [CHANGELOG.md](CHANGELOG.md) for the release history. Please report security vulnerabilities via [SECURITY.md](SECURITY.md).
 
 The test suite runs in **CI** via a GitHub Actions workflow (`.github/workflows/ci.yml`) on every pull request and on push to `main`, so PRs are gated and `main` is always verified. A **gitleaks** secret-scan guard also runs on pull requests and fails the PR if a new credential or token is introduced.
 

@@ -1,0 +1,60 @@
+name: Bug report
+description: Report a bug or unexpected behaviour in dsh-gsd-bundle
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill in the details
+        below so we can reproduce and fix it. For **security** vulnerabilities,
+        do not open a public issue — report them privately via the repository's
+        **Security tab** (see [SECURITY.md](../../SECURITY.md)).
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug.
+      placeholder: What happened that you did not expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: The exact steps that trigger the bug.
+      placeholder: |
+        1. Run `dsh ...`
+        2. ...
+        3. Observe the error.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behaviour
+    attributes:
+      label: Expected behaviour
+      description: What you expected to happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Relevant environment details (dsh version, bundle version, Node.js version, OS).
+      placeholder: |
+        - dsh version:
+        - bundle version:
+        - Node.js version:
+        - OS:
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      description: Confirm you have checked the following before submitting.
+      options:
+        - label: I have searched the existing issues and this is not a duplicate.
+          required: true
+        - label: I have read CONTRIBUTING.md and this is not a security vulnerability (those go through the Security tab).
+          required: true
