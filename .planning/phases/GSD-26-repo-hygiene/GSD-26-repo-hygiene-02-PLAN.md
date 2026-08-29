@@ -7,7 +7,7 @@ depends_on: []
 files_modified: [".gitignore"]
 autonomous: true
 requirements: ["PUB-03"]
-gap_closure: false
+gap_closure: true
 user_setup: []
 must_haves:
   truths:

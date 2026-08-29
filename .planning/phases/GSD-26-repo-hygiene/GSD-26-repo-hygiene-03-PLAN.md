@@ -7,7 +7,7 @@ depends_on: ["GSD-26-repo-hygiene-01", "GSD-26-repo-hygiene-02"]
 files_modified: ["README.md", "test/repo-hygiene.test.mjs", ".planning/phases/GSD-26-repo-hygiene/VALIDATION.md"]
 autonomous: true
 requirements: ["PUB-03"]
-gap_closure: false
+gap_closure: true
 user_setup: []
 must_haves:
   truths:
