@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v3.0.0
 milestone_name: upstream-parity
-status: verify
+status: ship
 active_phase: 36
-next_action: verify-phase
+next_action: ship-phase
 next_phases: [36]
 progress:
   total_phases: 50
@@ -15,7 +15,7 @@ progress:
 current_phase: 36
 current_phase_name: spec-phase
 current_plan: 3
-last_updated: "2026-08-29T22:53:55.265Z"
+last_updated: "2026-08-29T22:55:04.431Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 35 shipped — PR #38"
