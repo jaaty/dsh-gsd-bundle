@@ -1,6 +1,6 @@
-# Roadmap — public-launch (v2.2.0)
+# Roadmap — upstream-parity (v3.0.0)
 
-34 phase(s) | requirements mapped per phase
+50 phase(s) | requirements mapped per phase
 
 | # | Phase | Goal | Requirements |
 |---|-------|------|--------------|
@@ -38,6 +38,22 @@
 | 32 | [x] security-policy-templates | Add a SECURITY.md vulnerability-reporting policy and GitHub issue + pull-request templates so public contributors know how to report issues and open PRs. [REL-03] | REL-03 |
 | 33 | [x] github-repo-config | Configure the GitHub repository with searchable topics and a homepage URL for discoverability and canonical linking. [REL-04] | REL-04 |
 | 34 | [x] readme-badges | Add CI-status, license, and npm-version badges to the README so the public repo signals health and provenance at a glance. [REL-05] | REL-05 |
+| 35 | pr-branch | Add a clean-PR-branch path so gsd_ship creates a review branch that filters out .planning/ commits, leaving reviewers with only real code changes. | GAP-01 |
+| 36 | spec-phase | Add a spec-phase step that produces a SPEC.md with falsifiable requirements gated by an ambiguity-scoring score before discuss. | GAP-02 |
+| 37 | gap-analysis | Add a post-planning gap-analysis that emits a REQ-ID/D-ID versus plan-body coverage table after PLAN.md generation. | GAP-03 |
+| 38 | code-review | Add a code-review pass that reviews a phase's changed source into REVIEW.md and a --fix companion that applies findings with per-fix atomic commits into REVIEW-FIX.md. | GAP-04 |
+| 39 | ui-review | Add a retroactive 6-pillar UI audit that reviews implemented frontend code against the UI-SPEC. | GAP-05 |
+| 40 | validate-phase | Add a retro validate-phase audit that maps executed work to tests and manual evidence and produces tests to close validation gaps for a completed phase. | GAP-06 |
+| 41 | undo | Add a safe undo path that rolls back a phase's or plan's commits via the phase manifest with dependency checks and a confirmation gate. | GAP-07 |
+| 42 | health | Add a health diagnostic that inspects .planning/ integrity and offers non-destructive repair. | GAP-08 |
+| 43 | milestone-audit | Add milestone close-gate and cross-phase UAT audits that confirm a milestone met its definition of done before close. | GAP-09 |
+| 44 | learnings | Add an extract-learnings path that accumulates decisions, lessons, patterns, and surprises into a carrying-forward LEARNINGS.md. | GAP-10 |
+| 45 | graphify | Add a project knowledge graph built in .planning/graphs/ with a tool to build, query, and inspect it. | GAP-11 |
+| 46 | mempalace | Add a cross-session memory integration that performs deliberate recall before discuss/plan and verbatim capture at phase boundaries. | GAP-12 |
+| 47 | assumption-delta | Add an advisory assumption-delta checkpoint that surfaces one identity-model question when a phase makes something plural/optional/chosen that used to be singular/required/derived. | GAP-13 |
+| 48 | pause-resume-work | Add pause-work and resume-work commands that write a structured context handoff (HANDOFF.json) and restore full context to continue work mid-phase. | GAP-14 |
+| 49 | autonomous | Add an autonomous path that drives all remaining phases of a milestone end-to-end without per-phase manual prompting. | GAP-15 |
+| 50 | add-tests | Add an add-tests generator that creates unit and E2E tests for a completed phase from its UAT criteria and implementation. | GAP-16 |
 
 ## Progress
 
@@ -77,3 +93,19 @@
 | 32 | security-policy-templates | [x] Complete | 2026-08-29 |
 | 33 | github-repo-config | [x] Complete | 2026-08-29 |
 | 34 | readme-badges | [x] Complete | 2026-08-29 |
+| 35 | pr-branch | pending |  |
+| 36 | spec-phase | pending |  |
+| 37 | gap-analysis | pending |  |
+| 38 | code-review | pending |  |
+| 39 | ui-review | pending |  |
+| 40 | validate-phase | pending |  |
+| 41 | undo | pending |  |
+| 42 | health | pending |  |
+| 43 | milestone-audit | pending |  |
+| 44 | learnings | pending |  |
+| 45 | graphify | pending |  |
+| 46 | mempalace | pending |  |
+| 47 | assumption-delta | pending |  |
+| 48 | pause-resume-work | pending |  |
+| 49 | autonomous | pending |  |
+| 50 | add-tests | pending |  |
