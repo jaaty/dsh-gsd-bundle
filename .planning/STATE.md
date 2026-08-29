@@ -15,7 +15,7 @@ progress:
 current_phase: 28
 current_phase_name: publish-research
 current_plan: 1
-last_updated: "2026-08-29T06:20:00.000Z"
+last_updated: "2026-08-29T06:02:23.175Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 28 shipped — PR #31"
@@ -143,6 +143,19 @@ _No active phase._
 - Phase 28: CONTEXT.md sealed — 8 decisions
 - Phase 28: planned — 1 plan(s) across 1 wave(s).
 - Phase 28 shipped — PR #31 (https://github.com/jaaty/dsh-gsd-bundle/pull/31)
+- quick 2026-08-29-milestone-release-v2-1-0: Release milestone public-release-readiness as v2.1.0. Orient against .planning/STATE.md first: the milestone is fully COMPLETE (29/29 phases shipped, PRs #1..#32, all merged to main — PR #32 for phase 29 was merged 2026-08-29T06:01:10Z, merge commit 856b625d7e44407109365a9c01a45b55b94804d6). Branch is main, working tree is clean, and the existing tags are v1.7.0 and v2.0.0 (there is no v2.1.0 tag yet). gh CLI is authenticated as account jaaty.
+
+Do the full milestone release end to end and commit + tag atomically:
+1. Confirm the working tree is clean on main and that all 29 phase PRs (#1..#32) are merged to main.
+2. Build release notes for v2.1.0 summarizing the milestone: the public-release-readiness milestone (v2.1.0) covers phases 25-29 — license-and-attribution (PR #28), repo-hygiene (PR #29), ci-and-security (PR #30), publish-research (PR #31), and pre-ship-verify (PR #32, the new deterministic pre-ship npm ci + npm test verification gate in gsd_ship, skippable via a flag). Write the release notes to a fixed .planning temp path (e.g. .planning/.release-notes-v2.1.0.md).
+3. Create the annotated git tag v2.1.0 pointing at the current main HEAD (the release commit) and push it to origin.
+4. Create the GitHub release for v2.1.0 via `gh release create` using the release-notes file as the body, targeting the v2.1.0 tag.
+5. Record the release in the CHANGELOG.md (add a v2.1.0 entry) and commit that atomically with the tag.
+
+Constraints (MANDATORY):
+- All git/gh commands must use explicit argument arrays; never interpolate a model- or user-supplied value into a shell string (the release-notes file path can be a fixed .planning temp path). Do not push force, do not alter protected refs, do not run git clean/reset --hard.
+- If gh CLI is unavailable or unauthenticated, create the tag and push it, and report the gh release step as a warning with the real cause — do not silently skip or fake it.
+- The working tree must be left clean on main with the v2.1.0 tag pointing at the release commit.
 
 ### Blockers / Concerns
 _none_
