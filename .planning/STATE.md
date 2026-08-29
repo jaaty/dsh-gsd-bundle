@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v2.2.0
 milestone_name: public-launch
-status: verify
+status: ship
 active_phase: 34
-next_action: verify-phase
+next_action: ship-phase
 next_phases: [34]
 progress:
   total_phases: 34
@@ -15,7 +15,7 @@ progress:
 current_phase: 34
 current_phase_name: readme-badges
 current_plan: 1
-last_updated: "2026-08-29T21:20:43.636Z"
+last_updated: "2026-08-29T21:22:40.169Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 33 shipped — PR #36"

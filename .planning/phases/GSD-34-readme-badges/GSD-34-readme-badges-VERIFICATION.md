@@ -1,104 +1,77 @@
 ---
 phase: 34-readme-badges
 verified: 2026-08-29T00:00:00.000Z
-status: gaps_found
-score: 5/8 must-haves verified
+status: passed
+score: 4/4 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
-gaps:
-  - truth: "The README displays exactly three badges — CI-status, license, npm-version — on a single markdown line immediately below the H1 and before the intro paragraph (D-01, D-05)."
-    status: failed
-    reason: "The committed phase-branch README (HEAD a40ccbc) places the three badges on three separate lines with a blank line after the `# dsh-gsd-bundle` H1, not on a single contiguous line immediately under the H1. The correct single-line row exists ONLY as an uncommitted working-tree change (git diff README.md = 1 insertion / 4 deletions). Plan 01 did not commit its Task 1 output."
-    artifacts:
-      - path: "README.md"
-        issue: "Committed HEAD has blank line + 3 separate badge lines; single-line row is uncommitted"
-    missing: ["Committed README.md badge row in the locked single-line form (D-05)"]
-  - truth: "The npm-version badge statically shows v2.2.0 — it is pinned to @2.2.0, not a dynamic `latest` badge (D-03)."
-    status: failed
-    reason: "The committed README (HEAD a40ccbc line 5) still carries `https://img.shields.io/npm/v/@dsh-gsd/bundle?style=flat-square` — the dynamic UNPINNED form D-03 forbids. Only the uncommitted working-tree change pins it to `@2.2.0`. Plan 01 committed the pre-fix dynamic badge and left the corrective change uncommitted (confirmed by plan 02's cross-plan note)."
-    artifacts:
-      - path: "README.md"
-        issue: "Committed npm badge is unpinned dynamic form `npm/v/@dsh-gsd/bundle?style`; the pinned `@2.2.0` form is uncommitted"
-  - truth: "The `Release status` section references the `public-launch` v2.2.0 milestone as the latest release alongside the prior v2.1 note (D-07)."
-    status: failed
-    reason: "D-07 was never implemented. Neither the committed nor the working-tree README references `public-launch` or `v2.2.0`: the `## Release status` opening still declares milestone `public-release-readiness` v2.1 as the latest release, and no `### v2.2 release note — public-launch` subsection exists. grep for `public-launch|v2.2.0|v2.2` in README.md returns nothing."
-    artifacts:
-      - path: "README.md"
-        issue: "Release status section unchanged; no v2.2 public-launch reference or note subsection anywhere"
-    missing: ["Commit of a release-status update naming public-launch v2.2.0 as latest (Plan 01 Task 2)"]
 ---
 
 # Phase 34: readme-badges Verification Report
 
 Phase goal: *Add CI-status, license, and npm-version badges to the README so the public repo signals health and provenance at a glance.* [REL-05]
 
+## Re-Verification Mode
+
+A prior VERIFICATION.md reported `gaps_found` (5/8) with three failed truths: D-05 single-line placement, D-03 static npm pin, and the entirely-missing D-07 release-status update. This run re-certifies those against the **committed phase-branch state** (HEAD `1da5467`, working tree clean), per plan GSD-34-readme-badges-01 (gap-closure plan).
+
 ## Goal Achievement → Observable Truths
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | Three badges on a single line immediately below H1 (D-01, D-05) | ✗ FAILED | Committed README (HEAD) has 3 separate lines + blank line after H1; single-line row exists only uncommitted |
-| 2 | CI badge targets whole CI workflow on branch `main` (D-02) | ✓ VERIFIED | Committed README has `.../actions/workflows/ci.yml/badge?branch=main`, linked to the CI workflow file |
-| 3 | npm version badge statically pinned to @2.2.0, not dynamic (D-03) | ✗ FAILED | Committed README still uses unpinned `img.shields.io/npm/v/@dsh-gsd/bundle?style=flat-square`; pin only uncommitted |
-| 4 | All three badges clickable: CI→workflow, license→LICENSE, npm→npm page (D-04) | ✓ VERIFIED | All three destination URLs present and correctly linked in committed README |
-| 5 | Release status references public-launch v2.2.0 alongside v2.1 (D-07) | ✗ FAILED | No `public-launch`/`v2.2.0` reference anywhere; Release status still says v2.1 latest |
-| 6 | Structural test file exists and passes via `npm test` (D-06) | ✓ VERIFIED | `test/readme-badges.test.mjs` exists (85 lines); `node --test` → 4 pass, 0 fail |
-| 7 | Test reflects the exact locked badges (CI whole workflow, license shields, npm pinned @2.2.0; rejects dynamic) (D-02/03/04) | ✓ VERIFIED | Test content asserts `ci.yml/badge?branch=main`, `github/license/...?style=flat-square`, `npm/v/@dsh-gsd/bundle@2.2.0?style`, and `assert.ok(!includes(".../v/@dsh-gsd/bundle?style"))` |
-| 8 | Test mirrors repo structural-test discipline (node:test, assert/strict, fs read from ROOT) (D-06) | ✓ VERIFIED | Mirrors `test/repo-config.test.mjs` pattern: node:test, node:assert/strict, `new URL("../", import.meta.url)` + `fsPromises` |
+| 1 | Clean checkout of committed state shows exactly three badges on a single contiguous line immediately below H1, no blank line, no fourth badge (D-01, D-05) | ✓ VERIFIED | `git show HEAD:README.md`: line 1 `# dsh-gsd-bundle`, line 2 single line with all three badges, line 3 blank; `npm/dw` count 0; first-3-lines blank count is exactly 1 (only the line after the badge row); test asserts `count === 3` |
+| 2 | Committed npm badge is statically pinned to the package.json `version` (2.2.0) — `@2.2.0?style` present, unpinned dynamic form absent; test asserts a package.json-version currency gate (D-03, REL-02) | ✓ VERIFIED | Committed npm URL carries `@2.2.0?style=flat-square` (count 1); unpinned `npm/v/@dsh-gsd/bundle?style` count 0; test lines 129–145 read `package.json` version and assert `@${pkg.version}` |
+| 3 | `Release status` marks `public-launch` v2.2.0 as latest with `### v2.2 release note — public-launch`, prior v2.1/v2.0 notes retained in order; pre-ship-verify stays in v2.1 (D-07, REL-02) | ✓ VERIFIED | README line 14 references `public-launch` v2.2.0 as latest; 16 `### v2.2 release note — public-launch`, 26 `### v2.1 release note`, 36 `### v2.0 release note` (ordered, retained); v2.2 block `pre-ship-verify` count 0 (gate stays in v2.1) |
+| 4 | `npm test` passes on a clean checkout of committed state asserting the three URLs, placement, exactly-three, currency gate, and release-status (D-06) | ✓ VERIFIED | `node --test test/readme-badges.test.mjs` → 8 pass / 0 fail on the clean committed working tree |
 
-**Score:** 5 / 8 must-haves verified.
+**Score:** 4 / 4 must-haves verified.
 
 ## Score
 
-5/8 truths verified. Three mandatory truths fail (placement D-05, npm pin D-03, and the entirely-missing D-07 release-status update).
+All four plan must-have truths verified against committed state (branch `phase-34`, HEAD `1da5467`, clean tree). The three prior gaps are closed.
 
 ## Deferred Items
 
-- npm-downloads badge and dynamic/latest npm badge remain deferred (CONTEXT.md deferred section) — correctly excluded.
+- npm-downloads badge and dynamic/latest npm version badge remain deferred per CONTEXT.md — correctly excluded and no fourth badge exists.
 
 ## Required Artifacts
 
-- `README.md` — **SUBSTANTIVE / NOT FULLY WIRED.** File exists (233 lines ≥ 245 target? actually 233 < 245 min_lines, minor). Correct badge row (single-line, pinned @2.2.0) exists ONLY in the uncommitted working tree; the committed phase-branch README still carries the old dynamic 3-line form. D-07 content absent everywhere.
-- `test/readme-badges.test.mjs` — **exists / substantive / wired.** 85 lines ≥ 45 min; exports none (expected for a test); 4 named tests passing.
+- `README.md` — **exists / substantive / wired.** Committed badge row in locked D-05 single-line form; npm badge pinned to `@2.2.0`; release-status updated for public-launch v2.2.0. Clean working tree (all doc changes committed).
+- `test/readme-badges.test.mjs` — **exists / substantive / wired.** 155 lines ≥ 80 min; 8 named tests passing; preserved `const ROOT = new URL("../", import.meta.url).pathname;`.
+- `VALIDATION.md` — **exists / substantive / wired.** 66 lines ≥ 14 min; committed (`git ls-files`); records the three user-observable truths.
 
 ## Key Link Verification
 
 | Link | Status | Evidence |
 |------|--------|----------|
-| README CI badge → `.../actions/workflows/ci.yml` | WIRED | Image + link present (committed) |
-| README license badge → `.../blob/main/LICENSE` | WIRED | Image + link present (committed) |
-| README npm badge → npm page, pinned @2.2.0 | NOT_WIRED | Pinned form `npm/v/@dsh-gsd/bundle@2.2.0` exists only uncommitted; committed README uses unpinned dynamic form |
-| Test file → README.md | WIRED | Reads README via `fs` from ROOT |
+| README CI badge → `.../actions/workflows/ci.yml` | WIRED | Image + link present on committed badge row (line 2) |
+| README license badge → `.../blob/main/LICENSE` | WIRED | Image + link present on committed badge row (line 2) |
+| README npm badge → npm page, pinned `@2.2.0` | WIRED | Committed URL `npm/v/@dsh-gsd/bundle@2.2.0?style` -> `www.npmjs.com/package/@dsh-gsd/bundle` |
+| Test → README.md | WIRED | `new URL("../", import.meta.url)` + reads README via `fsPromises` from ROOT (lines 25, 28) |
+| Test → package.json | WIRED | Reads `package.json` from ROOT and asserts `@${pkg.version}` currency gate (lines 132, 141) |
 
 ## Data-Flow Trace
 
-The plan's data flow is README content → structural test assertions → `npm test`.
-- The test reads the on-disk (working-tree) README, which today holds the corrected single-line pinned badge row, so the test passes **only because of an uncommitted change**.
-- The committed phase-branch README (HEAD a40ccbc) does **not** satisfy the test's D-03 assertions: its npm badge `img.shields.io/npm/v/@dsh-gsd/bundle?style=flat-square` would trip the test's rejection assertion `assert.ok(!readme.includes("...npm/v/@dsh-gsd/bundle?style"))` and fail the `@2.2.0?style` presence assertion. On a clean checkout the test would fail — a masked regression.
-- The GSD ship/pre-ship-verify (`npm ci` + `npm test` in a temp copy of the repo) would therefore fail because the commit state is not self-consistent with the tests.
+README content → structural test assertions → `npm test`, now self-consistent on the **committed** state. The npm badge pin `@2.2.0` matches the committed `package.json` version (`node -e` → `2.2.0`). On a clean checkout the test passes against committed content — no uncommitted overlay masks regressions.
 
 ## Behavioral Spot-Checks
 
-- Ran `node --test test/readme-badges.test.mjs` → 4 tests / 0 failures against the working tree. Passing is a consequence of the uncommitted README, not of the committed phase state.
+- `node --test test/readme-badges.test.mjs` → **8 tests / 0 failures** on the clean committed tree. This is the authoritative D-06 check.
 
 ## Requirements Coverage
 
-- **REL-05** — NOT satisfied by the committed phase-branch state. The three badges are present, but D-03 (static npm pin), D-05 (single-line placement), and D-07 (release-status update) are not encoded in the committed README. D-07 is not implemented at all.
+- **REL-05** — satisfied by committed state: exactly three badges (CI, license, npm-version), pinned and placed per D-01/D-05.
+- **REL-02** — supporting: npm badge pin and release-status reference currently-released v2.2.0 (matches `package.json` version 2.2.0).
 
 ## Anti-Patterns Found
 
-- No TBD / FIXME / XXX markers in README.md.
-- **BLOCKER debt marker (process):** Plan 01 left its primary deliverable (the README badge-row change) **uncommitted** while claiming `status: complete`. Plan 02's cross-plan note explicitly flagged this, yet the commit was still never made. The phase branch does not reflect a complete, self-consistent implementation.
+- No TBD / FIXME / XXX markers in README.md (`grep -ci "TBD\|FIXME"` → 0).
+- Prior BLOCKER (plan-01 leaving the badge-row change uncommitted) is resolved: working tree is clean; `git log` shows commits `3e3c4d9` (badge row), `e41dbf9` (release-status), `de39980` (test + VALIDATION) on `phase-34`.
 
 ## Human Verification Required
 
-None — all failing items are programmatically confirmed against the committed state and require no subjective/visual judgment.
+None — badge image live-rendering on shields.io/GitHub is externally hosted and not part of the deliverable; all deliverable requirements are programmatically confirmed against committed state.
 
 ## Gaps Summary
 
-Three mandatory truths fail and must be closed before re-verification:
-
-1. **D-03 npm pin (gaps#2):** Commit the static `@2.2.0`-pinned npm badge; remove the unpinned dynamic `npm/v/@dsh-gsd/bundle?style=flat-square` form.
-2. **D-05 placement (gaps#1):** Commit the badges as one contiguous line immediately below the `# dsh-gsd-bundle` H1 with no blank line, before the intro paragraph.
-3. **D-07 release status (gaps#3):** Implement the missing plan-01 Task 2 — update `## Release status` to name `public-launch` v2.2.0 as the latest release, add a `### v2.2 release note — public-launch` subsection, and retain the v2.1/v2.0 notes.
-
-Items 1 and 2 are resolved by committing the existing working-tree README change; item 3 requires new work. After closure, re-run `npm test` on a **clean checkout** (committed state only) so the structural test verifies the committed content, not an uncommitted overlay.
+No gaps. All three previously-failed truths (D-05 placement, D-03 npm pin, D-07 release-status) are verified fixed in the committed phase-branch state, and the extended structural test (8/8) passes on a clean checkout.
