@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v2.1.0
 milestone_name: public-release-readiness
-status: idle
-active_phase: null
-next_action: null
-next_phases: [26]
+status: plan
+active_phase: 27
+next_action: plan-phase
+next_phases: [27]
 progress:
   total_phases: 28
   completed_phases: 26
   total_plans: 3
   completed_plans: 70
   percent: 93
-current_phase: 26
-current_phase_name: repo-hygiene
+current_phase: 27
+current_phase_name: ci-and-security
 current_plan: 3
-last_updated: "2026-08-29T03:59:22.778Z"
+last_updated: "2026-08-29T04:52:12.866Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 26 shipped — PR #29"
@@ -137,6 +137,7 @@ _No active phase._
 - Phase 26: planned — 3 plan(s) across 2 wave(s).
 - Phase 26: planned — 3 plan(s) across 2 wave(s).
 - Phase 26 shipped — PR #29 (https://github.com/jaaty/dsh-gsd-bundle/pull/29)
+- Phase 27: CONTEXT.md sealed — 8 decisions
 
 ### Blockers / Concerns
 _none_
