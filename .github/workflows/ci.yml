@@ -10,6 +10,12 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
 
+    # GH_TOKEN lets the repo-config structural test (test/repo-config.test.mjs)
+    # shell out to `gh` to assert the live repo settings (homepage, topics,
+    # visibility, private vuln reporting). Without it gh refuses to run in CI.
+    env:
+      GH_TOKEN: ${{ github.token }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
