@@ -16,7 +16,7 @@ Every unit of work is a **phase** that moves through these steps in order. State
 
 The v2.1 milestone hardens the GSD bundle for public release — licensing and attribution, repository hygiene, CI and security, distribution research, and a deterministic pre-ship verification gate. It delivered:
 
-- **License-and-attribution** — added an MIT `LICENSE`, verified opengsd-core attribution and license compliance in `NOTICE`, and fixed the broken `gsd-core-reference.md` reference in the README.
+- **License-and-attribution** — added an MIT `LICENSE`, verified opengsd-core attribution and license compliance in `NOTICE`, and fixed the broken opengsd-core reference in the README.
 - **Repo-hygiene** — added `CHANGELOG.md`, `CONTRIBUTING.md`, and `CODE_OF_CONDUCT.md`, and applied the `.planning/` keep-vs-gitignore-vs-curate decision.
 - **Ci-and-security** — added a GitHub Actions test workflow (`.github/workflows/ci.yml`) running the suite on pull requests and push to `main`, committed a `package-lock.json` for reproducible `npm ci` installs, and added a gitleaks secret-scan guard that fails a PR if a new secret is introduced.
 - **Publish-research** — a research-backed distribution decision for the bundle, recorded in `DISTRIBUTION.md`.
