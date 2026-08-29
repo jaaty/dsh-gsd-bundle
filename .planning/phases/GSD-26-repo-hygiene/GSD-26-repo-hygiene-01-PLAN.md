@@ -27,11 +27,7 @@ must_haves:
       provides: "Full-depth contribution guide (setup, tests, PR workflow, GSD loop, hygiene rule)"
       min_lines: 40
       exports: []
-  key_links:
-    - from: "CHANGELOG.md"
-      to: "README.md"
-      via: "README links the changelog (D-02/D-09)"
-      pattern: "CHANGELOG\\.md"
+  key_links: []
 ---
 <objective>Create the three repo-root documentation files — CHANGELOG.md, CODE_OF_CONDUCT.md, and CONTRIBUTING.md — that PUB-03 requires. This is the content plan for the phase: it delivers the actual documentation artefacts. The verification test that proves all phase outputs is written in plan 03, after the README links and curate decision are also in place.</objective>
 <context>

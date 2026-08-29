@@ -4,7 +4,7 @@ plan: 03
 type: execute
 wave: 2
 depends_on: ["GSD-26-repo-hygiene-01", "GSD-26-repo-hygiene-02"]
-files_modified: ["README.md", "test/repo-hygiene.test.mjs"]
+files_modified: ["README.md", "test/repo-hygiene.test.mjs", ".planning/phases/GSD-26-repo-hygiene/VALIDATION.md"]
 autonomous: true
 requirements: ["PUB-03"]
 gap_closure: false
@@ -14,10 +14,15 @@ must_haves:
     - "README.md links to CHANGELOG.md, CONTRIBUTING.md, and CODE_OF_CONDUCT.md."
     - "README.md's .planning/ artefacts section documents the curate decision: durable artefacts are tracked, volatile churn is gitignored."
     - "test/repo-hygiene.test.mjs passes (node --test exit 0) and asserts the three repo-root files exist, the README links them, the README documents the curate decision, and the volatile .planning/ files are untracked while durable ones remain tracked."
+    - "VALIDATION.md exists at the phase root and maps every locked decision D-01..D-09 to the named automated test(s) in test/repo-hygiene.test.mjs that prove it (Nyquist gate, nyquist_validation: true)."
   artifacts:
     - path: "test/repo-hygiene.test.mjs"
       provides: "node --test verification covering all phase outputs (files, README links, curate decision, git tracking state)"
       min_lines: 60
+      exports: []
+    - path: ".planning/phases/GSD-26-repo-hygiene/VALIDATION.md"
+      provides: "The Nyquist coverage artefact for the phase: maps every locked decision D-01..D-09 to the named automated test(s) that prove it"
+      min_lines: 20
       exports: []
   key_links:
     - from: "README.md"
@@ -37,7 +42,7 @@ must_haves:
       via: "README .planning/ artefacts section documents the curate decision (D-08)"
       pattern: "gitignore|git-ignore|volatile"
 ---
-<objective>Wire the phase outputs together: add README links to the three new files (D-09), document the .planning/ curate decision in README's .planning/ artefacts section (D-08), and add the full node --test verification (test/repo-hygiene.test.mjs) that proves every phase output — the three files, the README links, the curate note, and the git tracking state — is in place. This plan runs last (wave 2) because it depends on the files from plan 01 and the curate decision from plan 02.</objective>
+<objective>Wire the phase outputs together: add README links to the three new files (D-09), document the .planning/ curate decision in README's .planning/ artefacts section (D-08), add the full node --test verification (test/repo-hygiene.test.mjs) that proves every phase output — the three files, the README links, the curate note, and the git tracking state — is in place, and record the D-01..D-09 to automated-test mapping in VALIDATION.md (Nyquist gate, nyquist_validation: true). This plan runs last (wave 2) because it depends on the files from plan 01 and the curate decision from plan 02.</objective>
 <context>
 @README.md (has a "### `.planning/` artefacts" section at line ~146 and a "## License" section at line ~199)
 @CHANGELOG.md (created in plan 01)
@@ -74,5 +79,20 @@ must_haves:
       - grep -q 'git ls-files' test/repo-hygiene.test.mjs
     </acceptance_criteria>
     <done>test/repo-hygiene.test.mjs passes (exit 0) and asserts the three files, the README links, the curate note, and the git tracking state.</done>
+  </task>
+  <task type="auto">
+    <name>Task 3: Record the D-01..D-09 to automated-test mapping in VALIDATION.md (Nyquist gate)</name>
+    <files>.planning/phases/GSD-26-repo-hygiene/VALIDATION.md</files>
+    <read_first>test/repo-hygiene.test.mjs</read_first>
+    <action>Write the Nyquist coverage artefact for the phase at .planning/phases/GSD-26-repo-hygiene/VALIDATION.md (the phase root, alongside CONTEXT.md/RESEARCH.md). It is a plain Markdown file that records, for every locked decision D-01..D-09 in CONTEXT.md, the named automated test(s) in test/repo-hygiene.test.mjs that prove it, plus the phase-goal truths they back. Structure: a "## Nyquist Coverage" heading followed by a short statement that nyquist_validation is enabled (.planning/config.json) and every new behaviour in this phase has a named automated test, with no 3-consecutive-task window lacking coverage; then a "## Decision-to-Test Map" section with one line per decision D-01..D-09, each citing the exact test name string used in test/repo-hygiene.test.mjs (e.g. "D-01/D-02 — CHANGELOG.md exists and is Keep-a-Changelog — test 'CHANGELOG.md exists and is Keep-a-Changelog (D-01/D-02)'"). Map D-01/D-02 to the changelog test, D-03 to the code-of-conduct test, D-04/D-05 to the contributing test, D-06/D-07 to the git-tracking test, D-08 to the README curate-note test, and D-09 to the README-links test. Do NOT invent tests that do not exist in test/repo-hygiene.test.mjs — every cited test name must match a test actually written in Task 2.</action>
+    <verify>test -f .planning/phases/GSD-26-repo-hygiene/VALIDATION.md; grep -q '## Nyquist Coverage' .planning/phases/GSD-26-repo-hygiene/VALIDATION.md; grep -q 'D-09' .planning/phases/GSD-26-repo-hygiene/VALIDATION.md</verify>
+    <acceptance_criteria>
+      - test -f .planning/phases/GSD-26-repo-hygiene/VALIDATION.md
+      - grep -q '## Nyquist Coverage' .planning/phases/GSD-26-repo-hygiene/VALIDATION.md
+      - grep -q 'D-01' .planning/phases/GSD-26-repo-hygiene/VALIDATION.md
+      - grep -q 'D-09' .planning/phases/GSD-26-repo-hygiene/VALIDATION.md
+      - grep -q 'repo-hygiene.test.mjs' .planning/phases/GSD-26-repo-hygiene/VALIDATION.md
+    </acceptance_criteria>
+    <done>VALIDATION.md exists at the phase root and maps every locked decision D-01..D-09 to the named automated test(s) in test/repo-hygiene.test.mjs that prove it.</done>
   </task>
 </tasks>
