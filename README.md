@@ -175,6 +175,8 @@ The automated per-plugin removal suite proves this: every step plugin can be ret
 
 `<NN>` = zero-padded phase number; `<PP>` = zero-padded plan number within the phase. `STATE.md` frontmatter carries `gsd_state_version`, `milestone`, `status`, `active_phase`, `next_action`, `progress`, and session-continuity fields, matching the opengsd schema.
 
+**Curate, don't commit everything.** The durable artefacts the GSD loop needs to orient — `PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`, `config.json`, the `codebase/` map, and the per-phase `CONTEXT` / `RESEARCH` / `PLAN` / `SUMMARY` / `VERIFICATION` documents — are tracked in git. The volatile churn — `async-jobs.json`, `WINDOWS.md`, `quick/` records, and the per-phase `DISCUSSION-LOG.md` files — is gitignored (see `.gitignore`). These volatile files stay on disk (the GSD tools keep writing them) but are not committed. Because the durable subset is committed, never paste real credentials or tokens into `.planning/` artefacts.
+
 ### Fresh-context subagents
 
 Research, planning, execution, and verification run as one-shot fresh-context subagents spawned through the host `subagents` service's in-process `spawn` provider (`ctx.subagents.start('spawn', { prompt, parent, signal })`) — exactly opengsd's fresh-context model. The role prompts (researcher, planner, plan-checker, executor, verifier, ui-researcher, ui-checker, codebase-mapper) are condensed faithfully from opengsd's `agents/*.md`: role, tools, inputs, outputs, the planner's goal-backward `must_haves`, the plan-checker's 12 dimensions and adversarial FORCE stance, the executor's atomic-commit + worktree discipline, the verifier's "do not trust SUMMARY.md" escalation gate with the 3-value status decision tree, and the codebase-mapper's focus→document templates with the forbidden-secrets rule.
@@ -195,6 +197,10 @@ The reference used to build this is the [opengsd-core](https://github.com/open-g
 ## Status
 
 **Milestone v2.0 is complete and released** (`v2.0.0`): all 24 phases shipped — live-mount, service-tools, loop-e2e, checkpoint-resume, window-ledger, loop-robustness, uat-conversation, capability-gates, job-runtime, codebase-query, phase-dir-resolution, single-source-constants, gate-dispatch, execute-checkpoint, ship-robustness, context-budget, phase-branch-isolation, job-runtime-extensions, codebase-intel-extensions, multi-window-topology, capability-services, reactive-loop-rendering, removal-verification, composability-hardening. Every plugin module loads and its `apply` registers its tools with valid schemas; the `cordis.patch.yml` merges cleanly over `dsh-base` and overrides the `agent-loop` row's config. A full live mount (resolving the subpath exports and activating the plugins) is verified, the loop has been exercised end-to-end across the shipped phases, and the v2.0 removal suite proves every step plugin can be retired with the loop still functional.
+
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, how to run the test suite, the PR/contribution workflow, and a short explanation of the GSD phase loop that drives this repo. All participants are expected to follow the [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). See [CHANGELOG.md](CHANGELOG.md) for the release history.
 
 ## License
 
