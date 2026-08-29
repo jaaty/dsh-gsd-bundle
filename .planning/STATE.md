@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v2.0
 milestone_name: graceful-removal
-status: verify
+status: ship
 active_phase: 24
-next_action: verify-phase
+next_action: ship-phase
 next_phases: [24]
 progress:
   total_phases: 24
@@ -15,7 +15,7 @@ progress:
 current_phase: 24
 current_phase_name: composability-hardening
 current_plan: 3
-last_updated: "2026-08-29T02:10:41.895Z"
+last_updated: "2026-08-29T02:11:39.788Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 23 shipped — PR #26"
