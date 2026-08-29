@@ -159,6 +159,7 @@ _No active phase._
 - Phase 30 shipped — PR #33 (https://github.com/jaaty/dsh-gsd-bundle/pull/33)
 - Phase 32: CONTEXT.md sealed — 6 decisions
 - Phase 32: planned — 2 plan(s) across 2 wave(s).
+- Phase 32: plan 01 executed — SECURITY.md policy (D-01/D-02) + package.json files whitelist + README link (D-05); 3 commits, npm test green 415/415, SUMMARY.md written.
 
 ### Blockers / Concerns
 _none_
