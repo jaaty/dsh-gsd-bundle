@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v2.2.0
 milestone_name: public-launch
-status: plan
+status: execute
 active_phase: 30
-next_action: plan-phase
+next_action: execute-phase
 next_phases: [30]
 progress:
   total_phases: 34
@@ -15,7 +15,7 @@ progress:
 current_phase: 30
 current_phase_name: publishable-package
 current_plan: 1
-last_updated: "2026-08-29T06:36:52.290Z"
+last_updated: "2026-08-29T06:40:42.085Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 28 shipped — PR #31"
@@ -149,6 +149,7 @@ _No active phase._
 - The working tree must be left clean on main with the v2.1.0 tag pointing at the release commit.
 - quick 2026-08-29-readme-v2-1-0-update: Update README.md to reflect the v2.1.0 milestone release. The README is stale: it still presents milestone `graceful-removal` v2.0.0 as the latest release and never mentions the v2.1.0 `public-release-readiness` milestone or the new pre-ship-verify gate. The milestone `public-release-readiness` (v2.1.0) is now complete and released (all 29 phases shipped, PRs #1..#32, merged to main; tag v2.1.0). Use CHANGELOG.md's `[2.1.0]` entry as the source of truth for the milestone content.
 - Phase 30: CONTEXT.md sealed — 10 decisions
+- Phase 30: planned — 2 plan(s) across 1 wave(s).
 
 ### Blockers / Concerns
 _none_
