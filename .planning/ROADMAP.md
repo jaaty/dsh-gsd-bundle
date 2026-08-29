@@ -1,6 +1,6 @@
 # Roadmap — public-release-readiness (v2.1.0)
 
-28 phase(s) | requirements mapped per phase
+29 phase(s) | requirements mapped per phase
 
 | # | Phase | Goal | Requirements |
 |---|-------|------|--------------|
@@ -32,6 +32,7 @@
 | 26 | [x] repo-hygiene | Add a CHANGELOG, CONTRIBUTING.md, and code of conduct, and make and apply the .planning/ directory keep-vs-gitignore-vs-curate decision. | PUB-03 |
 | 27 | [x] ci-and-security | Add a GitHub Actions test workflow and run a full-history secret scan to confirm no credentials or tokens are exposed. | PUB-04 |
 | 28 | publish-research | Research how other dsh plugins are distributed (npm publish vs clone-and-install-from-source) and document a research-backed distribution decision. | PUB-05 |
+| 29 | pre-ship-verify | Add a deterministic pre-ship local verification gate to gsd_ship that runs a clean npm ci + npm test in a temp copy of the repo before pushing, fails the ship on failure, and is skippable via a flag. | SHIP-01 |
 
 ## Progress
 
@@ -65,3 +66,4 @@
 | 26 | repo-hygiene | [x] Complete | 2026-08-29 |
 | 27 | ci-and-security | [x] Complete | 2026-08-29 |
 | 28 | publish-research | pending |  |
+| 29 | pre-ship-verify | pending |  |
