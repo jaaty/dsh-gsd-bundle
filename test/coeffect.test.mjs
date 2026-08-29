@@ -1,6 +1,6 @@
 // Static coeffect assertions for the subagent-driven plugins (DEGR-07, D-04).
 //
-// The six subagent-driven plugins (plan, execute, verify, quick, ui,
+// The seven subagent-driven plugins (spec, plan, execute, verify, quick, ui,
 // map-codebase) are entirely subagent-driven: their tools read ctx.get('subagents')
 // and throw if absent. Declaring 'subagents' as a hard required coeffect in their
 // top-level inject array makes their fiber stay inactive when the subagents host
@@ -14,9 +14,9 @@ import assert from "node:assert/strict";
 
 import { mountSubset, makeSubagents } from "./helpers/mount-harness.mjs";
 
-// The six subagent-driven plugins (D-04). Each must declare 'subagents' as a
+// The seven subagent-driven plugins (D-04). Each must declare 'subagents' as a
 // hard required coeffect in its inject array.
-const SUBAGENT_DRIVEN_SUBS = ["plan", "execute", "verify", "quick", "ui", "map-codebase"];
+const SUBAGENT_DRIVEN_SUBS = ["spec", "plan", "execute", "verify", "quick", "ui", "map-codebase"];
 
 // The non-subagent core-tools surfaces that must stay active when subagents is
 // absent (D-05, phase-22 D-03 graceful degradation).

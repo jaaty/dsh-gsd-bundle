@@ -1,9 +1,9 @@
 // Offline activation harness for @dsh-gsd/bundle (Phase 1: live-mount).
 //
-// Proves the 12 cordis.patch.yml plugin rows activate inside a fake DSH host:
+// Proves the 13 cordis.patch.yml plugin rows activate inside a fake DSH host:
 // each subpath export resolves, apply() runs against one shared fake ctx, and
 // the full registration surface is captured (1 persona section, 1 runtime-
-// context provider, gsdState service, 13 gsd_* tools, 12 /gsd-* commands).
+// context provider, gsdState service, 15 gsd_* tools, 13 /gsd-* commands).
 // Offline only (D-01/D-02): FakeFs + fake-ctx, no live DSH boot, no LLM/git/gh.
 
 import { test, describe, beforeEach } from "node:test";
@@ -30,7 +30,7 @@ import {
   makeSubagents,
 } from "./helpers/mount-harness.mjs";
 
-// Apply all 12 plugins in patch order against a ctx; throw with the offending id.
+// Apply all 13 plugins in patch order against a ctx; throw with the offending id.
 async function applyAll(ctx) {
   for (const { id, sub } of PATCH_ROWS) {
     const mod = await import(`@dsh-gsd/bundle/${sub}`);
@@ -93,7 +93,7 @@ async function readPatchRows() {
   return { overridePresent, agentLoopConfigRaw, insertRows };
 }
 
-// The 12 expected insert rows, verbatim from cordis.patch.yml:34-84 (D-03:
+// The 13 expected insert rows, verbatim from cordis.patch.yml:34-84 (D-03:
 // "exactly the insert block"). Cross-checked against the parsed file so a row
 // added/removed in the patch fails the test.
 const EXPECTED_INSERT_ROWS = PATCH_ROWS.map(({ id, sub }) => ({
@@ -101,22 +101,23 @@ const EXPECTED_INSERT_ROWS = PATCH_ROWS.map(({ id, sub }) => ({
   spec: `@dsh-gsd/bundle/${sub}`,
 }));
 
-// Expected registered tool names (13) — verified against the real modules.
+// Expected registered tool names (15) — verified against the real modules.
 const EXPECTED_TOOL_NAMES = [
   "gsd_init", "gsd_status", "gsd_progress", "gsd_new_milestone",
-  "gsd_discuss", "gsd_plan", "gsd_execute", "gsd_verify",
+  "gsd_discuss", "gsd_spec_phase", "gsd_plan", "gsd_execute", "gsd_verify",
   "gsd_ship", "gsd_ui_phase", "gsd_quick", "gsd_map_codebase",
   "gsd_job", "gsd_intel_updater",
 ];
 
-// Expected registered command names (12) — from lib/commands.js:35-161 (D-03).
+// Expected registered command names (13) — from lib/commands.js:35-161 (D-03).
 const EXPECTED_COMMAND_NAMES = [
   "gsd-init", "gsd-status", "gsd-progress", "gsd-discuss-phase",
-  "gsd-ui-phase", "gsd-plan-phase", "gsd-execute-phase", "gsd-verify-work",
-  "gsd-ship", "gsd-quick", "gsd-map-codebase", "gsd-new-milestone",
+  "gsd-spec-phase", "gsd-ui-phase", "gsd-plan-phase", "gsd-execute-phase",
+  "gsd-verify-work", "gsd-ship", "gsd-quick", "gsd-map-codebase",
+  "gsd-new-milestone",
 ];
 
-describe("mount: all 12 plugins activate", () => {
+describe("mount: all 13 plugins activate", () => {
   let fs, ctx;
   beforeEach(() => {
     fs = new FakeFs();
@@ -125,12 +126,12 @@ describe("mount: all 12 plugins activate", () => {
     ctx = makeMountCtx(fs, { subagents: makeSubagents() });
   });
 
-  test("applies all 12 plugins in patch order without throwing", async () => {
+  test("applies all 13 plugins in patch order without throwing", async () => {
     await applyAll(ctx);
     assert.ok(ctx.provided.has("gsdState"), "gsdState service was not provided");
     assert.ok(ctx.provided.get("gsdState") instanceof GsdState, "gsdState is not a GsdState instance");
-    assert.ok(ctx.tools.length === 14, `expected 14 tools, got ${ctx.tools.length}`);
-    assert.ok(ctx.commands.length === 12, `expected 12 commands, got ${ctx.commands.length}`);
+    assert.ok(ctx.tools.length === 15, `expected 15 tools, got ${ctx.tools.length}`);
+    assert.ok(ctx.commands.length === 13, `expected 13 commands, got ${ctx.commands.length}`);
     assert.ok(ctx.sections.length === 1, `expected 1 section, got ${ctx.sections.length}`);
     assert.ok(ctx.contexts.length === 1, `expected 1 context, got ${ctx.contexts.length}`);
 
@@ -142,10 +143,10 @@ describe("mount: all 12 plugins activate", () => {
     assert.ok(cancelEffect, "gsdJobsRuntime.cancelAll cleanup effect was not registered");
     assert.doesNotThrow(() => cancelEffect.disposer(), "invoking the unload-cancel disposer must never throw");
 
-    // DEGR-01: all 10 capability services are provided with the documented
+    // DEGR-01: all 11 capability services are provided with the documented
     // descriptor shape (D-03: key/step/role/tools/commands/order). Built from
     // CAPABILITY_KEYS so test and source never drift (D-02 camelCase keys).
-    assert.ok(CAPABILITY_KEYS.length === 10, `expected 10 capability keys, got ${CAPABILITY_KEYS.length}`);
+    assert.ok(CAPABILITY_KEYS.length === 11, `expected 11 capability keys, got ${CAPABILITY_KEYS.length}`);
     for (const key of CAPABILITY_KEYS) {
       const cap = ctx.provided.get(key);
       assert.ok(cap, `capability ${key} was not provided`);
@@ -160,10 +161,10 @@ describe("mount: all 12 plugins activate", () => {
   });
 
   test("absent capability leaves its slash command unregistered (DEGR-03)", async () => {
-    // Apply every plugin EXCEPT gsd-commands so all 10 capabilities are
+    // Apply every plugin EXCEPT gsd-commands so all 11 capabilities are
     // provided, then withdraw one capability from the provided store and apply
     // gsd-commands: its sub-fiber for that capability must stay inactive (never
-    // register the command) while the other 11 commands register normally.
+    // register the command) while the other 12 commands register normally.
     const ctx2 = makeMountCtx(fs);
     for (const { id, sub } of PATCH_ROWS) {
       if (sub === "commands") continue;
@@ -176,7 +177,7 @@ describe("mount: all 12 plugins activate", () => {
     const commandsMod = await import(`@dsh-gsd/bundle/commands`);
     commandsMod.apply(ctx2, {});
 
-    assert.ok(ctx2.commands.length === 11, `expected 11 commands, got ${ctx2.commands.length}`);
+    assert.ok(ctx2.commands.length === 12, `expected 12 commands, got ${ctx2.commands.length}`);
     assert.ok(!ctx2.commands.some((c) => c.name === "gsd-quick"), "gsd-quick was registered despite gsdQuick being absent");
     for (const expected of EXPECTED_COMMAND_NAMES) {
       if (expected === "gsd-quick") continue;
@@ -200,9 +201,9 @@ describe("mount: cordis.patch.yml rows resolve", () => {
       "agent-loop override does not configure a gsd agent",
     );
 
-    // Exactly the 12 insert rows (D-03).
-    assert.ok(insertRows.length === 12, `expected 12 insert rows, got ${insertRows.length}`);
-    assert.deepEqual(insertRows, EXPECTED_INSERT_ROWS, "parsed insert rows differ from the expected 12");
+    // Exactly the 13 insert rows (D-03).
+    assert.ok(insertRows.length === 13, `expected 13 insert rows, got ${insertRows.length}`);
+    assert.deepEqual(insertRows, EXPECTED_INSERT_ROWS, "parsed insert rows differ from the expected 13");
 
     // Each row's name resolves through package.json exports and import().
     const pkgPath = path.resolve(import.meta.dirname, "../package.json");
@@ -220,14 +221,14 @@ describe("mount: cordis.patch.yml rows resolve", () => {
       assert.equal(typeof mod.apply, "function", `${id}: apply is not a function`);
     }
 
-    // Cross-check captured tool names against the expected 13.
+    // Cross-check captured tool names against the expected 15.
     const fs = new FakeFs();
     const ctx = makeMountCtx(fs, { subagents: makeSubagents() });
     await applyAll(ctx);
     const toolNames = ctx.tools.map((t) => t.name).sort();
     assert.deepEqual(toolNames, [...EXPECTED_TOOL_NAMES].sort(), "registered tool names mismatch");
 
-    // Cross-check captured command names against the expected 12.
+    // Cross-check captured command names against the expected 13.
     const commandNames = ctx.commands.map((c) => c.name).sort();
     assert.deepEqual(commandNames, [...EXPECTED_COMMAND_NAMES].sort(), "registered command names mismatch");
   });
@@ -311,10 +312,10 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
     assert.match(out, /no \.planning\/ project found/);
   });
 
-  test("all 14 registered tools have a valid compiled schema", () => {
+  test("all 15 registered tools have a valid compiled schema", () => {
     // apply() not throwing already proves defineTool compiled the schema (D-04);
     // assert the shape explicitly for every tool.
-    assert.equal(ctx.tools.length, 14);
+    assert.equal(ctx.tools.length, 15);
     for (const t of ctx.tools) {
       assert.equal(typeof t.name, "string", `${t.name}: name is not a string`);
       assert.equal(typeof t.description, "string", `${t.name}: description is not a string`);
@@ -440,7 +441,7 @@ describe("mount: reactive loop rendering (DEGR-02/DEGR-04)", () => {
   });
 
   test("full-set mount still renders present steps + tools (regression, D-11)", async () => {
-    const { ctx } = await mountSubset(["persona", "state", "core-tools", "discuss", "plan", "execute", "verify", "ship", "ui", "quick", "map-codebase"]);
+    const { ctx } = await mountSubset(["persona", "state", "core-tools", "discuss", "spec", "plan", "execute", "verify", "ship", "ui", "quick", "map-codebase"]);
     for (const key of CAPABILITY_KEYS) assert.ok(ctx.provided.has(key), `${key} not provided`);
     await initProject(ctx);
 
@@ -452,15 +453,17 @@ describe("mount: reactive loop rendering (DEGR-02/DEGR-04)", () => {
     assert.match(body, /gsd_quick/);
     assertNoAbsentToolToken(ctx, body, "full-set persona");
 
-    // Snapshot lists the full loop chain in descriptor order.
+    // Snapshot lists the full loop chain in descriptor order (spec precedes
+    // discuss at order 5).
     const snap = snapshot(ctx);
-    assert.match(snap, /Available steps: discuss, ui, plan, quick, execute, verify, ship\./);
+    assert.match(snap, /Available steps: spec, discuss, ui, plan, quick, execute, verify, ship\./);
 
     // gsd_status still advertises the stored next_action when its capability is
-    // present (after init, next_action is discuss-phase).
+    // present (after init, the first routable loop step is spec at order 5, so
+    // the stored null next_action routes to spec-phase per D-02).
     const gsdStatus = ctx.tools.find((t) => t.name === "gsd_status");
     const out = await gsdStatus.execute({}, exec);
-    assert.match(out, /Next action: discuss-phase/, "present discuss-phase not advertised");
+    assert.match(out, /Next action: spec-phase/, "present spec-phase not advertised");
     assertNoAbsentToolToken(ctx, out, "full-set gsd_status");
   });
 });

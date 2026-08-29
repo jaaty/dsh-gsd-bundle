@@ -47,6 +47,11 @@
     - id: gsd-discuss
       name: '@dsh-gsd/bundle/discuss'
 
+    # The spec-phase step: clarifies WHAT the phase delivers (a falsifiable
+    # SPEC.md) before discuss handles HOW.
+    - id: gsd-spec
+      name: '@dsh-gsd/bundle/spec'
+
     - id: gsd-plan
       name: '@dsh-gsd/bundle/plan'
 
