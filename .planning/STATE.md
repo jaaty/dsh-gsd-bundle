@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v2.2.0
 milestone_name: public-launch
-status: ship
-active_phase: 33
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [33]
 progress:
   total_phases: 34
-  completed_phases: 32
+  completed_phases: 33
   total_plans: 1
   completed_plans: 74
-  percent: 91
+  percent: 97
 current_phase: 33
 current_phase_name: github-repo-config
 current_plan: 1
-last_updated: "2026-08-29T19:29:17.705Z"
+last_updated: "2026-08-29T19:31:12.019Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 32 shipped — PR #35"
+stopped_at: "Phase 33 shipped — PR #36"
 paused_at: null
 ---
 # GSD STATE
@@ -170,6 +170,7 @@ _No active phase._
 - Phase 33: CONTEXT.md sealed — 5 decisions
 - Phase 33: planned — 1 plan(s) across 1 wave(s).
 - Phase 33: plan 01 executed — repo homepage set to npm page (D-01), seven topics set (D-02), repo made public + private vuln reporting enabled (D-03/OQ-1), structural test test/repo-config.test.mjs (5 tests); npm test green 431/431, SUMMARY.md written.
+- Phase 33 shipped — PR #36 (https://github.com/jaaty/dsh-gsd-bundle/pull/36)
 
 ### Blockers / Concerns
 _none_
