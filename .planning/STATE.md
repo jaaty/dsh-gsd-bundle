@@ -9,13 +9,13 @@ next_phases: [23]
 progress:
   total_phases: 24
   completed_phases: 22
-  total_plans: 4
-  completed_plans: 58
+  total_plans: 2
+  completed_plans: 59
   percent: 92
 current_phase: 23
 current_phase_name: removal-verification
-current_plan: 4
-last_updated: "2026-08-29T01:34:00.034Z"
+current_plan: 1
+last_updated: "2026-08-29T01:35:31.122Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 22 shipped — PR #25"

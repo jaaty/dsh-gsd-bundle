@@ -318,5 +318,15 @@
     "started": "2026-08-29T00:01:05.850Z",
     "result": "SUMMARY written",
     "completed": "2026-08-29T00:06:43.706Z"
+  },
+  {
+    "id": "JOB-33",
+    "kind": "subagent",
+    "plan": "GSD-23-removal-verification-01",
+    "phase": 23,
+    "status": "done",
+    "started": "2026-08-29T01:34:34.317Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-29T01:35:31.102Z"
   }
 ]
