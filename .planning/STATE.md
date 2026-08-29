@@ -5,20 +5,20 @@ milestone_name: public-release-readiness
 status: idle
 active_phase: null
 next_action: null
-next_phases: [27]
+next_phases: [29]
 progress:
-  total_phases: 28
-  completed_phases: 27
-  total_plans: 3
-  completed_plans: 73
-  percent: 96
-current_phase: 27
-current_phase_name: ci-and-security
-current_plan: 3
-last_updated: "2026-08-29T05:11:36.120Z"
+  total_phases: 29
+  completed_phases: 28
+  total_plans: 74
+  completed_plans: 74
+  percent: 97
+current_phase: 28
+current_phase_name: publish-research
+current_plan: 1
+last_updated: "2026-08-29T06:20:00.000Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 27 shipped — PR #30"
+stopped_at: "Phase 28 shipped — PR #31"
 paused_at: null
 ---
 # GSD STATE
@@ -140,6 +140,9 @@ _No active phase._
 - Phase 27: CONTEXT.md sealed — 8 decisions
 - Phase 27: planned — 3 plan(s) across 2 wave(s).
 - Phase 27 shipped — PR #30 (https://github.com/jaaty/dsh-gsd-bundle/pull/30)
+- Phase 28: CONTEXT.md sealed — 8 decisions
+- Phase 28: planned — 1 plan(s) across 1 wave(s).
+- Phase 28 shipped — PR #31 (https://github.com/jaaty/dsh-gsd-bundle/pull/31)
 
 ### Blockers / Concerns
 _none_

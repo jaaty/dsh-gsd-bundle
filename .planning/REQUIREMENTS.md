@@ -84,7 +84,7 @@
 - [x] PUB-02: The README's attribution to opengsd-core is accurate and license-compliant, and the broken gsd-core-reference.md reference is fixed (the file is added with proper attribution, or the reference is removed).
 - [x] PUB-03: The repository includes a CHANGELOG, a CONTRIBUTING.md, and a code of conduct, and the .planning/ directory keep-vs-gitignore-vs-curate decision is made and applied.
 - [x] PUB-04: A CI workflow runs the test suite on pull requests, and a full-history secret scan confirms no credentials or tokens are exposed.
-- [ ] PUB-05: A research-backed distribution decision (npm publish vs clone-and-install-from-source) is documented, matching the behavior of other dsh plugins.
+- [x] PUB-05: A research-backed distribution decision (npm publish vs clone-and-install-from-source) is documented, matching the behavior of other dsh plugins.
 
 ## SHIP
 
