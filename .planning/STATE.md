@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v2.2.0
 milestone_name: public-launch
-status: execute
+status: verify
 active_phase: 32
-next_action: execute-phase
+next_action: verify-phase
 next_phases: [32]
 progress:
   total_phases: 34
   completed_phases: 30
   total_plans: 2
-  completed_plans: 72
+  completed_plans: 73
   percent: 88
 current_phase: 32
 current_phase_name: security-policy-templates
-current_plan: 1
-last_updated: "2026-08-29T19:00:25.483Z"
+current_plan: 2
+last_updated: "2026-08-29T19:01:24.701Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 30 shipped — PR #33"
