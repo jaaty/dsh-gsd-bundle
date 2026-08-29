@@ -29,6 +29,17 @@ const ROOT = new URL("../", import.meta.url).pathname;
 const NPM_PAGE = "https://www.npmjs.com/package/@dsh-gsd/bundle";
 const GITHUB_PAGE = "https://github.com/jaaty/dsh-gsd-bundle";
 
+// The seven searchable topics (D-02).
+const EXPECTED_TOPICS = [
+  "dsh",
+  "deepseek-harness",
+  "opengsd",
+  "gsd",
+  "git-ship-done",
+  "plugin",
+  "coding-agent",
+];
+
 // Shell out to "gh repo view --json <fields>" and return the parsed object.
 // On a non-zero exit, throw an Error carrying the real gh stderr so the
 // failure is loud and actionable (D-04) — never silently pass.
@@ -63,4 +74,17 @@ test("package.json homepage field is unchanged (D-05)", async () => {
     GITHUB_PAGE,
     "package.json homepage field changed (D-05 forbids it)",
   );
+});
+
+test("repo topics include all seven configured topics (REL-04, D-02)", () => {
+  const { repositoryTopics } = ghRepoView("repositoryTopics");
+  const topics = (Array.isArray(repositoryTopics) ? repositoryTopics : []).map(
+    (t) => t.name,
+  );
+  for (const topic of EXPECTED_TOPICS) {
+    assert.ok(
+      topics.includes(topic),
+      `repo topics do not include '${topic}' (D-02)`,
+    );
+  }
 });
