@@ -92,7 +92,7 @@
 
 ## REL
 
-- [ ] REL-01: package.json version matches the milestone version (2.2.0), carries the metadata fields repository, homepage, bugs, keywords, engines, and author, and its files field ships every document the README links to (DISTRIBUTION.md, CHANGELOG.md, LICENSE, CONTRIBUTING.md, CODE_OF_CONDUCT.md, NOTICE).
+- [x] REL-01: package.json version matches the milestone version (2.2.0), carries the metadata fields repository, homepage, bugs, keywords, engines, and author, and its files field ships every document the README links to (DISTRIBUTION.md, CHANGELOG.md, LICENSE, CONTRIBUTING.md, CODE_OF_CONDUCT.md, NOTICE).
 - [ ] REL-02: The @dsh-gsd/bundle package is published to the npm registry as v2.2.0 and is installable (e.g. npm view @dsh-gsd/bundle@2.2.0, npm install / dsh plugin add succeeds), with the prepublishOnly test gate satisfied.
 - [ ] REL-03: A SECURITY.md vulnerability-reporting policy and GitHub issue templates + a pull-request template exist in the repository .github/ directory.
 - [ ] REL-04: The GitHub repository is configured with searchable topics and a homepage URL, so the repo is discoverable and links to its canonical location.
