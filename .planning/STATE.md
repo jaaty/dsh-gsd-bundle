@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v2.2.0
 milestone_name: public-launch
-status: ship
-active_phase: 31
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [31]
 progress:
   total_phases: 34
-  completed_phases: 30
+  completed_phases: 31
   total_plans: 1
   completed_plans: 72
-  percent: 88
+  percent: 91
 current_phase: 31
 current_phase_name: npm-publish
 current_plan: 1
-last_updated: "2026-08-29T18:46:30.399Z"
+last_updated: "2026-08-29T18:49:31.661Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 30 shipped — PR #33"
+stopped_at: "Phase 31 shipped — PR #34"
 paused_at: null
 ---
 # GSD STATE
@@ -159,6 +159,7 @@ _No active phase._
 - Phase 30 shipped — PR #33 (https://github.com/jaaty/dsh-gsd-bundle/pull/33)
 - Phase 31: CONTEXT.md sealed — 9 decisions
 - Phase 31: planned — 1 plan(s) across 1 wave(s).
+- Phase 31 shipped — PR #34 (https://github.com/jaaty/dsh-gsd-bundle/pull/34)
 
 ### Blockers / Concerns
 _none_
