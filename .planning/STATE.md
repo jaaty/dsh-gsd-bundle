@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v2.1.0
 milestone_name: public-release-readiness
-status: verify
+status: ship
 active_phase: 27
-next_action: verify-phase
+next_action: ship-phase
 next_phases: [27]
 progress:
   total_phases: 28
@@ -15,7 +15,7 @@ progress:
 current_phase: 27
 current_phase_name: ci-and-security
 current_plan: 3
-last_updated: "2026-08-29T05:06:43.558Z"
+last_updated: "2026-08-29T05:08:43.521Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 26 shipped — PR #29"
