@@ -10,12 +10,12 @@ progress:
   total_phases: 28
   completed_phases: 26
   total_plans: 3
-  completed_plans: 70
+  completed_plans: 72
   percent: 93
 current_phase: 27
 current_phase_name: ci-and-security
-current_plan: 3
-last_updated: "2026-08-29T04:55:00.079Z"
+current_plan: 1
+last_updated: "2026-08-29T05:06:02.410Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 26 shipped — PR #29"
