@@ -80,6 +80,24 @@ export function makeMountCtx(fs, { subagents } = {}) {
   const effects = [];
   gsdStateSvc = undefined;
 
+  // DEGR-07 (D-05): a single subagents service value, resolved once. When the
+  // caller explicitly supplies a subagents value (a service object or a factory
+  // `(fs) => service`), it is added to the provided store so ctx.inject's
+  // `provided.has("subagents")` check reflects real presence: an explicitly
+  // supplied service activates a ['subagents'] sub-fiber, and `subagents: null`
+  // leaves it absent so the sub-fiber stays inactive. When `subagents` is
+  // omitted (undefined), makeSubagents() is still returned by ctx.get but is
+  // NOT added to provided, preserving the default behaviour exactly.
+  const subagentsSvc =
+    subagents === null
+      ? undefined
+      : typeof subagents === "function"
+        ? subagents(fs)
+        : subagents || makeSubagents();
+  if (subagents !== undefined && subagents !== null) {
+    provided.set("subagents", subagentsSvc);
+  }
+
   const ctx = {
     fs,
     tools,
@@ -101,10 +119,7 @@ export function makeMountCtx(fs, { subagents } = {}) {
     // applied. Absent keys resolve to undefined (never throw).
     get: (n) => {
       if (n === "gsdState") return gsdStateSvc;
-      if (n === "subagents") {
-        if (typeof subagents === "function") return subagents(fs);
-        return subagents || makeSubagents();
-      }
+      if (n === "subagents") return subagentsSvc;
       return provided.has(n) ? provided.get(n) : undefined;
     },
   };
