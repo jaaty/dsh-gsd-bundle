@@ -31,6 +31,10 @@ The v2.0 milestone proves the whole GSD plugin bundle is **swappable and customi
 - **Capability gates** — `gsd_ship` runs a set of gates (security, broken-windows, TDD-audit) before creating a PR, reports each gate's pass/fail status, and refuses to ship when a required gate fails.
 - **Real background-job runtime** — a job runner that actually executes a job asynchronously, tracks its lifecycle (`running → done/failed`) in the async-jobs manifest, collects the result, and reflects real async state through `gsd_status`.
 - **Brownfield codebase mapping** — `gsd_map_codebase` analyses an existing codebase with parallel fresh-context mappers and writes 7 structured documents to `.planning/codebase/`.
+- **Capability-services** — each step plugin publishes a capability service declaring the loop step it provides; the persona and slash-command layer declare coeffects on the capabilities they need.
+- **Reactive-loop-rendering** — the persona, runtime-context snapshot, and `gsd_status` re-render from the available step capabilities, so absent steps are skipped and no missing tool is ever instructed.
+- **Removal-verification** — an automated per-plugin removal test proving every step plugin can be retired with its effects reverted and the remaining loop still functional end-to-end.
+- **Composability-hardening** — the background-job live registry is effect-scoped to its owning fiber so unload/HMR cancels running jobs; the subagents coeffect is declared in every consuming plugin so temporal and spatial composability hold for the job runtime and subagent paths.
 - **Two driving UXes** — natural language (the persona makes the agent a GSD driver) and the `/gsd-*` slash-command layer.
 
 ## Prerequisites
@@ -174,6 +178,7 @@ This is a faithful reimplementation of opengsd-core's **phase loop and artefact 
 - **Capability gates** are implemented as a focused set — `security`, `broken_windows`, `tdd_audit` — run by `gsd_ship` before PR creation, with per-gate pass/fail reporting and a `skip_gates` escape hatch. The broader opengsd gate ecosystem (e.g. `ui.safety-gate`) is not ported.
 - **`gsd_map_codebase` `--query` intel mode** is implemented (the `intel.enabled` capability ecosystem — drift detection via the `.map-manifest.json`, the `gsd-intel-updater` targeted re-map, a structured answer object, and subtree `queryScope` scoping). The full parallel map, `--fast` single-focus scan, and `--paths` incremental-remap scoping are all implemented; the existing-check's interactive refresh/update/skip choice is surfaced as `force` / `paths` parameters (a tool cannot hold a multi-turn interview).
 - Slash-command-style flags (`--gaps`, `--tdd`, `--mvp`, `--no-tracer`, `--granularity`, `--wave`, `--gaps-only`) are exposed as tool parameters rather than a slash-command layer.
+- **The bundle is deliberately swappable and customizable.** Every step plugin publishes a capability service and the persona / runtime-context / `gsd_status` render reactively from the available capabilities, so any step plugin can be retired (or replaced) and the remaining loop stays functional — proven by the automated per-plugin removal suite. This is a design property, not a limitation.
 
 The reference used to build this is in `gsd-core-reference.md` (compiled from the opengsd-core `next` branch).
 
