@@ -10,12 +10,12 @@ progress:
   total_phases: 24
   completed_phases: 22
   total_plans: 2
-  completed_plans: 59
+  completed_plans: 60
   percent: 92
 current_phase: 23
 current_phase_name: removal-verification
-current_plan: 1
-last_updated: "2026-08-29T01:35:31.122Z"
+current_plan: 2
+last_updated: "2026-08-29T01:40:00.000Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 22 shipped — PR #25"
@@ -116,6 +116,7 @@ _No active phase._
 - Phase 23: CONTEXT.md sealed — 8 decisions
 - Phase 23: planned — 2 plan(s) across 2 wave(s).
 - Phase 23: plan 01 executed — extracted shared fake-ctx mount harness to test/helpers/mount-harness.mjs (D-07) + optional subagents factory (OQ-1); mount suite refactored to import it; 373 tests green.
+- Phase 23: plan 02 executed — per-plugin removal suite test/removal.test.mjs (DEGR-05): data-driven matrix over the 5 step plugins, six effects-reverted surfaces, functional-depth smoke of remaining offline-runnable step tools, execute/ship present+registered+schema-sound; 378 tests green.
 
 ### Blockers / Concerns
 _none_
