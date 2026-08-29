@@ -1,8 +1,6 @@
-# Roadmap — graceful-removal (v2.0)
+# Roadmap — public-release-readiness (v2.1.0)
 
-> **Released as `v2.0.0`** — all 24 phases shipped (PRs #1–#27, merged to `main`). Milestone `graceful-removal` v2.0 is complete and released.
-
-24 phase(s) | requirements mapped per phase
+28 phase(s) | requirements mapped per phase
 
 | # | Phase | Goal | Requirements |
 |---|-------|------|--------------|
@@ -30,6 +28,10 @@
 | 22 | [x] reactive-loop-rendering | Re-render the persona, runtime-context snapshot, and gsd_status from the available step capabilities so absent steps are skipped and no missing tool is ever instructed. | DEGR-02 … DEGR-04 |
 | 23 | [x] removal-verification | Add an automated per-plugin removal test proving every single step plugin can be retired with its effects reverted and the remaining loop still functional end-to-end. | DEGR-05 |
 | 24 | [x] composability-hardening | Effect-scope the background-job live registry to its owning fiber and declare the subagents coeffect in every consuming plugin so temporal and spatial composability hold for the job runtime and subagent paths. | DEGR-06 … DEGR-07 |
+| 25 | license-and-attribution | Add an MIT LICENSE file, verify opengsd-core attribution and license compliance, and fix the broken gsd-core-reference.md reference in the README. | PUB-01 … PUB-02 |
+| 26 | repo-hygiene | Add a CHANGELOG, CONTRIBUTING.md, and code of conduct, and make and apply the .planning/ directory keep-vs-gitignore-vs-curate decision. | PUB-03 |
+| 27 | ci-and-security | Add a GitHub Actions test workflow and run a full-history secret scan to confirm no credentials or tokens are exposed. | PUB-04 |
+| 28 | publish-research | Research how other dsh plugins are distributed (npm publish vs clone-and-install-from-source) and document a research-backed distribution decision. | PUB-05 |
 
 ## Progress
 
@@ -59,3 +61,7 @@
 | 22 | reactive-loop-rendering | [x] Complete | 2026-08-29 |
 | 23 | removal-verification | [x] Complete | 2026-08-29 |
 | 24 | composability-hardening | [x] Complete | 2026-08-29 |
+| 25 | license-and-attribution | pending |  |
+| 26 | repo-hygiene | pending |  |
+| 27 | ci-and-security | pending |  |
+| 28 | publish-research | pending |  |
