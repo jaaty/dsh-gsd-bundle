@@ -190,7 +190,7 @@ This is a faithful reimplementation of opengsd-core's **phase loop and artefact 
 - Slash-command-style flags (`--gaps`, `--tdd`, `--mvp`, `--no-tracer`, `--granularity`, `--wave`, `--gaps-only`) are exposed as tool parameters rather than a slash-command layer.
 - **The bundle is deliberately swappable and customizable.** Every step plugin publishes a capability service and the persona / runtime-context / `gsd_status` render reactively from the available capabilities, so any step plugin can be retired (or replaced) and the remaining loop stays functional — proven by the automated per-plugin removal suite. This is a design property, not a limitation.
 
-The reference used to build this is in `gsd-core-reference.md` (compiled from the opengsd-core `next` branch).
+The reference used to build this is the [opengsd-core](https://github.com/open-gsd/gsd-core) repository.
 
 ## Status
 

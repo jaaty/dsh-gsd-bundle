@@ -66,3 +66,15 @@ test("NOTICE ships in the published npm tarball (files array includes NOTICE)", 
     "package.json files array does not include NOTICE",
   );
 });
+
+test("README no longer references gsd-core-reference.md and links the opengsd-core repo (D-04)", async () => {
+  const readme = await readRepoFile("README.md");
+  assert.ok(
+    !readme.includes("gsd-core-reference.md"),
+    "README still references the broken gsd-core-reference.md",
+  );
+  assert.ok(
+    readme.includes("https://github.com/open-gsd/gsd-core"),
+    "README does not link the opengsd-core repo",
+  );
+});
