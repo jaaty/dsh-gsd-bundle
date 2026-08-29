@@ -30,7 +30,7 @@
 | 24 | [x] composability-hardening | Effect-scope the background-job live registry to its owning fiber and declare the subagents coeffect in every consuming plugin so temporal and spatial composability hold for the job runtime and subagent paths. | DEGR-06 … DEGR-07 |
 | 25 | [x] license-and-attribution | Add an MIT LICENSE file, verify opengsd-core attribution and license compliance, and fix the broken gsd-core-reference.md reference in the README. | PUB-01 … PUB-02 |
 | 26 | [x] repo-hygiene | Add a CHANGELOG, CONTRIBUTING.md, and code of conduct, and make and apply the .planning/ directory keep-vs-gitignore-vs-curate decision. | PUB-03 |
-| 27 | ci-and-security | Add a GitHub Actions test workflow and run a full-history secret scan to confirm no credentials or tokens are exposed. | PUB-04 |
+| 27 | [x] ci-and-security | Add a GitHub Actions test workflow and run a full-history secret scan to confirm no credentials or tokens are exposed. | PUB-04 |
 | 28 | publish-research | Research how other dsh plugins are distributed (npm publish vs clone-and-install-from-source) and document a research-backed distribution decision. | PUB-05 |
 
 ## Progress
@@ -63,5 +63,5 @@
 | 24 | composability-hardening | [x] Complete | 2026-08-29 |
 | 25 | license-and-attribution | [x] Complete | 2026-08-29 |
 | 26 | repo-hygiene | [x] Complete | 2026-08-29 |
-| 27 | ci-and-security | pending |  |
+| 27 | ci-and-security | [x] Complete | 2026-08-29 |
 | 28 | publish-research | pending |  |
