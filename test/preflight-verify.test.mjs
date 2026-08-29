@@ -85,6 +85,38 @@ describe("runPreflightVerify", () => {
   });
 });
 
+describe("pre-ship-verify edge cases (D-06)", () => {
+  test("offline/network failure during npm ci fails with the real cause, never silently skipped", async () => {
+    const err = new Error("network down");
+    err.stderr = "npm error code ENOTFOUND registry.npmjs.org";
+    const fn = async (cmd, args, opts) => {
+      if (cmd === "npm" && args[0] === "ci") throw err;
+      return { stdout: "", stderr: "" };
+    };
+    const res = await runPreflightVerify("/tmp/fake", fn);
+    assert.equal(res.status, "fail");
+    assert.equal(res.step, "npm ci");
+    assert.ok(res.output.includes("ENOTFOUND"), res.output);
+  });
+
+  test("temp dir is removed in a finally even when npm ci fails (D-06)", async () => {
+    const dir = await makeTempDir();
+    const err = new Error("boom");
+    err.stderr = "npm ERR! code E404";
+    const fn = async (cmd, args, opts) => {
+      if (cmd === "npm" && args[0] === "ci") throw err;
+      return { stdout: "", stderr: "" };
+    };
+    try {
+      const res = await runPreflightVerify(dir, fn);
+      assert.equal(res.status, "fail");
+    } finally {
+      await cleanupTempDir(dir);
+    }
+    await assert.rejects(access(dir), "temp dir removed after a failing run");
+  });
+});
+
 describe("copyTree", () => {
   test("copies files but excludes node_modules and .git subtrees (D-01)", async () => {
     const src = await makeTempDir();
