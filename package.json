@@ -77,7 +77,11 @@
     "lib/*.js",
     "cordis.patch.yml",
     "README.md",
-    "NOTICE"
+    "NOTICE",
+    "DISTRIBUTION.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "CHANGELOG.md"
   ],
   "dsh": {
     "bundle": {
