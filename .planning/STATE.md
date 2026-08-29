@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v2.1.0
 milestone_name: public-release-readiness
-status: execute
+status: verify
 active_phase: 25
-next_action: execute-phase
+next_action: verify-phase
 next_phases: [25]
 progress:
   total_phases: 28
   completed_phases: 24
-  total_plans: 3
-  completed_plans: 64
+  total_plans: 1
+  completed_plans: 65
   percent: 86
 current_phase: 25
 current_phase_name: license-and-attribution
-current_plan: 3
-last_updated: "2026-08-29T02:41:26.205Z"
+current_plan: 1
+last_updated: "2026-08-29T02:42:28.115Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Milestone v2.0 released — v2.0.0 (all 24 phases shipped)"
