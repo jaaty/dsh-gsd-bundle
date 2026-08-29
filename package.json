@@ -2,6 +2,29 @@
   "name": "@dsh-gsd/bundle",
   "version": "2.2.0",
   "description": "A DeepSeek Harness plugin bundle that reimplements opengsd-core (Git Ship Done) as a host-plane plugin set, replacing the default agent-loop behavior with the GSD phase loop (Discuss -> UI design -> Plan -> Execute -> Verify -> Ship). Includes checkpoint-resume, a window ledger, a conversational UAT loop, capability gates, and a real background-job runtime.",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "bundle",
+    "opengsd",
+    "git",
+    "ship",
+    "automation",
+    "agile"
+  ],
+  "author": "jaaty <jamie.atyeo@live.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jaaty/dsh-gsd-bundle.git"
+  },
+  "homepage": "https://github.com/jaaty/dsh-gsd-bundle",
+  "bugs": {
+    "url": "https://github.com/jaaty/dsh-gsd-bundle/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "./lib/persona.js",
   "scripts": {
