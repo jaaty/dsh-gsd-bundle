@@ -1,21 +1,21 @@
 ---
 gsd_state_version: 1
-milestone: v2.1.0
-milestone_name: public-release-readiness
-status: idle
-active_phase: null
-next_action: null
-next_phases: [29]
+milestone: v2.2.0
+milestone_name: public-launch
+status: plan
+active_phase: 30
+next_action: plan-phase
+next_phases: [30]
 progress:
-  total_phases: 29
+  total_phases: 34
   completed_phases: 28
   total_plans: 74
   completed_plans: 74
-  percent: 97
-current_phase: 28
-current_phase_name: publish-research
+  percent: 82
+current_phase: 30
+current_phase_name: publishable-package
 current_plan: 1
-last_updated: "2026-08-29T06:10:27.497Z"
+last_updated: "2026-08-29T06:36:52.290Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 28 shipped — PR #31"
@@ -148,22 +148,7 @@ _No active phase._
 - If gh CLI is unavailable or unauthenticated, create the tag and push it, and report the gh release step as a warning with the real cause — do not silently skip or fake it.
 - The working tree must be left clean on main with the v2.1.0 tag pointing at the release commit.
 - quick 2026-08-29-readme-v2-1-0-update: Update README.md to reflect the v2.1.0 milestone release. The README is stale: it still presents milestone `graceful-removal` v2.0.0 as the latest release and never mentions the v2.1.0 `public-release-readiness` milestone or the new pre-ship-verify gate. The milestone `public-release-readiness` (v2.1.0) is now complete and released (all 29 phases shipped, PRs #1..#32, merged to main; tag v2.1.0). Use CHANGELOG.md's `[2.1.0]` entry as the source of truth for the milestone content.
-
-Make these targeted edits to README.md (do not rewrite the whole file; preserve the existing structure, tone, and the v2.0 content as a prior milestone):
-
-1. **Release status section (line ~13):** Update the lead line to state that milestone `public-release-readiness` v2.1.0 is complete and released as `v2.1.0` (all 29 phases shipped, PRs #1–#32, merged to main), and that the bundle now additionally covers the v2.1 public-release-readiness milestone: license-and-attribution, repo-hygiene, ci-and-security, publish-research, and pre-ship-verify. Keep the v2.0 milestone as a prior milestone.
-
-2. **Add a v2.1.0 release note** (mirroring the existing "v2.0 release note — graceful-removal" subsection) titled e.g. "### v2.1 release note — public-release-readiness", listing the five phases it delivered: license-and-attribution (MIT LICENSE, opengsd-core attribution/NOTICE, fixed gsd-core-reference.md), repo-hygiene (CHANGELOG, CONTRIBUTING, CODE_OF_CONDUCT, .planning/ keep-vs-gitignore-vs-curate decision), ci-and-security (GitHub Actions test workflow + gitleaks secret-scan guard, package-lock.json), publish-research (research-backed distribution decision in DISTRIBUTION.md), and pre-ship-verify (a new deterministic pre-ship verification gate in gsd_ship that runs npm ci + npm test in a temp copy before pushing, skippable via a flag).
-
-3. **Features section (line ~31):** Extend the "Capability gates" bullet (or add a sibling bullet) to mention the new pre-ship-verify gate: gsd_ship runs a deterministic local verification (npm ci + npm test in a temp copy of the repo) before pushing, fails the ship on failure, and is skippable via a flag.
-
-4. **gsd_ship tool row (line ~94):** Update the purpose to mention the pre-ship-verify gate, e.g. "Preflight + capability gates + pre-ship-verify (npm ci + npm test in a temp copy), push the branch, create the PR, mark the phase shipped."
-
-5. **gsd-ship plugin row (line ~142):** Update to mention the pre-ship-verify gate, e.g. "gsd_ship — preflight + capability gates + pre-ship-verify, PR body assembly, gh pr create, STATE update".
-
-6. **Status section (line ~211):** Update to state that milestone v2.1.0 (public-release-readiness) is complete and released, listing the 29 phases (the 24 v2.0 phases plus license-and-attribution, repo-hygiene, ci-and-security, publish-research, pre-ship-verify), and note the pre-ship-verify gate and the CI + gitleaks guard.
-
-Constraints: do not change any code, package.json, or other files — README.md only. Do not touch the v2.0 release-note subsection's content (keep it as a prior milestone). Keep the README's existing tone and markdown style. After editing, verify the README no longer claims v2.0.0 is the latest release and that it mentions v2.1.0 and the pre-ship-verify gate. Commit the change atomically with a conventional-commit message (e.g. `docs(readme): document v2.1.0 public-release-readiness release`).
+- Phase 30: CONTEXT.md sealed — 10 decisions
 
 ### Blockers / Concerns
 _none_
