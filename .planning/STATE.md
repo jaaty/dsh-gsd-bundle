@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v2.1.0
 milestone_name: public-release-readiness
-status: plan
+status: execute
 active_phase: 25
-next_action: plan-phase
+next_action: execute-phase
 next_phases: [25]
 progress:
   total_phases: 28
@@ -15,7 +15,7 @@ progress:
 current_phase: 25
 current_phase_name: license-and-attribution
 current_plan: 3
-last_updated: "2026-08-29T02:40:15.185Z"
+last_updated: "2026-08-29T02:41:26.205Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Milestone v2.0 released — v2.0.0 (all 24 phases shipped)"
@@ -127,6 +127,7 @@ _No active phase._
 - If gh CLI is unavailable or unauthenticated, create the tag and push it, and report the gh release step as a warning with the real cause — do not silently skip or fake it.
 - The working tree must be left clean on main with the v2.0.0 tag pointing at the release commit.
 - Phase 25: CONTEXT.md sealed — 5 decisions
+- Phase 25: planned — 1 plan(s) across 1 wave(s).
 
 ### Blockers / Concerns
 _none_
