@@ -10,12 +10,12 @@ progress:
   total_phases: 50
   completed_phases: 35
   total_plans: 3
-  completed_plans: 80
+  completed_plans: 81
   percent: 70
 current_phase: 36
 current_phase_name: spec-phase
-current_plan: 3
-last_updated: "2026-08-29T22:45:01.867Z"
+current_plan: 1
+last_updated: "2026-08-29T22:47:17.136Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 35 shipped — PR #38"
