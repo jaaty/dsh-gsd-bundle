@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v3.0.0
 milestone_name: upstream-parity
-status: idle
-active_phase: null
-next_action: null
-next_phases: [35]
+status: plan
+active_phase: 36
+next_action: plan-phase
+next_phases: [36]
 progress:
   total_phases: 50
   completed_phases: 35
   total_plans: 3
   completed_plans: 80
   percent: 70
-current_phase: 35
-current_phase_name: pr-branch
+current_phase: 36
+current_phase_name: spec-phase
 current_plan: 3
-last_updated: "2026-08-29T22:27:12.272Z"
+last_updated: "2026-08-29T22:36:13.616Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 35 shipped — PR #38"
@@ -182,6 +182,7 @@ _No active phase._
 - Phase 35: CONTEXT.md sealed — 10 decisions
 - Phase 35: planned — 3 plan(s) across 2 wave(s).
 - Phase 35 shipped — PR #38 (https://github.com/jaaty/dsh-gsd-bundle/pull/38)
+- Phase 36: CONTEXT.md sealed — 12 decisions
 
 ### Blockers / Concerns
 _none_
