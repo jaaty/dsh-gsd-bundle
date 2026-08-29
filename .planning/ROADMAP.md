@@ -25,7 +25,7 @@
 | 19 | [x] codebase-intel-extensions | Extend gsd_map_codebase with drift detection, targeted re-map/updater, a structured answer object, and subtree query scoping. | CBQX-01 … CBQX-02 … CBQX-03 … CBQX-04 |
 | 20 | [x] multi-window-topology | Support concurrent multi-window phases on a shared base branch with a merge topology, earlier phase-branch push, and auto-commit of out-of-flow artefacts. | MW-01 … MW-02 … MW-03 |
 | 21 | [x] capability-services | Each step plugin publishes a capability service declaring the loop step it provides, and the persona and slash-command layer declare coeffects on the capabilities they need. | DEGR-01 … DEGR-03 |
-| 22 | reactive-loop-rendering | Re-render the persona, runtime-context snapshot, and gsd_status from the available step capabilities so absent steps are skipped and no missing tool is ever instructed. | DEGR-02 … DEGR-04 |
+| 22 | [x] reactive-loop-rendering | Re-render the persona, runtime-context snapshot, and gsd_status from the available step capabilities so absent steps are skipped and no missing tool is ever instructed. | DEGR-02 … DEGR-04 |
 | 23 | removal-verification | Add an automated per-plugin removal test proving every single step plugin can be retired with its effects reverted and the remaining loop still functional end-to-end. | DEGR-05 |
 | 24 | composability-hardening | Effect-scope the background-job live registry to its owning fiber and declare the subagents coeffect in every consuming plugin so temporal and spatial composability hold for the job runtime and subagent paths. | DEGR-06 … DEGR-07 |
 
@@ -33,27 +33,27 @@
 
 | # | Phase | Status | Date |
 |---|-------|--------|------|
-| 01 | live-mount | [x] Complete | 2026-08-28 |
-| 02 | service-tools | [x] Complete | 2026-08-28 |
-| 03 | loop-e2e | [x] Complete | 2026-08-28 |
-| 04 | checkpoint-resume | [x] Complete | 2026-08-28 |
-| 05 | window-ledger | [x] Complete | 2026-08-28 |
-| 06 | loop-robustness | [x] Complete | 2026-08-28 |
-| 07 | uat-conversation | [x] Complete | 2026-08-28 |
-| 08 | capability-gates | [x] Complete | 2026-08-28 |
-| 09 | job-runtime | [x] Complete | 2026-08-28 |
-| 10 | codebase-query | [x] Complete | 2026-08-28 |
-| 11 | phase-dir-resolution | [x] Complete | 2026-08-28 |
-| 12 | single-source-constants | [x] Complete | 2026-08-28 |
-| 13 | gate-dispatch | [x] Complete | 2026-08-28 |
-| 14 | execute-checkpoint | [x] Complete | 2026-08-28 |
-| 15 | ship-robustness | [x] Complete | 2026-08-28 |
-| 16 | context-budget | [x] Complete | 2026-08-28 |
-| 17 | phase-branch-isolation | [x] Complete | 2026-08-28 |
-| 18 | job-runtime-extensions | [x] Complete | 2026-08-28 |
-| 19 | codebase-intel-extensions | [x] Complete | 2026-08-28 |
-| 20 | multi-window-topology | [x] Complete | 2026-08-28 |
-| 21 | capability-services | [x] Complete | 2026-08-28 |
-| 22 | reactive-loop-rendering | pending |  |
+| 01 | live-mount | [x] Complete | 2026-08-29 |
+| 02 | service-tools | [x] Complete | 2026-08-29 |
+| 03 | loop-e2e | [x] Complete | 2026-08-29 |
+| 04 | checkpoint-resume | [x] Complete | 2026-08-29 |
+| 05 | window-ledger | [x] Complete | 2026-08-29 |
+| 06 | loop-robustness | [x] Complete | 2026-08-29 |
+| 07 | uat-conversation | [x] Complete | 2026-08-29 |
+| 08 | capability-gates | [x] Complete | 2026-08-29 |
+| 09 | job-runtime | [x] Complete | 2026-08-29 |
+| 10 | codebase-query | [x] Complete | 2026-08-29 |
+| 11 | phase-dir-resolution | [x] Complete | 2026-08-29 |
+| 12 | single-source-constants | [x] Complete | 2026-08-29 |
+| 13 | gate-dispatch | [x] Complete | 2026-08-29 |
+| 14 | execute-checkpoint | [x] Complete | 2026-08-29 |
+| 15 | ship-robustness | [x] Complete | 2026-08-29 |
+| 16 | context-budget | [x] Complete | 2026-08-29 |
+| 17 | phase-branch-isolation | [x] Complete | 2026-08-29 |
+| 18 | job-runtime-extensions | [x] Complete | 2026-08-29 |
+| 19 | codebase-intel-extensions | [x] Complete | 2026-08-29 |
+| 20 | multi-window-topology | [x] Complete | 2026-08-29 |
+| 21 | capability-services | [x] Complete | 2026-08-29 |
+| 22 | reactive-loop-rendering | [x] Complete | 2026-08-29 |
 | 23 | removal-verification | pending |  |
 | 24 | composability-hardening | pending |  |
