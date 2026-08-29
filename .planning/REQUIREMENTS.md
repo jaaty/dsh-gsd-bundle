@@ -75,5 +75,5 @@
 - [x] DEGR-03: The slash-command layer declares coeffects on the corresponding step capabilities so retiring a step plugin reactively unregisters its /gsd-* command (no dangling commands).
 - [x] DEGR-04: gsd_status and the STATE.md step machine route only through available steps, so the loop never advances into an absent step.
 - [x] DEGR-05: An automated per-plugin removal test proves each single step plugin can be retired (effects reverted, no crash) with the remaining loop still functional end-to-end.
-- [ ] DEGR-06: The background-job live registry is effect-scoped to its owning fiber so unloading/HMR cancels running jobs.
-- [ ] DEGR-07: Plugins consuming the subagents host service declare it in inject so reactive coeffect activation/deactivation holds.
+- [x] DEGR-06: The background-job live registry is effect-scoped to its owning fiber so unloading/HMR cancels running jobs.
+- [x] DEGR-07: Plugins consuming the subagents host service declare it in inject so reactive coeffect activation/deactivation holds.
