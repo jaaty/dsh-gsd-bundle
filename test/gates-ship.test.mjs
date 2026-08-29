@@ -220,3 +220,19 @@ describe("skip + tdd enforcement", () => {
     assert.equal(blockError, null, "opt-out via skipGates unblocks without hiding the gate");
   });
 });
+
+describe("GSD-35 clean-PR branch wiring (D-09: no_clean_pr param + config resolution)", () => {
+  test("ship.js exposes the no_clean_pr param, resolves clean-PR, and imports the clean-branch module (static)", async () => {
+    const fs = await import("node:fs/promises");
+    const src = await fs.readFile(new URL("../lib/ship.js", import.meta.url), "utf8");
+
+    // D-09: a boolean `no_clean_pr` parameter is declared on gsd_ship.
+    assert.match(src, /no_clean_pr\s*:\s*\{\s*type\s*:\s*"boolean"/, "no_clean_pr param present in defineTool");
+
+    // The clean-PR decision is derived from config + the param override.
+    assert.match(src, /resolveCleanPr\s*\(\s*cfg,\s*args\.no_clean_pr\s*\)/, "resolveCleanPr(cfg, args.no_clean_pr) called after readConfig");
+
+    // The clean-branch module is imported into ship.js (plan 01 core consumed).
+    assert.match(src, /from\s+"\.\/_clean-branch\.js"/, "import from ./_clean-branch.js present");
+  });
+});
