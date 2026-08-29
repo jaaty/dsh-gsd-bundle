@@ -45,3 +45,41 @@ test("CI badge is present and links to the CI workflow (D-02, D-04)", async () =
     "CI badge link destination missing (D-04)",
   );
 });
+
+test("license badge is present and links to the LICENSE file (D-03, D-04)", async () => {
+  const readme = await fsPromises.readFile(path.join(ROOT, "README.md"), "utf8");
+  // The license badge image is the shields.io github/license URL (D-03).
+  assert.ok(
+    readme.includes(
+      "https://img.shields.io/github/license/jaaty/dsh-gsd-bundle?style=flat-square",
+    ),
+    "license badge image URL missing (D-03)",
+  );
+  // The badge is clickable and links to the LICENSE file (D-04).
+  assert.ok(
+    readme.includes("https://github.com/jaaty/dsh-gsd-bundle/blob/main/LICENSE"),
+    "license badge link destination missing (D-04)",
+  );
+});
+
+test("npm-version badge is statically pinned to v2.2.0 and links to the npm page (D-03, D-04)", async () => {
+  const readme = await fsPromises.readFile(path.join(ROOT, "README.md"), "utf8");
+  // The npm badge is a STATIC mirror pinned to @2.2.0 (D-03), not a dynamic
+  // `latest` badge — the pinned substring @2.2.0?style must appear.
+  assert.ok(
+    readme.includes(
+      "https://img.shields.io/npm/v/@dsh-gsd/bundle@2.2.0?style=flat-square",
+    ),
+    "npm-version badge image URL missing or not pinned to @2.2.0 (D-03)",
+  );
+  // Lock out the dynamic unpinned form (shields.io latest badge).
+  assert.ok(
+    !readme.includes("https://img.shields.io/npm/v/@dsh-gsd/bundle?style"),
+    "dynamic unpinned npm badge present; D-03 requires the static @2.2.0 pin",
+  );
+  // The badge is clickable and links to the npm package page (D-04).
+  assert.ok(
+    readme.includes("https://www.npmjs.com/package/@dsh-gsd/bundle"),
+    "npm badge link destination missing (D-04)",
+  );
+});
