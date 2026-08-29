@@ -160,6 +160,7 @@ _No active phase._
 - Phase 32: CONTEXT.md sealed — 6 decisions
 - Phase 32: planned — 2 plan(s) across 2 wave(s).
 - Phase 32: plan 01 executed — SECURITY.md policy (D-01/D-02) + package.json files whitelist + README link (D-05); 3 commits, npm test green 415/415, SUMMARY.md written.
+- Phase 32: plan 02 executed — GitHub issue forms (bug_report.yml, feature_request.yml, config.yml) + PULL_REQUEST_TEMPLATE.md (D-03/D-04) + structural test test/security-policy.test.mjs (D-06); 3 commits, npm test green 426/426, SUMMARY.md written.
 
 ### Blockers / Concerns
 _none_
