@@ -1,4 +1,5 @@
 # dsh-gsd-bundle
+[![CI](https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml/badge?branch=main)](https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/jaaty/dsh-gsd-bundle?style=flat-square)](https://github.com/jaaty/dsh-gsd-bundle/blob/main/LICENSE) [![npm version](https://img.shields.io/npm/v/@dsh-gsd/bundle@2.2.0?style=flat-square)](https://www.npmjs.com/package/@dsh-gsd/bundle)
 
 A **plugin bundle for [DeepSeek Harness](https://github.com/deepseek-ai/dsh)** (dsh) that reimplements [opengsd-core](https://github.com/open-gsd/gsd-core) — **Git Ship Done (GSD)** — as a set of host-plane Cordis plugins. It replaces the default agent-loop behaviour with the GSD phase loop, so every session becomes a disciplined, artefact-driven engineering loop.
 
@@ -10,7 +11,17 @@ Every unit of work is a **phase** that moves through these steps in order. State
 
 ## Release status
 
-**Milestone `public-release-readiness` v2.1 is complete and released as `v2.1.0`** — all 29 phases shipped (PRs #1–#32, merged to `main`). The bundle covers the full GSD phase loop plus checkpoint-resume, the multi-window ledger and async-jobs manifest, the conversational UAT loop, capability gates, the real background-job runtime, codebase-query intel mode with drift detection / targeted updater, multi-window topology, and the v2.1 public-release-readiness milestone: license-and-attribution, repo-hygiene, ci-and-security, publish-research, and pre-ship-verify. The prior v2.0 graceful-removal milestone (capability-services, reactive-loop-rendering, removal-verification, composability-hardening) remains a prior milestone.
+**Milestone `public-launch` v2.2 is complete and released as `v2.2.0`** — this 34-phase milestone ships the provenance badge row and the npm-publishable package. The bundle now advertises its CI status, MIT license, and statically-pinned npm version with a single-line README badge row, ships its README-linked documentation in the npm package, and carries full npm metadata so it is discoverable on GitHub and the npm registry. The prior v2.1 `public-release-readiness` milestone (license-and-attribution, repo-hygiene, ci-and-security, publish-research, pre-ship-verify) and the v2.0 `graceful-removal` milestone (capability-services, reactive-loop-rendering, removal-verification, composability-hardening) remain prior milestones.
+
+### v2.2 release note — public-launch
+
+The v2.2 milestone makes the GSD bundle **publish-ready for npm** and surfaces its health at a glance. It delivered:
+
+- **Provenance/health badge row** — the README now carries a single-line row of three clickable badges directly under the H1: the whole CI workflow status, the MIT license, and an npm-version badge statically pinned to `@2.2.0`.
+- **Repo discoverability** — repository topics and the `homepage` are configured so the package is findable on GitHub and the npm registry.
+- **README-linked documentation shipped** — the npm `files` whitelist was expanded to ship `DISTRIBUTION.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `CHANGELOG.md` in the package.
+- **Security + contribution surface** — a `SECURITY.md` and GitHub issue/PR templates were added so the repo is ready for external contributors.
+- **Released as `v2.2.0`** — the `@dsh-gsd/bundle` package is published with full npm metadata (repository, homepage, bugs, keywords, engines, author).
 
 ### v2.1 release note — public-release-readiness
 
