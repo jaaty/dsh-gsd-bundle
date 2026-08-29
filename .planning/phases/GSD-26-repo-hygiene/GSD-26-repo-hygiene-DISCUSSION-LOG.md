@@ -1,0 +1,3 @@
+# Phase 26: repo-hygiene — Discussion Log
+
+Held a lightweight interview covering the phase's grey areas. Locked: CHANGELOG = Keep-a-Changelog full history (Unreleased + v2.0.0 + v1.7.0, hand-maintained); CoC = Contributor Covenant 2.1; CONTRIBUTING.md = full depth incl. GSD loop + a no-credentials-in-.planning hygiene rule; .planning/ = curate (keep durable, gitignore volatile); README links all three + documents the decision. The user deferred the .planning/ decision to ask whether committing .planning/ is normal and whether there are security risks; I scanned all 258 tracked files (no secrets found; committing is the intended GSD design) and re-asked, and the user confirmed the curate option.
