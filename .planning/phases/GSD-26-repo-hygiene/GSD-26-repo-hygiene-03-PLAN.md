@@ -1,0 +1,78 @@
+---
+phase: 26-repo-hygiene
+plan: 03
+type: execute
+wave: 2
+depends_on: ["GSD-26-repo-hygiene-01", "GSD-26-repo-hygiene-02"]
+files_modified: ["README.md", "test/repo-hygiene.test.mjs"]
+autonomous: true
+requirements: ["PUB-03"]
+gap_closure: false
+user_setup: []
+must_haves:
+  truths:
+    - "README.md links to CHANGELOG.md, CONTRIBUTING.md, and CODE_OF_CONDUCT.md."
+    - "README.md's .planning/ artefacts section documents the curate decision: durable artefacts are tracked, volatile churn is gitignored."
+    - "test/repo-hygiene.test.mjs passes (node --test exit 0) and asserts the three repo-root files exist, the README links them, the README documents the curate decision, and the volatile .planning/ files are untracked while durable ones remain tracked."
+  artifacts:
+    - path: "test/repo-hygiene.test.mjs"
+      provides: "node --test verification covering all phase outputs (files, README links, curate decision, git tracking state)"
+      min_lines: 60
+      exports: []
+  key_links:
+    - from: "README.md"
+      to: "CHANGELOG.md"
+      via: "README links the changelog (D-02/D-09)"
+      pattern: "CHANGELOG\\.md"
+    - from: "README.md"
+      to: "CONTRIBUTING.md"
+      via: "README links the contribution guide (D-09)"
+      pattern: "CONTRIBUTING\\.md"
+    - from: "README.md"
+      to: "CODE_OF_CONDUCT.md"
+      via: "README links the code of conduct (D-09)"
+      pattern: "CODE_OF_CONDUCT\\.md"
+    - from: "README.md"
+      to: ".planning/"
+      via: "README .planning/ artefacts section documents the curate decision (D-08)"
+      pattern: "gitignore|git-ignore|volatile"
+---
+<objective>Wire the phase outputs together: add README links to the three new files (D-09), document the .planning/ curate decision in README's .planning/ artefacts section (D-08), and add the full node --test verification (test/repo-hygiene.test.mjs) that proves every phase output — the three files, the README links, the curate note, and the git tracking state — is in place. This plan runs last (wave 2) because it depends on the files from plan 01 and the curate decision from plan 02.</objective>
+<context>
+@README.md (has a "### `.planning/` artefacts" section at line ~146 and a "## License" section at line ~199)
+@CHANGELOG.md (created in plan 01)
+@CODE_OF_CONDUCT.md (created in plan 01)
+@CONTRIBUTING.md (created in plan 01)
+@test/license.test.mjs (existing test pattern to mirror: reads repo files from ROOT = new URL("../", import.meta.url).pathname)
+</context>
+<tasks>
+  <task type="auto">
+    <name>Task 1: Add README links to the three new files and document the curate decision (D-08, D-09)</name>
+    <files>README.md</files>
+    <read_first>README.md</read_first>
+    <action>Edit README.md to (1) add links to CHANGELOG.md, CONTRIBUTING.md, and CODE_OF_CONDUCT.md — place them in or near the "## License" section (line ~199) or a small "Contributing" area; each link must be a Markdown link whose visible text or target contains the exact filename (e.g. [CHANGELOG.md](CHANGELOG.md)); and (2) in the "### `.planning/` artefacts" section (line ~146), add a short note documenting the curate decision: the durable artefacts the GSD loop needs to orient (PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md, config.json, codebase/, and per-phase CONTEXT/RESEARCH/PLAN/SUMMARY/VERIFICATION) are tracked, while the volatile churn (async-jobs.json, WINDOWS.md, quick/ records, and per-phase DISCUSSION-LOG.md) is gitignored. The note must be discoverable in that section. Do NOT remove or rewrite the existing .planning/ tree diagram; you may annotate the volatile entries in it as gitignored if you wish.</action>
+    <verify>grep -q 'CHANGELOG\.md' README.md; grep -q 'CONTRIBUTING\.md' README.md; grep -q 'CODE_OF_CONDUCT\.md' README.md; grep -qi 'gitignore\|git-ignore\|volatile' README.md</verify>
+    <acceptance_criteria>
+      - grep -q 'CHANGELOG\.md' README.md
+      - grep -q 'CONTRIBUTING\.md' README.md
+      - grep -q 'CODE_OF_CONDUCT\.md' README.md
+      - grep -qi 'gitignore\|git-ignore\|volatile' README.md
+    </acceptance_criteria>
+    <done>README.md links all three new files and its .planning/ artefacts section documents the curate decision.</done>
+  </task>
+  <task type="auto">
+    <name>Task 2: Add test/repo-hygiene.test.mjs covering all phase outputs (D-01..D-09)</name>
+    <files>test/repo-hygiene.test.mjs</files>
+    <read_first>test/license.test.mjs</read_first>
+    <action>Create test/repo-hygiene.test.mjs mirroring the style of test/license.test.mjs: use node:test with assert/strict, resolve the repo root as ROOT = new URL("../", import.meta.url).pathname, and read repo files with fsPromises.readFile. Add tests that assert: (1) CHANGELOG.md exists and contains "# Changelog", "## [Unreleased]", "## [2.0.0]", and "## [1.7.0]" (D-01/D-02); (2) CODE_OF_CONDUCT.md exists and contains "Contributor Covenant" and "2.1" (D-03); (3) CONTRIBUTING.md exists and mentions "node --test", a PR/contribution workflow, the GSD phase loop, and the no-credentials hygiene rule (D-04/D-05); (4) README.md links CHANGELOG.md, CONTRIBUTING.md, and CODE_OF_CONDUCT.md (D-09); (5) README.md's .planning/ artefacts section documents the curate decision (D-08) — assert README mentions gitignore/volatile; (6) the volatile .planning/ files are untracked while durable ones remain tracked (D-06/D-07) — shell out to "git ls-files" (as test/phase-tools-git.test.mjs does) and assert the output does NOT list .planning/WINDOWS.md, .planning/async-jobs.json, .planning/quick/, or any *-DISCUSSION-LOG.md, while it DOES list .planning/STATE.md, .planning/ROADMAP.md, and a -CONTEXT.md. Name each test with a descriptive string citing the decision id, e.g. "volatile .planning/ files are untracked, durable ones tracked (D-06/D-07)".</action>
+    <verify>node --test test/repo-hygiene.test.mjs should exit 0</verify>
+    <acceptance_criteria>
+      - node --test test/repo-hygiene.test.mjs exits 0
+      - grep -q 'CHANGELOG.md' test/repo-hygiene.test.mjs
+      - grep -q 'CODE_OF_CONDUCT.md' test/repo-hygiene.test.mjs
+      - grep -q 'CONTRIBUTING.md' test/repo-hygiene.test.mjs
+      - grep -q 'git ls-files' test/repo-hygiene.test.mjs
+    </acceptance_criteria>
+    <done>test/repo-hygiene.test.mjs passes (exit 0) and asserts the three files, the README links, the curate note, and the git tracking state.</done>
+  </task>
+</tasks>
