@@ -1,5 +1,5 @@
 // Unit tests for the capability descriptor model in lib/_capabilities.js.
-// Proves DEGR-01 (the 10-key capability surface), the D-03 descriptor shape,
+// Proves DEGR-01 (the 11-key capability surface), the D-03 descriptor shape,
 // the D-04 per-plugin mapping, the D-03 role enum, the D-11 order-sorted chain,
 // and the D-10 fail-loud validation.
 
@@ -9,11 +9,12 @@ import assert from "node:assert/strict";
 import { ROLES, CAPABILITY_KEYS, buildCapability } from "../lib/_capabilities.js";
 
 describe("capability key surface (DEGR-01)", () => {
-  test("exposes exactly the 10 known keys", () => {
-    assert.equal(CAPABILITY_KEYS.length, 10);
+  test("exposes exactly the 11 known keys", () => {
+    assert.equal(CAPABILITY_KEYS.length, 11);
     for (const key of [
       "gsdOrient",
       "gsdJobs",
+      "gsdSpec",
       "gsdDiscuss",
       "gsdUi",
       "gsdPlan",
@@ -66,7 +67,7 @@ describe("capability mapping (D-04)", () => {
   });
 
   test("role values match the D-04 mapping", () => {
-    for (const key of ["gsdDiscuss", "gsdPlan", "gsdExecute", "gsdVerify", "gsdShip"]) {
+    for (const key of ["gsdSpec", "gsdDiscuss", "gsdPlan", "gsdExecute", "gsdVerify", "gsdShip"]) {
       assert.equal(buildCapability(key).role, "step", `${key} should be step`);
     }
     assert.equal(buildCapability("gsdUi").role, "optional");
@@ -78,6 +79,13 @@ describe("capability mapping (D-04)", () => {
 });
 
 describe("loop ordering by order value (D-11)", () => {
+  test("gsdSpec is a step at order 5, before discuss (10)", () => {
+    const spec = buildCapability("gsdSpec");
+    assert.equal(spec.role, "step");
+    assert.equal(spec.order, 5);
+    assert.ok(spec.order < buildCapability("gsdDiscuss").order, "spec(5) sorts before discuss(10)");
+  });
+
   test("main chain sorts discuss -> ui -> plan -> execute -> verify -> ship", () => {
     const stepCaps = ["gsdDiscuss", "gsdUi", "gsdPlan", "gsdExecute", "gsdVerify", "gsdShip"];
     const sorted = stepCaps
