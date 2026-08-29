@@ -15,7 +15,7 @@ progress:
 current_phase: 32
 current_phase_name: security-policy-templates
 current_plan: 2
-last_updated: "2026-08-29T19:03:00.369Z"
+last_updated: "2026-08-29T19:04:58.669Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 30 shipped — PR #33"
@@ -161,6 +161,7 @@ _No active phase._
 - Phase 32: planned — 2 plan(s) across 2 wave(s).
 - Phase 32: plan 01 executed — SECURITY.md policy (D-01/D-02) + package.json files whitelist + README link (D-05); 3 commits, npm test green 415/415, SUMMARY.md written.
 - Phase 32: plan 02 executed — GitHub issue forms (bug_report.yml, feature_request.yml, config.yml) + PULL_REQUEST_TEMPLATE.md (D-03/D-04) + structural test test/security-policy.test.mjs (D-06); 3 commits, npm test green 426/426, SUMMARY.md written.
+- quick 2026-08-29-gitignore-npm-cache: Add `.npm-cache/` to the repo's `.gitignore` so the npm cache directory created by phase 31's `--cache` override (D-01) is never tracked. The `.gitignore` currently ignores `node_modules/` and the volatile `.planning/` files. Append a line `.npm-cache/` (with a short comment noting it is the alternate npm cache used by the publish/install `--cache` override) so `git status` is clean and gsd_ship preflight passes. Do not delete the directory from disk; only ignore it. Commit atomically.
 
 ### Blockers / Concerns
 _none_
