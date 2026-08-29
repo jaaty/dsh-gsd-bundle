@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v2.2.0
 milestone_name: public-launch
-status: plan
+status: execute
 active_phase: 33
-next_action: plan-phase
+next_action: execute-phase
 next_phases: [33]
 progress:
   total_phases: 34
@@ -15,7 +15,7 @@ progress:
 current_phase: 33
 current_phase_name: github-repo-config
 current_plan: 2
-last_updated: "2026-08-29T19:11:00.010Z"
+last_updated: "2026-08-29T19:15:24.646Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 32 shipped — PR #35"
@@ -168,6 +168,7 @@ _No active phase._
 - quick 2026-08-29-repo-hygiene-git-skip: Fix test/repo-hygiene.test.mjs so the git-dependent test "volatile .planning/ files are untracked, durable ones tracked (D-06/D-07)" skips gracefully when not running inside a git repository, instead of failing. Root cause: the gsd_ship pre-ship-verify gate (phase 29, lib/preflight-verify.js copyTree) copies the working tree into a temp dir EXCLUDING the .git directory, then runs `npm test`. The repo-hygiene test shells out to `git ls-files .planning/` (via the gitLsFiles helper using execFileSync with cwd: ROOT), which throws "not a git repository" in the temp copy, failing the gate. The tracking-state assertions are only meaningful in the real repo, so the test should skip when git is unavailable. Change the test signature to accept the node:test context `(t)`, wrap the gitLsFiles call in a try/catch, and on failure call `t.skip("not a git repository (pre-ship-verify temp copy)")` and return, leaving the assertions untouched for the normal git-repo case. Do not change any other test or file. Verify with `npm test` (must pass 426/426 in the real repo) and confirm the pre-ship-verify temp-copy path no longer fails on this test. Commit atomically.
 - Phase 32 shipped — PR #35 (https://github.com/jaaty/dsh-gsd-bundle/pull/35)
 - Phase 33: CONTEXT.md sealed — 5 decisions
+- Phase 33: planned — 1 plan(s) across 1 wave(s).
 
 ### Blockers / Concerns
 _none_
