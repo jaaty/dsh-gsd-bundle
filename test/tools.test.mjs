@@ -207,7 +207,7 @@ function makeSubagents() {
 }
 
 function makeCtx() {
-  return {
+  const c = {
     fs,
     get: (n) =>
       n === "gsdState" ? svc : n === "subagents" ? makeSubagents() : n === "tools" ? { register() {} } : undefined,
@@ -215,6 +215,18 @@ function makeCtx() {
     effect: () => () => {},
     tools: { register() {} },
   };
+  // DEGR-07 (D-05): core-tools wraps gsd_job in a ctx.inject(['subagents'])
+  // sub-fiber. This fake ctx always provides subagents via get, so the sub-fiber
+  // activates and gsd_job is registered (mirrors the mount harness's ctx.inject).
+  c.inject = (injectKeys, callback) => {
+    const missing = (injectKeys || []).some(
+      (k) => k !== "commands" && !(k === "subagents" || k === "gsdState" || k === "tools"),
+    );
+    if (missing) return () => {};
+    const d = callback(c);
+    return typeof d === "function" ? d : () => {};
+  };
+  return c;
 }
 
 async function registerTool(pluginFile, toolName) {
@@ -725,6 +737,16 @@ describe("gsd_job", () => {
           : n === "subagents" ? subagents
             : n === "tools" ? { register() {} } : undefined,
       provide() {}, effect: () => () => {},
+    };
+    // DEGR-07 (D-05): core-tools wraps gsd_job in a ctx.inject(['subagents'])
+    // sub-fiber; this real-tool ctx always provides subagents, so it activates.
+    c.inject = (injectKeys, callback) => {
+      const missing = (injectKeys || []).some(
+        (k) => k !== "commands" && !(k === "subagents" || k === "gsdState" || k === "tools"),
+      );
+      if (missing) return () => {};
+      const d = callback(c);
+      return typeof d === "function" ? d : () => {};
     };
     const tools = [];
     c.tools = { register: (t) => tools.push(t) };

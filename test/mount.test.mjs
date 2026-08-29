@@ -27,6 +27,7 @@ import {
   presentTools,
   assertNoAbsentToolToken,
   makeExec,
+  makeSubagents,
 } from "./helpers/mount-harness.mjs";
 
 // Apply all 12 plugins in patch order against a ctx; throw with the offending id.
@@ -119,7 +120,9 @@ describe("mount: all 12 plugins activate", () => {
   let fs, ctx;
   beforeEach(() => {
     fs = new FakeFs();
-    ctx = makeMountCtx(fs);
+    // Supply subagents so the gsd_job sub-fiber activates (DEGR-07 D-05) and
+    // the full 14-tool surface is registered.
+    ctx = makeMountCtx(fs, { subagents: makeSubagents() });
   });
 
   test("applies all 12 plugins in patch order without throwing", async () => {
@@ -130,6 +133,14 @@ describe("mount: all 12 plugins activate", () => {
     assert.ok(ctx.commands.length === 12, `expected 12 commands, got ${ctx.commands.length}`);
     assert.ok(ctx.sections.length === 1, `expected 1 section, got ${ctx.sections.length}`);
     assert.ok(ctx.contexts.length === 1, `expected 1 context, got ${ctx.contexts.length}`);
+
+    // DEGR-06: core-tools provides the jobs runtime service and registers a
+    // fire-and-forget unload-cancel cleanup effect. Invoking the disposer (the
+    // actual un-awaited path) must never throw.
+    assert.ok(ctx.provided.has("gsdJobsRuntime"), "gsdJobsRuntime service was not provided");
+    const cancelEffect = ctx.effects.find((e) => e.label === "gsdJobsRuntime.cancelAll");
+    assert.ok(cancelEffect, "gsdJobsRuntime.cancelAll cleanup effect was not registered");
+    assert.doesNotThrow(() => cancelEffect.disposer(), "invoking the unload-cancel disposer must never throw");
 
     // DEGR-01: all 10 capability services are provided with the documented
     // descriptor shape (D-03: key/step/role/tools/commands/order). Built from
@@ -211,7 +222,7 @@ describe("mount: cordis.patch.yml rows resolve", () => {
 
     // Cross-check captured tool names against the expected 13.
     const fs = new FakeFs();
-    const ctx = makeMountCtx(fs);
+    const ctx = makeMountCtx(fs, { subagents: makeSubagents() });
     await applyAll(ctx);
     const toolNames = ctx.tools.map((t) => t.name).sort();
     assert.deepEqual(toolNames, [...EXPECTED_TOOL_NAMES].sort(), "registered tool names mismatch");
@@ -229,7 +240,7 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
 
   beforeEach(async () => {
     fs = new FakeFs();
-    ctx = makeMountCtx(fs);
+    ctx = makeMountCtx(fs, { subagents: makeSubagents() });
     await applyAll(ctx);
   });
 

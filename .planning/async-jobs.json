@@ -338,5 +338,35 @@
     "started": "2026-08-29T01:35:33.988Z",
     "result": "SUMMARY written",
     "completed": "2026-08-29T01:37:58.681Z"
+  },
+  {
+    "id": "JOB-35",
+    "kind": "subagent",
+    "plan": "GSD-24-composability-hardening-02",
+    "phase": 24,
+    "status": "done",
+    "started": "2026-08-29T02:02:10.035Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-29T02:03:11.225Z"
+  },
+  {
+    "id": "JOB-36",
+    "kind": "subagent",
+    "plan": "GSD-24-composability-hardening-03",
+    "phase": 24,
+    "status": "failed",
+    "started": "2026-08-29T02:05:05.055Z",
+    "result": "max-tokens",
+    "completed": "2026-08-29T02:08:18.894Z"
+  },
+  {
+    "id": "JOB-37",
+    "kind": "subagent",
+    "plan": "GSD-24-composability-hardening-03",
+    "phase": 24,
+    "status": "done",
+    "started": "2026-08-29T02:08:19.979Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-29T02:10:41.868Z"
   }
 ]

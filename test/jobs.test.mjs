@@ -12,7 +12,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 
 import { GsdState } from "../lib/state.js";
 import { stateCtx, realFsAdapter } from "./helpers/fake-fs.mjs";
-import { launchJob, reconcileJobs, cancelJob, retryJob, scheduleJobs } from "../lib/jobs.js";
+import { launchJob, reconcileJobs, cancelJob, retryJob, scheduleJobs, createJobsRuntime } from "../lib/jobs.js";
 
 // Poll for a file to appear under a real fs, bounded (~5s).
 async function waitForFile(ctx, absPath, timeoutMs = 5000) {
@@ -62,11 +62,13 @@ describe("job runtime (real child processes)", () => {
   let tmp;
   let s;
   let ctx;
+  let runtime;
 
   beforeEach(async () => {
     tmp = await mkdtemp(path.join(os.tmpdir(), "gsd-jobs-"));
     ctx = stateCtx(realFsAdapter());
     s = new GsdState(ctx, {});
+    runtime = createJobsRuntime();
   });
 
   afterEach(async () => {
@@ -74,7 +76,7 @@ describe("job runtime (real child processes)", () => {
   });
 
   test("launchJob records a running job with a JOB-01 id and started timestamp", async () => {
-    const job = await launchJob(ctx, s, tmp, {
+    const job = await launchJob(runtime, ctx, s, tmp, {
       kind: "shell",
       command: ["node", "-e", "process.exit(0)"],
     });
@@ -90,14 +92,14 @@ describe("job runtime (real child processes)", () => {
   });
 
   test("a real child runs and reconcile flips a zero-exit job to done", async () => {
-    await launchJob(ctx, s, tmp, {
+    await launchJob(runtime, ctx, s, tmp, {
       kind: "shell",
       command: ["node", "-e", "console.log('hello'); process.exit(0)"],
     });
     const resultFile = `${tmp}/.planning/jobs/JOB-01.result.json`;
     assert.equal(await waitForFile(ctx, resultFile), true, "result file appears");
 
-    const { updated } = await reconcileJobs(ctx, s, tmp);
+    const { updated } = await reconcileJobs(runtime, ctx, s, tmp);
     assert.equal(updated, 1);
 
     const { entries } = await s.readJobs(tmp);
@@ -107,14 +109,14 @@ describe("job runtime (real child processes)", () => {
   });
 
   test("a non-zero exit flips to failed with captured stderr", async () => {
-    await launchJob(ctx, s, tmp, {
+    await launchJob(runtime, ctx, s, tmp, {
       kind: "shell",
       command: ["node", "-e", "console.error('boom'); process.exit(3)"],
     });
     const resultFile = `${tmp}/.planning/jobs/JOB-01.result.json`;
     assert.equal(await waitForFile(ctx, resultFile), true, "result file appears");
 
-    const { updated } = await reconcileJobs(ctx, s, tmp);
+    const { updated } = await reconcileJobs(runtime, ctx, s, tmp);
     assert.equal(updated, 1);
 
     const { entries } = await s.readJobs(tmp);
@@ -125,7 +127,7 @@ describe("job runtime (real child processes)", () => {
 
   test("a running job with no result file stays running after reconcile", async () => {
     await s.appendJob(tmp, { kind: "shell", status: "running" });
-    const { updated } = await reconcileJobs(ctx, s, tmp);
+    const { updated } = await reconcileJobs(runtime, ctx, s, tmp);
     assert.equal(updated, 0);
     const { entries } = await s.readJobs(tmp);
     assert.equal(entries[0].status, "running");
@@ -140,7 +142,7 @@ describe("job runtime (real child processes)", () => {
     let rejected = false;
     let updated;
     try {
-      updated = await reconcileJobs(ctx, s, tmp);
+      updated = await reconcileJobs(runtime, ctx, s, tmp);
     } catch {
       rejected = true;
     }
@@ -159,7 +161,7 @@ describe("job runtime (real child processes)", () => {
       },
       dispose: () => {},
     }));
-    const job = await launchJob(ctx, s, tmp, { kind: "subagent", prompt: "do the thing", label: "sub1" });
+    const job = await launchJob(runtime, ctx, s, tmp, { kind: "subagent", prompt: "do the thing", label: "sub1" });
     assert.equal(job.kind, "subagent");
     assert.ok(captured.request.signal, "a job-owned AbortSignal is passed (signal is defined)");
     assert.equal(captured.provider, "spawn", "provider positional arg defaults to 'spawn'");
@@ -179,7 +181,7 @@ describe("job runtime (real child processes)", () => {
       run: { result: Promise.resolve({ output: [], stopReason: "error", diagnostic: "provider blew up" }) },
       dispose: () => {},
     }));
-    const job = await launchJob(ctx, s, tmp, { kind: "subagent", prompt: "x" });
+    const job = await launchJob(runtime, ctx, s, tmp, { kind: "subagent", prompt: "x" });
     const failed = await waitForStatus(s, tmp, job.id, "failed");
     assert.ok(failed, "job reaches failed");
     assert.equal(failed.reason.reason, "error");
@@ -188,14 +190,14 @@ describe("job runtime (real child processes)", () => {
   // ── JOBX-02: timeout + cancellation ─────────────────────────────────────────
 
   test("shell job exceeding its timeout flips to failed with reason 'timeout'", async () => {
-    const job = await launchJob(ctx, s, tmp, {
+    const job = await launchJob(runtime, ctx, s, tmp, {
       kind: "shell",
       command: ["node", "-e", "setTimeout(() => {}, 10000)"],
       timeout: 1,
     });
     const resultFile = `${tmp}/.planning/jobs/${job.id}.result.json`;
     assert.equal(await waitForFile(ctx, resultFile), true, "timeout result file appears");
-    const { updated } = await reconcileJobs(ctx, s, tmp);
+    const { updated } = await reconcileJobs(runtime, ctx, s, tmp);
     assert.equal(updated, 1);
     const { entries } = await s.readJobs(tmp);
     assert.equal(entries[0].status, "failed");
@@ -212,7 +214,7 @@ describe("job runtime (real child processes)", () => {
       },
       dispose: () => {},
     }));
-    const job = await launchJob(ctx, s, tmp, { kind: "subagent", prompt: "x", timeout: 0.2 });
+    const job = await launchJob(runtime, ctx, s, tmp, { kind: "subagent", prompt: "x", timeout: 0.2 });
     const failed = await waitForStatus(s, tmp, job.id, "failed", 5000);
     assert.ok(failed, "subagent timeout job reaches failed");
     assert.equal(failed.reason.reason, "timeout");
@@ -231,9 +233,9 @@ describe("job runtime (real child processes)", () => {
         dispose: () => {},
       };
     });
-    const job = await launchJob(ctx, s, tmp, { kind: "subagent", prompt: "x" });
+    const job = await launchJob(runtime, ctx, s, tmp, { kind: "subagent", prompt: "x" });
     assert.equal(job.status, "running", "under capacity the subagent job runs");
-    const res = await cancelJob(ctx, s, tmp, job.id);
+    const res = await cancelJob(runtime, ctx, s, tmp, job.id);
     assert.equal(res.ok, true);
     const failed = await waitForStatus(s, tmp, job.id, "failed");
     assert.ok(failed, "cancelled subagent job reaches failed");
@@ -241,19 +243,19 @@ describe("job runtime (real child processes)", () => {
   });
 
   test("cancelJob never throws for an unknown or already-terminal job", async () => {
-    const unknown = await cancelJob(ctx, s, tmp, "JOB-999");
+    const unknown = await cancelJob(runtime, ctx, s, tmp, "JOB-999");
     assert.equal(unknown.ok, false);
     assert.match(unknown.message, /not found/);
 
-    const done = await launchJob(ctx, s, tmp, {
+    const done = await launchJob(runtime, ctx, s, tmp, {
       kind: "shell",
       command: ["node", "-e", "process.exit(0)"],
     });
     const doneFile = `${tmp}/.planning/jobs/${done.id}.result.json`;
     assert.equal(await waitForFile(ctx, doneFile), true, "shell job result file appears");
-    await reconcileJobs(ctx, s, tmp);
+    await reconcileJobs(runtime, ctx, s, tmp);
     assert.ok(await waitForStatus(s, tmp, done.id, "done"), "shell job completes");
-    const alreadyTerminal = await cancelJob(ctx, s, tmp, done.id);
+    const alreadyTerminal = await cancelJob(runtime, ctx, s, tmp, done.id);
     assert.equal(alreadyTerminal.ok, false);
     assert.match(alreadyTerminal.message, /terminal/);
   });
@@ -270,7 +272,7 @@ describe("job runtime (real child processes)", () => {
     const b = await s.appendJob(tmp, { kind: "shell", command: ["node", "-e", "setTimeout(()=>{}, 500)"], status: "pending", attempts: 1, timeout: 2 });
     const c = await s.appendJob(tmp, { kind: "shell", command: ["node", "-e", "setTimeout(()=>{}, 500)"], status: "pending", attempts: 1, timeout: 2 });
 
-    await scheduleJobs(ctx, s, tmp);
+    await scheduleJobs(runtime, ctx, s, tmp);
     let { entries } = await s.readJobs(tmp);
     const running = entries.filter((e) => e.status === "running");
     assert.equal(running.length, 1, "only one job runs at concurrency 1");
@@ -280,7 +282,7 @@ describe("job runtime (real child processes)", () => {
 
     // Reconcile drains the running job's completion → the next pending promotes.
     await new Promise((r) => setTimeout(r, 700));
-    await reconcileJobs(ctx, s, tmp);
+    await reconcileJobs(runtime, ctx, s, tmp);
     entries = (await s.readJobs(tmp)).entries;
     const running2 = entries.filter((e) => e.status === "running");
     assert.equal(running2.length, 1);
@@ -291,7 +293,7 @@ describe("job runtime (real child processes)", () => {
     const failed = await s.appendJob(tmp, {
       kind: "shell", command: ["node", "-e", "process.exit(1)"], status: "failed", attempts: 1, retryCount: 0, timeout: 5,
     });
-    const retry = await retryJob(ctx, s, tmp, failed.id, { maxRetries: 2 });
+    const retry = await retryJob(runtime, ctx, s, tmp, failed.id, { maxRetries: 2 });
     assert.equal(retry.ok, true);
     assert.ok(retry.newId, "a new JOB-NN attempt id is returned");
     assert.notEqual(retry.newId, failed.id);
@@ -306,19 +308,70 @@ describe("job runtime (real child processes)", () => {
 
     // Exhaust the cap: mark the attempt failed and retry twice more.
     await s.updateJob(tmp, retry.newId, { status: "failed" });
-    const r2 = await retryJob(ctx, s, tmp, retry.newId, { maxRetries: 1 });
+    const r2 = await retryJob(runtime, ctx, s, tmp, retry.newId, { maxRetries: 1 });
     assert.equal(r2.ok, false);
     assert.match(r2.message, /max_retries exceeded/);
   });
 
   test("retryJob never throws for an unknown or non-failed job", async () => {
-    const unknown = await retryJob(ctx, s, tmp, "JOB-999");
+    const unknown = await retryJob(runtime, ctx, s, tmp, "JOB-999");
     assert.equal(unknown.ok, false);
     assert.match(unknown.message, /not found/);
 
     const running = await s.appendJob(tmp, { kind: "shell", command: ["true"], status: "running", attempts: 1, timeout: 5 });
-    const nonFailed = await retryJob(ctx, s, tmp, running.id);
+    const nonFailed = await retryJob(runtime, ctx, s, tmp, running.id);
     assert.equal(nonFailed.ok, false);
     assert.match(nonFailed.message, /not failed/);
+  });
+
+  // ── DEGR-06: unload-cancel (cancelAll) ─────────────────────────────────────
+
+  test("unload-cancel: a running subagent is aborted and the manifest reflects 'cancelled'", async () => {
+    let abortFn = null;
+    const { ctx } = subagentCtx(async (req) => {
+      req.signal.addEventListener("abort", () => { if (abortFn) abortFn(); });
+      return {
+        run: {
+          result: new Promise((resolve, reject) => {
+            abortFn = () => reject(new Error("aborted"));
+          }),
+        },
+        dispose: () => {},
+      };
+    });
+    const job = await launchJob(runtime, ctx, s, tmp, { kind: "subagent", prompt: "x" });
+    assert.equal(job.status, "running", "under capacity the subagent job runs");
+    await runtime.cancelAll();
+    const { entries } = await s.readJobs(tmp);
+    const e = entries.find((x) => x.id === job.id);
+    assert.ok(e, "job still present in the manifest");
+    assert.equal(e.reason.reason, "cancelled", "unload-cancel writes 'cancelled' to the manifest");
+  });
+
+  test("unload-cancel: a running shell child is killed and the manifest reflects 'cancelled'", async () => {
+    const job = await launchJob(runtime, ctx, s, tmp, {
+      kind: "shell",
+      command: ["node", "-e", "setTimeout(() => {}, 10000)"],
+    });
+    assert.equal(job.status, "running", "under capacity the shell job runs");
+    await runtime.cancelAll();
+    const { entries } = await s.readJobs(tmp);
+    const e = entries.find((x) => x.id === job.id);
+    assert.ok(e, "job still present in the manifest");
+    assert.equal(e.reason.reason, "cancelled", "unload-cancel writes 'cancelled' to the manifest");
+  });
+
+  test("unload-cancel: cancelAll never throws when the manifest write fails", async () => {
+    const { ctx } = subagentCtx(async () => ({
+      run: { result: new Promise(() => {}), dispose: () => {} },
+    }));
+    const job = await launchJob(runtime, ctx, s, tmp, { kind: "subagent", prompt: "x" });
+    assert.equal(job.status, "running", "under capacity the subagent job runs");
+    // Make the manifest write fail: replace the live record's gsdState with a
+    // stub whose updateJob rejects (unload may be tearing down gsdState).
+    const rec = runtime.live.get(job.id);
+    assert.ok(rec, "live record exists for the running subagent");
+    rec.s = { updateJob: async () => { throw new Error("gsdState tearing down"); } };
+    await assert.doesNotReject(runtime.cancelAll(), "cancelAll must never throw on a failing manifest write");
   });
 });

@@ -77,7 +77,26 @@ export function makeMountCtx(fs, { subagents } = {}) {
   const sections = [];
   const contexts = [];
   const provided = new Map();
+  const effects = [];
   gsdStateSvc = undefined;
+
+  // DEGR-07 (D-05): a single subagents service value, resolved once. When the
+  // caller explicitly supplies a subagents value (a service object or a factory
+  // `(fs) => service`), it is added to the provided store so ctx.inject's
+  // `provided.has("subagents")` check reflects real presence: an explicitly
+  // supplied service activates a ['subagents'] sub-fiber, and `subagents: null`
+  // leaves it absent so the sub-fiber stays inactive. When `subagents` is
+  // omitted (undefined), makeSubagents() is still returned by ctx.get but is
+  // NOT added to provided, preserving the default behaviour exactly.
+  const subagentsSvc =
+    subagents === null
+      ? undefined
+      : typeof subagents === "function"
+        ? subagents(fs)
+        : subagents || makeSubagents();
+  if (subagents !== undefined && subagents !== null) {
+    provided.set("subagents", subagentsSvc);
+  }
 
   const ctx = {
     fs,
@@ -100,19 +119,21 @@ export function makeMountCtx(fs, { subagents } = {}) {
     // applied. Absent keys resolve to undefined (never throw).
     get: (n) => {
       if (n === "gsdState") return gsdStateSvc;
-      if (n === "subagents") {
-        if (typeof subagents === "function") return subagents(fs);
-        return subagents || makeSubagents();
-      }
+      if (n === "subagents") return subagentsSvc;
       return provided.has(n) ? provided.get(n) : undefined;
     },
   };
+  // Record registered effects (label + disposer) so tests can assert the
+  // unload-cancel cleanup wiring and invoke its disposer (DEGR-06).
+  ctx.effects = effects;
   // Invoke the effect callback synchronously (R-3); return its disposer if any.
   // gsd-commands wraps registration in ctx.effect(fn) — a no-op effect would
   // capture zero commands, so fn() MUST run here.
-  ctx.effect = (fn, _label) => {
+  ctx.effect = (fn, label) => {
     const d = fn();
-    return typeof d === "function" ? d : () => {};
+    const disposer = typeof d === "function" ? d : () => {};
+    effects.push({ label, disposer });
+    return disposer;
   };
   // Per-command sub-fiber API (Plan 03 / RESEARCH 1.6): ctx.inject(injectKeys,
   // callback) mirrors ctx.effect's synchronous behaviour. The host "commands"
