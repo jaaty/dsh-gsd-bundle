@@ -12,6 +12,7 @@ import {
   resolveGatesConfig,
   runCapabilityGates,
   fetchGitData,
+  addedLinesOf,
   GATE_DISPATCH,
   GATE_NAMES,
 } from "../lib/gates.js";
@@ -122,6 +123,50 @@ describe("broken-windows gate", () => {
     const res = brokenWindowsGate([".planning/phase.md"], { ".planning/phase.md": "TODO later" });
     assert.equal(res.status, "pass");
     assert.deepEqual(res.findings, []);
+  });
+
+  test("scans only ADDED lines from diffMap, not pre-existing whole-file markers", async () => {
+    // The whole file contains a TODO, but it is NOT in the added lines — a
+    // pre-existing marker in an unchanged line must not flag (diff-based scan).
+    const res = brokenWindowsGate(
+      ["src/a.js"],
+      { "src/a.js": "// TODO pre-existing\nconst x = 1;" },
+      { "src/a.js": ["const x = 1;"] },
+    );
+    assert.equal(res.status, "pass", "pre-existing marker in unchanged line must not flag");
+    assert.deepEqual(res.findings, []);
+  });
+
+  test("flags a marker introduced in an ADDED line", async () => {
+    const res = brokenWindowsGate(
+      ["src/a.js"],
+      { "src/a.js": "const x = 1;" },
+      { "src/a.js": ["const x = 1;", "// TODO new work"] },
+    );
+    assert.equal(res.status, "fail");
+    assert.deepEqual(res.findings, [{ file: "src/a.js", marker: "TODO" }]);
+  });
+
+  test("falls back to whole-file content when diffMap has no entry for the file", async () => {
+    const res = brokenWindowsGate(["src/a.js"], { "src/a.js": "// TODO later" });
+    assert.equal(res.status, "fail");
+    assert.deepEqual(res.findings, [{ file: "src/a.js", marker: "TODO" }]);
+  });
+
+  test("addedLinesOf extracts added lines and skips the +++ header", async () => {
+    const patch = [
+      "diff --git a/src/a.js b/src/a.js",
+      "index 000..111 100644",
+      "--- a/src/a.js",
+      "+++ b/src/a.js",
+      "@@ -1,2 +1,3 @@",
+      " const x = 1;",
+      "+// TODO new",
+      "+const y = 2;",
+      "-const old = 0;",
+    ].join("\n");
+    assert.deepEqual(addedLinesOf(patch), ["// TODO new", "const y = 2;"]);
+    assert.deepEqual(addedLinesOf(""), []);
   });
 });
 
