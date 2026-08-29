@@ -323,4 +323,55 @@ describe("job runtime (real child processes)", () => {
     assert.equal(nonFailed.ok, false);
     assert.match(nonFailed.message, /not failed/);
   });
+
+  // ── DEGR-06: unload-cancel (cancelAll) ─────────────────────────────────────
+
+  test("unload-cancel: a running subagent is aborted and the manifest reflects 'cancelled'", async () => {
+    let abortFn = null;
+    const { ctx } = subagentCtx(async (req) => {
+      req.signal.addEventListener("abort", () => { if (abortFn) abortFn(); });
+      return {
+        run: {
+          result: new Promise((resolve, reject) => {
+            abortFn = () => reject(new Error("aborted"));
+          }),
+        },
+        dispose: () => {},
+      };
+    });
+    const job = await launchJob(runtime, ctx, s, tmp, { kind: "subagent", prompt: "x" });
+    assert.equal(job.status, "running", "under capacity the subagent job runs");
+    await runtime.cancelAll();
+    const { entries } = await s.readJobs(tmp);
+    const e = entries.find((x) => x.id === job.id);
+    assert.ok(e, "job still present in the manifest");
+    assert.equal(e.reason.reason, "cancelled", "unload-cancel writes 'cancelled' to the manifest");
+  });
+
+  test("unload-cancel: a running shell child is killed and the manifest reflects 'cancelled'", async () => {
+    const job = await launchJob(runtime, ctx, s, tmp, {
+      kind: "shell",
+      command: ["node", "-e", "setTimeout(() => {}, 10000)"],
+    });
+    assert.equal(job.status, "running", "under capacity the shell job runs");
+    await runtime.cancelAll();
+    const { entries } = await s.readJobs(tmp);
+    const e = entries.find((x) => x.id === job.id);
+    assert.ok(e, "job still present in the manifest");
+    assert.equal(e.reason.reason, "cancelled", "unload-cancel writes 'cancelled' to the manifest");
+  });
+
+  test("unload-cancel: cancelAll never throws when the manifest write fails", async () => {
+    const { ctx } = subagentCtx(async () => ({
+      run: { result: new Promise(() => {}), dispose: () => {} },
+    }));
+    const job = await launchJob(runtime, ctx, s, tmp, { kind: "subagent", prompt: "x" });
+    assert.equal(job.status, "running", "under capacity the subagent job runs");
+    // Make the manifest write fail: replace the live record's gsdState with a
+    // stub whose updateJob rejects (unload may be tearing down gsdState).
+    const rec = runtime.live.get(job.id);
+    assert.ok(rec, "live record exists for the running subagent");
+    rec.s = { updateJob: async () => { throw new Error("gsdState tearing down"); } };
+    await assert.doesNotReject(runtime.cancelAll(), "cancelAll must never throw on a failing manifest write");
+  });
 });
