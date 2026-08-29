@@ -1,24 +1,24 @@
 ---
 gsd_state_version: 1
-milestone: v2.2.0
-milestone_name: public-launch
+milestone: v3.0.0
+milestone_name: upstream-parity
 status: idle
 active_phase: null
 next_action: null
-next_phases: [34]
+next_phases: [35]
 progress:
-  total_phases: 34
-  completed_phases: 34
-  total_plans: 1
-  completed_plans: 77
-  percent: 100
-current_phase: 34
-current_phase_name: readme-badges
-current_plan: 1
-last_updated: "2026-08-29T21:25:44.623Z"
+  total_phases: 50
+  completed_phases: 35
+  total_plans: 3
+  completed_plans: 80
+  percent: 70
+current_phase: 35
+current_phase_name: pr-branch
+current_plan: 3
+last_updated: "2026-08-29T22:27:12.272Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 34 shipped — PR #37"
+stopped_at: "Phase 35 shipped — PR #38"
 paused_at: null
 ---
 # GSD STATE
@@ -178,13 +178,10 @@ _No active phase._
 - Phase 34: planned — 1 plan(s) across 1 wave(s).
 - Phase 34 shipped — PR #37 (https://github.com/jaaty/dsh-gsd-bundle/pull/37)
 - quick 2026-08-29-milestone-release-v2-2-0: Release the `public-launch` milestone as v2.2.0. Orient against `.planning/STATE.md` first: the milestone is fully COMPLETE (34/34 phases shipped, PRs #1..#37 — PR #37 for phase 34 (readme-badges) is merged to main; the last merge commit on main is ab33631a083d51014bd061bf54c7d083d45f7d18). Branch is main, working tree is clean, and the existing tags are v1.7.0, v2.0.0, and v2.1.0 (there is NO v2.2.0 tag yet). package.json version is 2.2.0 and CHANGELOG.md has a verified `## [2.2.0] - 2026-08-29` entry. gh CLI is authenticated as account jaaty.
-
-Do the full milestone release end to end, atomically:
-1. Confirm the working tree is clean and you are on main.
-2. Draft the release notes from CHANGELOG.md's `## [2.2.0]` block as the source of truth for what the `public-launch` milestone shipped (publishable-package, publish-research, github-repo-config, security-policy-templates, readme-badges), WITHOUT inventing claims not in the CHANGELOG. The repo homepage is the npm page, but the release notes live on the GitHub release.
-3. Create and push the annotated tag v2.2.0 pointing at the current main HEAD, then create the GitHub Release v2.2.0 from that tag with the drafted notes via gh.
-
-All git/gh commands must use explicit argument arrays; never interpolate a model- or user-supplied value into a shell string (the release-notes file path can be a fixed .planning temp path). Do not push force, do not alter protected refs, do not run git clean/reset --hard. The working tree must be left clean on main with the v2.2.0 tag pointing at the release commit. Record the release as a one-line entry under .planning/quick/.
+- quick 2026-08-29-main-branch-protection: Record the main branch protection setup as a quick-task audit entry under .planning/quick/<YYYYMMDD>-main-branch-protection/. This is a documentation-only record; no repo code changes are needed.
+- Phase 35: CONTEXT.md sealed — 10 decisions
+- Phase 35: planned — 3 plan(s) across 2 wave(s).
+- Phase 35 shipped — PR #38 (https://github.com/jaaty/dsh-gsd-bundle/pull/38)
 
 ### Blockers / Concerns
 _none_

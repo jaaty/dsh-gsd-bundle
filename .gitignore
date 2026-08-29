@@ -10,3 +10,6 @@ node_modules/
 
 # Alternate npm cache used by the publish/install --cache override (D-01).
 .npm-cache/
+
+# Analysis scratch (upstream gsd-core clone + ad-hoc reports); untracked.
+.analysis/

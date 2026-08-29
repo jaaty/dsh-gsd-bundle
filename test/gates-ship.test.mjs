@@ -220,3 +220,53 @@ describe("skip + tdd enforcement", () => {
     assert.equal(blockError, null, "opt-out via skipGates unblocks without hiding the gate");
   });
 });
+
+describe("GSD-35 clean-PR branch wiring (D-09: no_clean_pr param + config resolution)", () => {
+  test("ship.js exposes the no_clean_pr param, resolves clean-PR, and imports the clean-branch module (static)", async () => {
+    const fs = await import("node:fs/promises");
+    const src = await fs.readFile(new URL("../lib/ship.js", import.meta.url), "utf8");
+
+    // D-09: a boolean `no_clean_pr` parameter is declared on gsd_ship.
+    assert.match(src, /no_clean_pr\s*:\s*\{\s*type\s*:\s*"boolean"/, "no_clean_pr param present in defineTool");
+
+    // The clean-PR decision is derived from config + the param override.
+    assert.match(src, /resolveCleanPr\s*\(\s*cfg,\s*args\.no_clean_pr\s*\)/, "resolveCleanPr(cfg, args.no_clean_pr) called after readConfig");
+
+    // The clean-branch module is imported into ship.js (plan 01 core consumed).
+    assert.match(src, /from\s+"\.\/_clean-branch\.js"/, "import from ./_clean-branch.js present");
+  });
+});
+
+describe("GSD-35 clean-PR branch sequencing + fallback (D-08/D-07, static)", () => {
+  test("ship.js builds the clean branch after the verify gate and before the push; PR head + fallback retained", async () => {
+    const fs = await import("node:fs/promises");
+    const src = await fs.readFile(new URL("../lib/ship.js", import.meta.url), "utf8");
+
+    // (a) the 5.7 step banner exists.
+    const stepIdx = src.indexOf("5.7 clean-PR branch");
+    assert.ok(stepIdx > -1, "5.7 clean-PR step banner present in ship.js");
+
+    // (b) D-08 ordering: the clean-branch step sits after the pre-ship-verify gate
+    // and before the push step.
+    const verifyIdx = src.indexOf("pre-ship-verify: pass");
+    assert.ok(verifyIdx > -1, "pre-ship-verify gate present");
+    const pushIdx = src.indexOf("6. push branch");
+    assert.ok(pushIdx > -1, "push-branch step marker present");
+    assert.ok(stepIdx > verifyIdx, "clean-PR step is AFTER the verify gate (gates must pass first)");
+    assert.ok(stepIdx < pushIdx, "clean-PR step is BEFORE the push step");
+
+    // (c) buildCleanBranch is invoked within (before) the push-step region.
+    const buildIdx = src.indexOf("buildCleanBranch({");
+    assert.ok(buildIdx > -1, "buildCleanBranch invoked in ship.js");
+    assert.ok(buildIdx < pushIdx, "buildCleanBranch call precedes the push step");
+
+    // (d) the PR is created with an explicit --head so its head is the clean
+    // branch (or phase-N on the D-07 fallback).
+    assert.match(src, /prArgs\.push\(\s*"--head",\s*prBranch\s*\)/, "gh pr create passes --head prBranch");
+
+    // (e) the D-07 fallback / phase-N path is retained: phase-N is the default
+    // prBranch and a skipped clean branch logs the "shipping phase branch as-is" path.
+    assert.match(src, /let\s+prBranch\s*=\s*branch\s*;/, "phase-N branch is the default prBranch");
+    assert.match(src, /info\.reason\s*}\s*;\s*shipping\s+phase\s+branch\s+as-is/, "D-07 skip log present");
+  });
+});

@@ -97,3 +97,22 @@
 - [x] REL-03: A SECURITY.md vulnerability-reporting policy and GitHub issue templates + a pull-request template exist in the repository .github/ directory.
 - [x] REL-04: The GitHub repository is configured with searchable topics and a homepage URL, so the repo is discoverable and links to its canonical location.
 - [x] REL-05: The README displays CI-status, license, and npm-version badges so the public repo signals at-a-glance health and provenance.
+
+## GAP
+
+- [x] GAP-01: A clean-PR-branch path exists so gsd_ship creates a review branch that filters out .planning/ commits, leaving reviewers with only real code changes in the PR diff.
+- [ ] GAP-02: A spec-phase step precedes discuss and produces a SPEC.md with falsifiable requirements gated by an ambiguity-scoring score (≤0.20 across weighted dimensions).
+- [ ] GAP-03: After PLAN.md files are generated, a post-planning gap-analysis emits a coverage table cross-referencing every REQ-ID and D-ID from REQUIREMENTS.md and CONTEXT.md against plan bodies.
+- [ ] GAP-04: A code-review pass reviews a phase's changed source files and produces REVIEW.md; a --fix companion applies findings with per-fix atomic commits and produces REVIEW-FIX.md.
+- [ ] GAP-05: A retroactive 6-pillar UI audit reviews implemented frontend code against the UI-SPEC and produces a UI-audit report.
+- [ ] GAP-06: A retro validate-phase audit maps executed work back to tests and manual evidence, identifies validation gaps, and produces tests to close those gaps for a completed phase.
+- [ ] GAP-07: A safe undo path can roll back a phase's or plan's commits using the phase manifest, with dependency checks and a confirmation gate before execution.
+- [ ] GAP-08: A health diagnostic inspects .planning/ integrity (phase/plan numbering, orphan SUMMARYs, config validation) and offers non-destructive repair.
+- [ ] GAP-09: Milestone close-gate audits aggregate phase verifications to confirm the milestone met its definition of done, and a cross-phase UAT audit lists outstanding items before close.
+- [ ] GAP-10: An extract-learnings path accumulates decisions, lessons, patterns, and surprises from completed phase artifacts into a LEARNINGS.md that carries forward across phases.
+- [ ] GAP-11: A project knowledge graph is built in .planning/graphs/ and can be queried and inspected through a graphify tool.
+- [ ] GAP-12: A cross-session memory integration performs deliberate recall before discuss/plan and verbatim capture at phase boundaries (mempalace).
+- [ ] GAP-13: An advisory assumption-delta checkpoint detects when a phase makes something plural, optional, or chosen that used to be singular, required, or derived, and surfaces one identity-model question.
+- [ ] GAP-14: A pause-work command writes a structured context handoff (HANDOFF.json + a continue-here pointer) and a resume-work command restores full context from earlier artifacts to continue mid-phase.
+- [ ] GAP-15: An autonomous path can drive all remaining phases of a milestone end-to-end (discuss → plan → execute per phase) without per-phase manual prompting.
+- [ ] GAP-16: An add-tests generator creates unit and E2E tests for a completed phase based on its UAT criteria and implementation.
