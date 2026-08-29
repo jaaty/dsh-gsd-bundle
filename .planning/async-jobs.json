@@ -358,5 +358,15 @@
     "started": "2026-08-29T02:05:05.055Z",
     "result": "max-tokens",
     "completed": "2026-08-29T02:08:18.894Z"
+  },
+  {
+    "id": "JOB-37",
+    "kind": "subagent",
+    "plan": "GSD-24-composability-hardening-03",
+    "phase": 24,
+    "status": "done",
+    "started": "2026-08-29T02:08:19.979Z",
+    "result": "SUMMARY written",
+    "completed": "2026-08-29T02:10:41.868Z"
   }
 ]
