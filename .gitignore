@@ -7,3 +7,7 @@ node_modules/
 .planning/WINDOWS.md
 .planning/quick/
 .planning/phases/**/*-DISCUSSION-LOG.md
+
+# Local npm cache override byproduct (D-01: default ~/.npm cache is read-only).
+# Created by npm --cache .npm-cache commands; never committed.
+.npm-cache/
