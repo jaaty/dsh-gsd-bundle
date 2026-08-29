@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v2.0
 milestone_name: graceful-removal
-status: idle
-active_phase: null
-next_action: null
-next_phases: [22]
+status: plan
+active_phase: 23
+next_action: plan-phase
+next_phases: [23]
 progress:
   total_phases: 24
   completed_phases: 22
   total_plans: 4
   completed_plans: 58
   percent: 92
-current_phase: 22
-current_phase_name: reactive-loop-rendering
+current_phase: 23
+current_phase_name: removal-verification
 current_plan: 4
-last_updated: "2026-08-29T01:04:28.947Z"
+last_updated: "2026-08-29T01:13:20.158Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 22 shipped — PR #25"
@@ -113,6 +113,7 @@ _No active phase._
 - Phase 22: CONTEXT.md sealed — 11 decisions
 - Phase 22: planned — 4 plan(s) across 3 wave(s).
 - Phase 22 shipped — PR #25 (https://github.com/jaaty/dsh-gsd-bundle/pull/25)
+- Phase 23: CONTEXT.md sealed — 8 decisions
 
 ### Blockers / Concerns
 _none_
