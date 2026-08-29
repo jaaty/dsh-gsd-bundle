@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v2.2.0
 milestone_name: public-launch
-status: verify
+status: ship
 active_phase: 30
-next_action: verify-phase
+next_action: ship-phase
 next_phases: [30]
 progress:
   total_phases: 34
@@ -15,7 +15,7 @@ progress:
 current_phase: 30
 current_phase_name: publishable-package
 current_plan: 3
-last_updated: "2026-08-29T06:51:40.085Z"
+last_updated: "2026-08-29T06:52:57.732Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 28 shipped — PR #31"
