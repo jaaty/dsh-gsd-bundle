@@ -8,17 +8,17 @@ next_action: null
 next_phases: [29]
 progress:
   total_phases: 29
-  completed_phases: 28
-  total_plans: 74
-  completed_plans: 74
-  percent: 97
-current_phase: 28
-current_phase_name: publish-research
-current_plan: 1
-last_updated: "2026-08-29T06:20:00.000Z"
+  completed_phases: 29
+  total_plans: 2
+  completed_plans: 76
+  percent: 100
+current_phase: 29
+current_phase_name: pre-ship-verify
+current_plan: 2
+last_updated: "2026-08-29T06:00:21.723Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 28 shipped — PR #31"
+stopped_at: "Phase 29 shipped — PR #32"
 paused_at: null
 ---
 # GSD STATE
@@ -143,6 +143,9 @@ _No active phase._
 - Phase 28: CONTEXT.md sealed — 8 decisions
 - Phase 28: planned — 1 plan(s) across 1 wave(s).
 - Phase 28 shipped — PR #31 (https://github.com/jaaty/dsh-gsd-bundle/pull/31)
+- Phase 29: CONTEXT.md sealed — 6 decisions
+- Phase 29: planned — 2 plan(s) across 2 wave(s).
+- Phase 29 shipped — PR #32 (https://github.com/jaaty/dsh-gsd-bundle/pull/32)
 
 ### Blockers / Concerns
 _none_
