@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v2.2.0
 milestone_name: public-launch
-status: ship
-active_phase: 34
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [34]
 progress:
   total_phases: 34
-  completed_phases: 33
+  completed_phases: 34
   total_plans: 1
   completed_plans: 77
-  percent: 97
+  percent: 100
 current_phase: 34
 current_phase_name: readme-badges
 current_plan: 1
-last_updated: "2026-08-29T21:22:40.169Z"
+last_updated: "2026-08-29T21:23:11.536Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 33 shipped — PR #36"
+stopped_at: "Phase 34 shipped — PR #37"
 paused_at: null
 ---
 # GSD STATE
@@ -176,6 +176,7 @@ _No active phase._
 - Phase 34: CONTEXT.md sealed — 7 decisions
 - Phase 34: planned — 2 plan(s) across 2 wave(s).
 - Phase 34: planned — 1 plan(s) across 1 wave(s).
+- Phase 34 shipped — PR #37 (https://github.com/jaaty/dsh-gsd-bundle/pull/37)
 
 ### Blockers / Concerns
 _none_
