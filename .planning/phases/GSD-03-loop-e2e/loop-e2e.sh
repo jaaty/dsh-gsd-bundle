@@ -15,7 +15,7 @@
 set -uo pipefail
 
 DSH_HOME_DIR="${DSH_HOME_DIR:-/tmp/dshhome}"
-BUNDLE_ROOT="${BUNDLE_ROOT:-/var/home/jatyeo/dev/dsh-gsd-bundle}"
+BUNDLE_ROOT="${BUNDLE_ROOT:-$(pwd)}"
 DEMO_DIR="${DEMO_DIR:-/tmp/demo}"
 DEMO_ORIGIN="${DEMO_ORIGIN:-https://github.com/jaaty/dsh-gsd-bundle.git}"
 DEMO_BRANCH="${DEMO_BRANCH:-demo-loop-e2e}"
@@ -49,8 +49,8 @@ JSON
 YML
     mkdir -p "$PROFILE_DIR/node_modules/@dsh-gsd"
     ln -sfn "$BUNDLE_ROOT" "$PROFILE_DIR/node_modules/@dsh-gsd/bundle"
-    if [ -f /var/home/jatyeo/.dsh/settings.yaml ]; then
-      cp /var/home/jatyeo/.dsh/settings.yaml "$DSH_HOME_DIR/settings.yaml"
+    if [ -f "$HOME/.dsh/settings.yaml" ]; then
+      cp "$HOME/.dsh/settings.yaml" "$DSH_HOME_DIR/settings.yaml"
     fi
     echo "bootstrap_home (inline) - profile scaffold ready"
   }

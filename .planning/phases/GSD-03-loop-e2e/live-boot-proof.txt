@@ -2,7 +2,7 @@ GSD-03-loop-e2e live-boot proof
 ===============================
 
 Captured 2026-08-23 from a single `dsh` run under DSH_HOME=/tmp/dshhome
-(relocated home; the real /home/jatyeo/.dsh is EROFS under this sandbox, per D-04).
+(relocated home; the real ~/.dsh is EROFS under this sandbox, per D-04).
 
 1) COMPOSE (dsh --profile headless --dump-config, DSH_HOME=/tmp/dshhome)
    GSD_BUNDLE_ROWS=12

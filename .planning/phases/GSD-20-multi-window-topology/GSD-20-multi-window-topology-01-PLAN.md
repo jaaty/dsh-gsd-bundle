@@ -46,7 +46,7 @@ Then add unit tests to test/_git-artifacts.test.mjs under the existing `describe
   2. A test that the existing default call `commitArtifacts("/repo", 17, { scope: "discuss", phaseName: "phase-branch-isolation" }, git)` still produces a commit message matching `/^docs\(planning\): phase 17 phase-branch-isolation discuss artefacts$/` (guards against a regression in the default path).
   3. A best-effort guard: `commitArtifacts("/repo", null, { scope: "quick", message: "docs(planning): quick x" }, git)` with `rejectArg: "add"` returns `committed: false` and does NOT throw (D-06 semantics unchanged for the null-phaseNum path).
 </action>
-    <verify>Run: cd /var/home/jatyeo/dev/dsh-gsd-bundle && node --test test/_git-artifacts.test.mjs — all commitArtifacts tests (new + pre-existing) pass.</verify>
+    <verify>Run: node --test test/_git-artifacts.test.mjs — all commitArtifacts tests (new + pre-existing) pass.</verify>
     <acceptance_criteria>
       - node --test test/_git-artifacts.test.mjs exits 0; the new override test and null-phaseNum best-effort test are present and pass.
       - grep -c "opts.message ||" lib/_git-artifacts.js == 1 (the override is a single resolution point).
@@ -62,7 +62,7 @@ Then add unit tests to test/_git-artifacts.test.mjs under the existing `describe
     <action>
 Read test/discuss-artifacts.test.mjs and test/phase-tools-git.test.mjs. These assert the phase-tool/discuss commitArtifacts call sites match exactly-one with the literal string `commitArtifacts(cwd, args.phase, { scope: "...", phaseName: phase.name })`. Add a single static regression test to test/_git-artifacts.test.mjs (new top-level test()) that reads lib/discuss.js, lib/plan.js, lib/execute.js, lib/verify.js via `readFile` (import readFile from "node:fs/promises" at the top of the test file) and, for each file, asserts `(src.match(/commitArtifacts\(cwd, args\.phase, \{ scope: "(discuss|plan|execute|verify)", phaseName: phase\.name \}\)/g) || []).length === 1` — proving the signature change introduced no `message:` key and no second call. Do NOT modify the existing phase-tool call sites or the existing tests in discuss-artifacts.test.mjs / phase-tools-git.test.mjs.
 </action>
-    <verify>Run: cd /var/home/jatyeo/dev/dsh-gsd-bundle && node --test test/_git-artifacts.test.mjs test/discuss-artifacts.test.mjs test/phase-tools-git.test.mjs — all pass.</verify>
+    <verify>Run: node --test test/_git-artifacts.test.mjs test/discuss-artifacts.test.mjs test/phase-tools-git.test.mjs — all pass.</verify>
     <acceptance_criteria>
       - The grep string `commitArtifacts(cwd, args.phase, { scope: "(discuss|plan|execute|verify)", phaseName: phase.name })` appears exactly once in each of lib/discuss.js, lib/plan.js, lib/execute.js, lib/verify.js.
       - node --test test/_git-artifacts.test.mjs test/discuss-artifacts.test.mjs test/phase-tools-git.test.mjs exits 0.

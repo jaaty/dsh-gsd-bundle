@@ -26,14 +26,14 @@ The official DeepSeek Harness packaging tutorial treats a bundle as *"an npm pac
 
 ## Evidence — Source 2: Local inspection (installed dsh checkout)
 
-The installed `@deepseek-ai/dsh` package at `/var/home/jatyeo/.nvm/versions/node/v24.15.0/lib/node_modules/@deepseek-ai/dsh` is itself an **npm-published** bundle. Its `package.json` declares:
+The installed `@deepseek-ai/dsh` package (resolved from the npm registry) is itself an **npm-published** bundle. Its `package.json` declares:
 
 - `"name": "@deepseek-ai/dsh"`, `"version": "0.1.1-rc.2"`, MIT license.
 - `"publishConfig": { "access": "public" }` — the scoped-package publish-access convention this bundle now mirrors.
 - `"files": ["lib/*.js", "config"]` and `"bin": { "dsh": "lib/bin.js" }`.
 - ~60 dependencies, all scoped `@deepseek-ai/dsh-*` / `@deepseek-ai/cordis-*` resolved from the npm registry (e.g. `@deepseek-ai/dsh-base ^0.1.1-rc.2`, `@deepseek-ai/cordis-plugin-hmr ^1.0.16`).
 
-The checkout's `node_modules/@deepseek-ai/` holds the full installed first-party plugin set (`dsh-agent`, `dsh-agent-loop`, `dsh-base`, `dsh-cordis-client-runner`, `dsh-tool-bash`, …). **No third-party `dsh-*` bundles are present locally** — only official `@deepseek-ai/*`. Local inspection alone therefore cannot establish third-party precedent; the live registry queries (Source 3) do.
+The installed package's `node_modules/@deepseek-ai/` holds the full first-party plugin set (`dsh-agent`, `dsh-agent-loop`, `dsh-base`, `dsh-cordis-client-runner`, `dsh-tool-bash`, …). **No third-party `dsh-*` bundles are present locally** — only official `@deepseek-ai/*`. Local inspection alone therefore cannot establish third-party precedent; the live registry queries (Source 3) do.
 
 ## Evidence — Source 3: Live npm registry queries
 

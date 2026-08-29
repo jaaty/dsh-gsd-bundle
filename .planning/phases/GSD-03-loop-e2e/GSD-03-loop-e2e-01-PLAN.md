@@ -31,7 +31,7 @@ must_haves:
 
 <objective>Prove the riskiest live-boot slice first (per CONTEXT D-01/D-04): a relocated DSH_HOME at /tmp/dshhome composes the headless profile with all 12 @dsh-gsd/bundle/* rows applied, and a freshly booted headless session answers a gsd_* tool task with real LLM output — the genuine preconditions that MOUNT-05's full loop depends on. Produces a runnable live-boot.sh recipe and a captured proof file.</objective>
 
-<context>@.planning/phases/GSD-03-loop-e2e/GSD-03-loop-e2e-RESEARCH.md, @/var/home/jatyeo/.dsh/profiles/headless/package.json, @/var/home/jatyeo/.dsh/settings.yaml, @cordis.patch.yml</context>
+<context>@.planning/phases/GSD-03-loop-e2e/GSD-03-loop-e2e-RESEARCH.md, @~/.dsh/profiles/headless/package.json, @~/.dsh/settings.yaml, @cordis.patch.yml</context>
 
 <tasks>
   <task type="auto">
@@ -40,7 +40,7 @@ must_haves:
     <read_first>.planning/phases/GSD-03-loop-e2e/GSD-03-loop-e2e-RESEARCH.md</read_first>
     <action>Create the runnable bash script live-boot.sh under .planning/phases/GSD-03-loop-e2e/ that performs the WHOLE relocate-compose-boot sequence inside one invocation, because /tmp is ephemeral across separate bash calls (per RESEARCH). Steps it must take, in order, each implemented as a function so the compose and boot halves can be run separately:
 
-(1) `bootstrap_home()`: create `/tmp/dshhome/profiles/headless/`; write a `package.json` there whose contents mirror `/var/home/jatyeo/.dsh/profiles/headless/package.json` (bundles: ["dsh-base","dsh-headless","@dsh-gsd/bundle"]); write an empty `cordis.patch.yml` user layer (a comment-only or minimal file); create `node_modules/@dsh-gsd/bundle` as a symlink to the workspace bundle root; copy `/var/home/jatyeo/.dsh/settings.yaml` to `/tmp/dshhome/settings.yaml` so the ollama provider + agent-default-model are inherited (RESEARCH: bearer inline in settings, no credentials file needed). Do NOT copy `.credentials.yaml`; healProfilesModuleFallback auto-populates `profiles/node_modules` peers on first boot.
+(1) `bootstrap_home()`: create `/tmp/dshhome/profiles/headless/`; write a `package.json` there whose contents mirror `~/.dsh/profiles/headless/package.json` (bundles: ["dsh-base","dsh-headless","@dsh-gsd/bundle"]); write an empty `cordis.patch.yml` user layer (a comment-only or minimal file); create `node_modules/@dsh-gsd/bundle` as a symlink to the workspace bundle root; copy `~/.dsh/settings.yaml` to `/tmp/dshhome/settings.yaml` so the ollama provider + agent-default-model are inherited (RESEARCH: bearer inline in settings, no credentials file needed). Do NOT copy `.credentials.yaml`; healProfilesModuleFallback auto-populates `profiles/node_modules` peers on first boot.
 
 2. `compose_check()`: run `DSH_HOME=/tmp/dshhome dsh --profile headless --dump-config`, then count occurrences of `@dsh-gsd/bundle/` and grep for the agent-loop row override (a `config.agents` list containing `id: gsd`). Print the count and the matching lines to stdout. Fail the script (exit non-zero) if fewer than 12 `@dsh-gsd/bundle/` rows or if the agent-loop override line is absent — per D-01/MOUNT-01.
 

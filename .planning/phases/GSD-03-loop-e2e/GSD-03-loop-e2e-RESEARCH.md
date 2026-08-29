@@ -20,7 +20,7 @@ The proof target is a **freshly booted headless DSH deployment** (`dsh --profile
 - Boot is process-driven: `prepareProfile` (re)writes the profile root `cordis.yml`, which is exactly why the read-only `.dsh` must be relocated (below).
 
 ### DSH_HOME relocation mechanics [VERIFIED live this session]
-- Original `$DSH_HOME=/home/jatyeo/.dsh` is EROFS for writes under this sandbox: `dsh --profile headless --dump-default-config` throws `EROFS ... open '/home/jatyeo/.dsh/profiles/headless/cordis.yml'` (`prepareProfile` rewrites `cordis.yml`). Relocation is therefore mandatory, not optional (matches D-04).
+- Original `$DSH_HOME=~/.dsh` is EROFS for writes under this sandbox: `dsh --profile headless --dump-default-config` throws `EROFS ... open '~/.dsh/profiles/headless/cordis.yml'` (`prepareProfile` rewrites `cordis.yml`). Relocation is therefore mandatory, not optional (matches D-04).
 - Relocation works: a fresh `DSH_HOME=/tmp/dshhome` whose `profiles/headless/` carries `package.json` (bundles list), an empty `cordis.patch.yml` user layer, and a `node_modules/@dsh-gsd/bundle` symlink to the workspace composes correctly. `dsh --profile headless --dump-config` under that relocated home shows **all 12 `@dsh-gsd/bundle/*` insert rows, plus the `agent-loop` row patched to `config.agents: [{ id: gsd }]`** (grep lines 314–361). The bundle is genuinely applied.
 - A **full headless boot** with that relocated home + a copied `settings.yaml` completed a real LLM round-trip: task `Reply with exactly the single word: ok...` → printed `ok`, exit 0.
 - **`healProfilesModuleFallback(INSTALL_ANCHOR, home)`** (in `@deepseek-ai/dsh-app-boot/lib/index.js:409`) creates `$DSH_HOME/profiles/node_modules/<pkg>` symlinks for every dependency/peerDependency of the `@deepseek-ai/dsh` install. So the relocated home's `profiles/node_modules` fallback is auto-populated on boot with the `@deepseek-ai` peer packages (`dsh-tools`, `dsh-llm`, `schemastery`, `cordis`, …). Only the profile's own bundle link (`@dsh-gsd/bundle`) must be supplied by hand (it is not an install dep).
@@ -28,7 +28,7 @@ The proof target is a **freshly booted headless DSH deployment** (`dsh --profile
 
 ### LLM / credentials [VERIFIED live this session]
 - No `DEEPSEEK_API_KEY` env is set. LLM is a **local Ollama** OpenAI-compatible endpoint.
-- Real `settings.yaml` (`/home/jatyeo/.dsh/settings.yaml`) declares `llm-pi-ai.providers.ollama` (baseURL `http://localhost:11434/v1`, header `Authorization: Bearer ollama`, models `glm-5.2:cloud`, `deepseek-v4-flash:0731-cloud`) and `agent-default-model: {provider: ollama, model: deepseek-v4-flash:0731-cloud}`. This overrides the `dsh-base` default `deepseek-official/deepseek-v4-flash`.
+- Real `settings.yaml` (`~/.dsh/settings.yaml`) declares `llm-pi-ai.providers.ollama` (baseURL `http://localhost:11434/v1`, header `Authorization: Bearer ollama`, models `glm-5.2:cloud`, `deepseek-v4-flash:0731-cloud`) and `agent-default-model: {provider: ollama, model: deepseek-v4-flash:0731-cloud}`. This overrides the `dsh-base` default `deepseek-official/deepseek-v4-flash`.
 - Ollama is reachable and a real chat completion returns valid output (`model: deepseek-v4-flash:0731`, with `reasoning` field — a thinking model). **So the booted headless session can do genuine LLM round-trips with no cloud auth.**
 - ⇒ The relocated `DSH_HOME` must contain a copy of `settings.yaml` (the provider + default model). No `.credentials.yaml` is needed (bearer is inline in settings headers).
 

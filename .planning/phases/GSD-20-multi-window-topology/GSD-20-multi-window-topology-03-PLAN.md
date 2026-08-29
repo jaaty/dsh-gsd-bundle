@@ -49,7 +49,7 @@ Read lib/ui.js. It currently imports `{ contextBudget }` from "./_shared.js" and
 
 Then create test/out-of-flow-commit.test.mjs — a new static-wiring test file mirroring test/phase-tools-git.test.mjs (import test, describe, assert from node:test / node:assert/strict, and `readFile` from node:fs/promises; a `readLib(file)` helper resolving `../lib/<file>` from import.meta.url). In it, for `lib/ui.js` assert: (a) it imports commitArtifacts from "./_git-artifacts.js"; (b) it calls `commitArtifacts(cwd, args.phase, { scope: "ui", phaseName: phase.name })` exactly once; (c) the index of that commitArtifacts call is GREATER THAN the index of `writeArtifact(cwd, args.phase, "UI-SPEC"` in the source (ordering).
 </action>
-    <verify>Run: cd /var/home/jatyeo/dev/dsh-gsd-bundle && node --test test/out-of-flow-commit.test.mjs — the ui wiring tests pass.</verify>
+    <verify>Run: node --test test/out-of-flow-commit.test.mjs — the ui wiring tests pass.</verify>
     <acceptance_criteria>
       - grep -n "commitArtifacts" lib/ui.js shows exactly one call with the literal `{ scope: "ui", phaseName: phase.name }`.
       - The string `commitArtifacts(cwd, args.phase, { scope: "ui", phaseName: phase.name })` appears exactly once in lib/ui.js.
@@ -65,7 +65,7 @@ Then create test/out-of-flow-commit.test.mjs — a new static-wiring test file m
     <action>
 Read lib/map-codebase.js. It has a bespoke `gitAddCommit(cwd, dir)` function (lines 81-89) using synchronous `execFileSync("git", ["-C", cwd, "add", "--", ...])` + `execFileSync("git", ["-C", cwd, "commit", "-m", "docs: map existing codebase", "--", ...])`, called at line 343 as `const committed = gitAddCommit(cwd, ".planning/codebase")`. Per D-11, remove this bespoke path entirely and re-route through the shared seam: (1) delete the `gitAddCommit` function (lines 81-89); (2) remove the now-unused `import { execFileSync } from "node:child_process";` at line 25 (verifiable: execFileSync only appears in the deleted function); (3) add `import { commitArtifacts } from "./_git-artifacts.js";`; (4) replace line 343 with `const committed = (await commitArtifacts(cwd, null, { scope: "map", message: "docs(planning): codebase map" },)).committed;` — phaseNum `null` + a `message` override because map has no phase (D-11/D-12); (5) update the summary text at line 359 — it currently reads the old `committed ? "Committed: docs: map existing codebase." : ...` — to reference the new message `Committed: docs(planning): codebase map.` (RESEARCH risk 5); (6) update the header comment at line 18 (`It commits the map with "docs: map existing codebase" when it can.`) to the new message. Keep the surrounding `const committed` boolean usage in the summary intact (the seam returns `{ committed, ... }`).
 </action>
-    <verify>Run: cd /var/home/jatyeo/dev/dsh-gsd-bundle && node --test test/out-of-flow-commit.test.mjs test/phase-tools-git.test.mjs — including new map assertions; also grep confirms the bespoke commit is gone.</verify>
+    <verify>Run: node --test test/out-of-flow-commit.test.mjs test/phase-tools-git.test.mjs — including new map assertions; also grep confirms the bespoke commit is gone.</verify>
     <acceptance_criteria>
       - grep -c "gitAddCommit" lib/map-codebase.js == 0.
       - grep -c "execFileSync" lib/map-codebase.js == 0 (import removed with the deleted function).
@@ -83,12 +83,12 @@ Read lib/map-codebase.js. It has a bespoke `gitAddCommit(cwd, dir)` function (li
     <action>
 Read lib/quick.js. It imports `{ slugify, today, nowIso }` from "./_shared.js" and `spawnSubagent, cwdOf` from "./_runner.js", and writes the quick record via `await s.writeQuickRecord(cwd, \`${today()}-${slug}\`, entry);` at line 58 but never commits it (the QUICK_PROMPT subagent commits only its own code change). Per D-11, add a shared-seam commit for the record: add `import { commitArtifacts } from "./_git-artifacts.js";`, and immediately after the `writeQuickRecord` line add `await commitArtifacts(cwd, null, { scope: "quick", message: \`docs(planning): quick ${today()}-${slug}\` });` — phaseNum `null` + a `message` override because quick has no phase and may run in a project-less / non-repo workspace (the seam no-throws there, D-06). Keep the `addDecision` best-effort block (line 59) and the return structure unchanged. The record auto-commit lands on the currently checked-out branch (phase-N during a phase per D-09).
 </action>
-<verify>Run: cd /var/home/jatyeo/dev/dsh-gsd-bundle && node --test test/out-of-flow-commit.test.mjs — the quick wiring tests pass.</verify>
+<verify>Run: node --test test/out-of-flow-commit.test.mjs — the quick wiring tests pass.</verify>
 <acceptance_criteria>
       - grep -n "commitArtifacts" lib/quick.js shows exactly one call with `{ scope: "quick"` and phaseNum `null`.
       - The string `commitArtifacts(cwd, null, { scope: "quick"` appears exactly once in lib/quick.js.
       - Add test/out-of-flow-commit.test.mjs assertions for lib/quick.js: (a) imports commitArtifacts; (b) calls `commitArtifacts(cwd, null, { scope: "quick"` exactly once; (c) the commitArtifacts call index is GREATER THAN the `writeQuickRecord(cwd,` index (ordering). node --test test/out-of-flow-commit.test.mjs exits 0.
-      - cd /var/home/jatyeo/dev/dsh-gsd-bundle && node --test test/out-of-flow-commit.test.mjs test/phase-tools-git.test.mjs test/discuss-artifacts.test.mjs exits 0 (focused wiring regression on files this plan does not overlap; the full MOUNT-06 suite is re-confirmed at phase Verify after wave merging, since plan 02 edits test/_git-artifacts.test.mjs in this same wave).
+      - node --test test/out-of-flow-commit.test.mjs test/phase-tools-git.test.mjs test/discuss-artifacts.test.mjs exits 0 (focused wiring regression on files this plan does not overlap; the full MOUNT-06 suite is re-confirmed at phase Verify after wave merging, since plan 02 edits test/_git-artifacts.test.mjs in this same wave).
     </acceptance_criteria>
     <done>gsd_quick auto-commits its TASK.md record via commitArtifacts after writeQuickRecord (phaseNum null + message override), proven by the static wiring test and a focused wiring regression.</done>
   </task>

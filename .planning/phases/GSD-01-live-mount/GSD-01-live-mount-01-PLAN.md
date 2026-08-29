@@ -72,7 +72,7 @@ Define the 12 plugin subpaths in patch order as an array of {id, sub}: gsd-perso
 
 In a describe("mount: all 12 plugins activate") with beforeEach constructing `fs = new FakeFs()` and `ctx = makeMountCtx(fs)`, write a test "applies all 12 plugins in patch order without throwing" that loops the 12 entries, does `const mod = await import(\`@dsh-gsd/bundle/${sub}\`)` (self-referencing subpath import — Node resolves via package.json exports), asserts `typeof mod.apply === "function"`, and calls `mod.apply(ctx, {})`. Wrap the loop so any throw fails the test with the offending id. After the loop assert: `ctx.provided.has("gsdState")`, `ctx.provided.get("gsdState") instanceof GsdState`, `ctx.tools.length === 12`, `ctx.commands.length === 12`, `ctx.sections.length === 1`, `ctx.contexts.length === 1`. This is the thinnest end-to-end activation slice (import → apply → capture) touching every registration surface; expand in later tasks.
     </action>
-    <verify>cd /var/home/jatyeo/dev/dsh-gsd-bundle && node --test test/mount.test.mjs</verify>
+    <verify>node --test test/mount.test.mjs</verify>
     <acceptance_criteria>
       - test/mount.test.mjs exists and imports from "@dsh-gsd/bundle/" subpaths (grep: "import(`@dsh-gsd/bundle/" or "@dsh-gsd/bundle/${")
       - grep "ctx.effect = (fn" present and the body calls fn() (grep: "const d = fn()")
@@ -97,7 +97,7 @@ Add a describe("mount: cordis.patch.yml rows resolve") with a test that:
 4. Cross-checks the captured tool names against the expected 12: gsd_init, gsd_status, gsd_progress, gsd_new_milestone, gsd_discuss, gsd_plan, gsd_execute, gsd_verify, gsd_ship, gsd_ui_phase, gsd_quick, gsd_map_codebase (from research, verified this session). Capture tool names by applying all 12 against a fresh makeMountCtx (reuse Task 1's apply loop) and reading ctx.tools.map(t => t.name).
 5. Cross-checks the captured command names against the expected 12: gsd-init, gsd-status, gsd-progress, gsd-discuss-phase, gsd-ui-phase, gsd-plan-phase, gsd-execute-phase, gsd-verify-work, gsd-ship, gsd-quick, gsd-map-codebase, gsd-new-milestone (from lib/commands.js:35-161, per D-03).
     </action>
-    <verify>cd /var/home/jatyeo/dev/dsh-gsd-bundle && node --test test/mount.test.mjs</verify>
+    <verify>node --test test/mount.test.mjs</verify>
     <acceptance_criteria>
       - grep "readPatchRows" present in test/mount.test.mjs
       - grep "import { promises as fsPromises } from \"node:fs\"" present (no yaml/js-yaml import anywhere in the file)
@@ -131,7 +131,7 @@ Extend test/mount.test.mjs with a describe("mount: persona orients at STATE.md (
 
 No live DSH boot, no touching the web profile (per D-02). All writes go to the in-memory FakeFs.
     </action>
-    <verify>cd /var/home/jatyeo/dev/dsh-gsd-bundle && node --test test/mount.test.mjs && npm test</verify>
+    <verify>node --test test/mount.test.mjs && npm test</verify>
     <acceptance_criteria>
       - grep "gsd:persona" and "order === -100" (or "order: -100" assertion) present
       - grep "gsd:state" and "order === 10" (or "order: 10" assertion) present

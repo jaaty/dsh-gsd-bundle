@@ -51,10 +51,10 @@ I have all the evidence needed. The key host-implementation fact is verified: bo
 
 ## 2. Package legitimacy
 
-**No new dependency is proposed.** This phase changes rendering/routing only and consumes the existing `@deepseek-ai/cordis` (peerDep, present in node_modules) and the internal `lib/*` modules. **[VERIFIED: /var/home/jatyeo/dev/dsh-gsd-bundle/package.json:62-70 — dependencies:{}, peerDependencies:{dsh-tools, schemastery, cordis, dsh-llm}}]**
+**No new dependency is proposed.** This phase changes rendering/routing only and consumes the existing `@deepseek-ai/cordis` (peerDep, present in node_modules) and the internal `lib/*` modules. **[VERIFIED: package.json:62-70 — dependencies:{}, peerDependencies:{dsh-tools, schemastery, cordis, dsh-llm}}]**
 
 The only "host contract" the implementation leans on is `@deepseek-ai/dsh-system-prompt`, which is **not** a declared dependency of the bundle — it is injected by the DSH host and appears only in the runtime checkout. Its function-`text` support is the load-bearing fact for D-01 and was verified this session:
-- **[VERIFIED: /var/home/jatyeo/.nvm/versions/node/v24.15.0/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js:271, 278]** `section.text` and `context.text` are both called with `context` when they are functions. The current `gsd:state` context provider already relies on the `context.text` half; phase 22 extends the same contract to `section.text`.
+- **[VERIFIED: @deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-system-prompt/lib/index.js:271, 278]** `section.text` and `context.text` are both called with `context` when they are functions. The current `gsd:state` context provider already relies on the `context.text` half; phase 22 extends the same contract to `section.text`.
 
 **No package legitimacy concerns arise — nothing new is being introduced.**
 

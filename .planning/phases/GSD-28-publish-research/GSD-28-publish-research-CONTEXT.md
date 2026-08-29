@@ -53,7 +53,7 @@
 ### Bundle patch referenced from package.json
 - `cordis.patch.yml — the bundle patch applied by `dsh plugin add``
 ### Locally-installed dsh plugins to inspect for distribution precedent
-- `The dsh checkout at /var/home/jatyeo/.nvm/versions/node/v24.15.0/lib/node_modules/@deepseek-ai/dsh — inspect its node_modules for @deepseek-ai/* packages and any dsh-* bundles, reading their package.json publish fields and README install sections`
+- `The dsh checkout at @deepseek-ai/dsh — inspect its node_modules for @deepseek-ai/* packages and any dsh-* bundles, reading their package.json publish fields and README install sections`
 ### Existing map notes on packaging/distribution, if any
 - `.planning/codebase/ — STRUCTURE.md / CONVENTIONS.md for any existing notes on packaging and distribution`
 ### Deferred-from / feeds-into phases

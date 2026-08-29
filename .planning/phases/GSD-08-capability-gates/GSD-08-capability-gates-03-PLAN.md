@@ -50,7 +50,7 @@ Prove the capability-gate gatekeeper's requirements. Add a focused node --test e
   <files>test/gates-ship.test.mjs</files>
   <read_first>lib/gates.js, test/_shared.test.mjs, .planning/phases/GSD-08-capability-gates/GSD-08-capability-gates-CONTEXT.md</read_first>
   <action>Create test/gates-ship.test.mjs importing { runCapabilityGates } from "../lib/gates.js" and assert. Add describe "CAP-01 gate report" with: (a) every-gate-pass: runCapabilityGates({cfg:{}, gitData:{changedFiles:["src/a.js"], contentMap:{"src/a.js":"const x=1;"}, commitSubjects:[]}, plans:[{id:"GSD-08-x-01", type:"execute"}], skipGates:[]}) → reportLines has length 3, each matches /^(security|broken_windows|tdd_audit): pass$/, blockError is null; (b) a mixed run where all three appear (one pass, one skipped, one fail) proving every gate is reported regardless of outcome (D-07). Assert the exact report substrings. Commit atomically as feat(08-03): CAP-01 gate report suite.</action>
-  <verify>cd /var/home/jatyeo/dev/dsh-gsd-bundle && node --test test/gates-ship.test.mjs 2>&1 | tail -20</verify>
+  <verify>node --test test/gates-ship.test.mjs 2>&1 | tail -20</verify>
   <acceptance_criteria>
     - test/gates-ship.test.mjs exists and imports runCapabilityGates
     - grep -q "security: pass\|blockError" test/gates-ship.test.mjs
@@ -64,7 +64,7 @@ Prove the capability-gate gatekeeper's requirements. Add a focused node --test e
   <files>test/gates-ship.test.mjs</files>
   <read_first>test/gates-ship.test.mjs, lib/ship.js, .planning/phases/GSD-08-capability-gates/GSD-08-capability-gates-CONTEXT.md</read_first>
   <action>Extend test/gates-ship.test.mjs with describe "CAP-02 blocking": (a) a failing security gate — runCapabilityGates({cfg:{}, gitData:{changedFiles:["a/.env"], contentMap:{}, commitSubjects:[]}, plans:[], skipGates:[]}) → blockError is a non-null string containing "security", ".env"; (b) a failing broken-windows gate — contentMap {"src/a.js":"// TODO"}: blockError contains "broken_windows" and "src/a.js" and "TODO"; (c) a failing tdd-audit gate — plans [{id:"GSD-08-x-01",type:"tdd"}], commitSubjects ["feat(08-01): b"]: blockError contains "tdd_audit" and "GSD-08-x-01"; (d) when blockError is non-null the ship would throw: read lib/ship.js source via fs and assert it contains a call to fail with blockError (pattern /fail\s*\(\s*blockError/) AND that the gate section (containing "## Gate Report" and runCapabilityGates) appears textually before the line whose comment is the "6. push branch" block — proving a failing gate aborts before any push/PR I/O (CAP-02, D-05). Commit atomically as feat(08-03): CAP-02 blocking suite.</action>
-  <verify>cd /var/home/jatyeo/dev/dsh-gsd-bundle && node --test test/gates-ship.test.mjs 2>&1 | tail -20</verify>
+  <verify>node --test test/gates-ship.test.mjs 2>&1 | tail -20</verify>
   <acceptance_criteria>
     - grep -q "broken_windows\|tdd_audit\|fail(blockError)" test/gates-ship.test.mjs
     - the static check asserts the "## Gate Report" position precedes the push-branch marker in lib/ship.js (test passes)
@@ -78,7 +78,7 @@ Prove the capability-gate gatekeeper's requirements. Add a focused node --test e
   <files>test/gates-ship.test.mjs</files>
   <read_first>test/gates-ship.test.mjs, lib/gates.js (resolveGatesConfig, tddAuditGate), .planning/phases/GSD-08-capability-gates/GSD-08-capability-gates-CONTEXT.md</read_first>
   <action>Extend test/gates-ship.test.mjs with describe "skip + tdd enforcement": (a) config-disable — runCapabilityGates({cfg:{gates:{security:false}}, gitData:{changedFiles:["a/.env"], contentMap:{}, commitSubjects:[]}, plans:[], skipGates:[]}) → a "security: skipped" report line, blockError null, and broken_windows+tdd_audit still reported (D-08, D-06); (b) skipGates — runCapabilityGates({cfg:{}, gitData:{changedFiles:["a/.env"],...}, plans:[], skipGates:["security"]}) → "security: skipped", blockError null (D-06); (c) config-disable AND skipGates for different gates both respected; (d) D-09 — tdd-audit fails a type:tdd plan with only a feat: commit even though the caller's cfg carries no tdd_mode (cfg:{}) proving enforcement is independent of any global tdd_mode flag. Commit atomically as feat(08-03): skip + tdd enforcement suite.</action>
-  <verify>cd /var/home/jatyeo/dev/dsh-gsd-bundle && node --test test/gates-ship.test.mjs 2>&1 | tail -20 && node --test test/*.test.mjs 2>&1 | tail -15</verify>
+  <verify>node --test test/gates-ship.test.mjs 2>&1 | tail -20 && node --test test/*.test.mjs 2>&1 | tail -15</verify>
   <acceptance_criteria>
     - grep -q "security: skipped\|skipGates" test/gates-ship.test.mjs
     - node --test test/gates-ship.test.mjs exits 0

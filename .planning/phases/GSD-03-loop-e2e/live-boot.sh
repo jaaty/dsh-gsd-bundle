@@ -16,8 +16,8 @@ set -uo pipefail
 
 DSH_HOME_DIR="${DSH_HOME_DIR:-/tmp/dshhome}"
 PROFILE_DIR="$DSH_HOME_DIR/profiles/headless"
-BUNDLE_ROOT="${BUNDLE_ROOT:-/var/home/jatyeo/dev/dsh-gsd-bundle}"
-SETTINGS_SRC="${SETTINGS_SRC:-/var/home/jatyeo/.dsh/settings.yaml}"
+BUNDLE_ROOT="${BUNDLE_ROOT:-$(pwd)}"
+SETTINGS_SRC="${SETTINGS_SRC:-$HOME/.dsh/settings.yaml}"
 EXPECTED_ROWS="${EXPECTED_ROWS:-12}"
 GSD_TOOL_TASK="${GSD_TOOL_TASK:-Reply with exactly the output of the gsd_status tool: the current phase number and step, on a single line, prefixed with PHASE=}"
 
@@ -37,7 +37,7 @@ bootstrap_home() {
   "name": "dsh-profile-headless",
   "private": true,
   "dependencies": {
-    "@dsh-gsd/bundle": "link:/var/home/jatyeo/dev/dsh-gsd-bundle"
+    "@dsh-gsd/bundle": "link:${BUNDLE_ROOT}"
   },
   "dsh": {
     "profile": {

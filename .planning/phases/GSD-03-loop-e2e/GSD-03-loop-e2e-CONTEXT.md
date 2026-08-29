@@ -33,8 +33,8 @@
 - `cordis.patch.yml — the agent-loop override + 12 GSD plugin rows`
 - `package.json — @dsh-gsd/bundle subpath exports; the bundle linked into headless/web profiles`
 ### Headless profile composition
-- `/var/home/jatyeo/.dsh/profiles/headless/package.json — bundles: [dsh-base, dsh-headless, @dsh-gsd/bundle]`
-- `/var/home/jatyeo/.dsh/profiles/headless/cordis.patch.yml — empty user layer`
+- `~/.dsh/profiles/headless/package.json — bundles: [dsh-base, dsh-headless, @dsh-gsd/bundle]`
+- `~/.dsh/profiles/headless/cordis.patch.yml — empty user layer`
 ### Live session boot mechanism
 - `dsh CLI — --profile headless 'run the tests' answers one task and exits; --dump-config prints composed tree; DSH_HOME env override relocates profile root`
 ### Phase 1 deferral
