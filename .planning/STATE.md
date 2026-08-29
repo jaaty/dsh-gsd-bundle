@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v2.1.0
 milestone_name: public-release-readiness
-status: ship
-active_phase: 25
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [25]
 progress:
   total_phases: 28
-  completed_phases: 24
+  completed_phases: 25
   total_plans: 1
   completed_plans: 65
-  percent: 86
+  percent: 89
 current_phase: 25
 current_phase_name: license-and-attribution
 current_plan: 1
-last_updated: "2026-08-29T02:44:05.512Z"
+last_updated: "2026-08-29T02:44:24.466Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Milestone v2.0 released — v2.0.0 (all 24 phases shipped)"
+stopped_at: "Phase 25 shipped — PR #28"
 paused_at: null
 ---
 # GSD STATE
@@ -128,6 +128,7 @@ _No active phase._
 - The working tree must be left clean on main with the v2.0.0 tag pointing at the release commit.
 - Phase 25: CONTEXT.md sealed — 5 decisions
 - Phase 25: planned — 1 plan(s) across 1 wave(s).
+- Phase 25 shipped — PR #28 (https://github.com/jaaty/dsh-gsd-bundle/pull/28)
 
 ### Blockers / Concerns
 _none_
