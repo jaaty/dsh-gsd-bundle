@@ -9,13 +9,13 @@ next_phases: [35]
 progress:
   total_phases: 50
   completed_phases: 34
-  total_plans: 1
-  completed_plans: 77
+  total_plans: 3
+  completed_plans: 78
   percent: 68
 current_phase: 35
 current_phase_name: pr-branch
 current_plan: 1
-last_updated: "2026-08-29T22:08:44.221Z"
+last_updated: "2026-08-29T22:13:51.799Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 34 shipped — PR #37"
