@@ -15,109 +15,19 @@ import path from "node:path";
 import { FakeFs } from "./helpers/fake-fs.mjs";
 import { GsdState } from "../lib/state.js";
 import { CAPABILITY_KEYS } from "../lib/_capabilities.js";
-
-const CWD = "/project";
-
-// The 12 plugin rows in cordis.patch.yml insert order (D-03), verbatim from
-// cordis.patch.yml:34-84. Each {id, sub} maps the patch row id to the
-// @dsh-gsd/bundle/<sub> subpath export.
-const PATCH_ROWS = [
-  { id: "gsd-persona", sub: "persona" },
-  { id: "gsd-state", sub: "state" },
-  { id: "gsd-core-tools", sub: "core-tools" },
-  { id: "gsd-discuss", sub: "discuss" },
-  { id: "gsd-plan", sub: "plan" },
-  { id: "gsd-execute", sub: "execute" },
-  { id: "gsd-verify", sub: "verify" },
-  { id: "gsd-ship", sub: "ship" },
-  { id: "gsd-ui", sub: "ui" },
-  { id: "gsd-quick", sub: "quick" },
-  { id: "gsd-map-codebase", sub: "map-codebase" },
-  { id: "gsd-commands", sub: "commands" },
-];
-
-// Module-level handle to the gsdState service published by gsd-state's apply(),
-// so ctx.get("gsdState") resolves to the SAME instance the persona context
-// provider reads (R-1: a separately-constructed GsdState renders "no project").
-let gsdStateSvc;
-
-// Fake subagents service (mirrors test/tools.test.mjs:21-62) so any future
-// smoke execute that spawns does not throw. apply() of the spawning plugins
-// does not touch subagents, but providing it is future-proof (OQ-3).
-function makeSubagents() {
-  return {
-    getProvider: (n) => (n === "spawn" ? { spawn: true } : undefined),
-    async start(_n, _req) {
-      return { result: { output: [{ type: "text", text: "done" }], stopReason: "completed" }, dispose: () => {} };
-    },
-  };
-}
-
-// Build a single shared fake ctx that satisfies all 12 plugins' inject arrays
-// and captures every registration surface. CRITICAL (R-3): ctx.effect MUST
-// invoke its callback synchronously or gsd-commands captures zero commands.
-function makeMountCtx(fs) {
-  // Each capture surface is an array that also carries its register method,
-  // so ctx.tools / ctx.commands are both the array (for length assertions)
-  // and the registration target the plugins call.
-  const tools = [];
-  tools.register = (t) => tools.push(t);
-  const commands = [];
-  commands.register = (c) => commands.push(c);
-  const sections = [];
-  const contexts = [];
-  const provided = new Map();
-  gsdStateSvc = undefined;
-
-  const ctx = {
-    fs,
-    tools,
-    commands,
-    sections,
-    contexts,
-    provided,
-    systemPrompt: {
-      section: (s) => sections.push(s),
-      context: (c) => contexts.push(c),
-    },
-    provide: (n, svc) => {
-      provided.set(n, svc);
-      if (n === "gsdState") gsdStateSvc = svc;
-    },
-    // Phase-22 subset-mount (D-11): ctx.get returns the provided capability
-    // descriptor for any capability key (via the provided store), so the persona
-    // / gsd_status / _render helper read the *subset* of capabilities actually
-    // applied. Absent keys resolve to undefined (never throw).
-    get: (n) => {
-      if (n === "gsdState") return gsdStateSvc;
-      if (n === "subagents") return makeSubagents();
-      return provided.has(n) ? provided.get(n) : undefined;
-    },
-  };
-  // Invoke the effect callback synchronously (R-3); return its disposer if any.
-  // gsd-commands wraps registration in ctx.effect(fn) — a no-op effect would
-  // capture zero commands, so fn() MUST run here.
-  ctx.effect = (fn, _label) => {
-    const d = fn();
-    return typeof d === "function" ? d : () => {};
-  };
-  // Per-command sub-fiber API (Plan 03 / RESEARCH 1.6): ctx.inject(injectKeys,
-  // callback) mirrors ctx.effect's synchronous behaviour. The host "commands"
-  // service is always satisfied (the fake ctx provides ctx.commands); any other
-  // key resolves only if it exists in the provided store. When every inject key
-  // resolves the sub-fiber's apply runs synchronously; when any key is missing
-  // the sub-fiber stays inactive and the callback never runs — so that command
-  // is never registered (D-12 / DEGR-03 negative contract).
-  ctx.inject = (injectKeys, callback) => {
-    const missing = (injectKeys || []).some(
-      (k) => k !== "commands" && !provided.has(k),
-    );
-    if (missing) return () => {};
-    const d = callback(ctx);
-    return typeof d === "function" ? d : () => {};
-  };
-  return ctx;
-}
+import {
+  CWD,
+  PATCH_ROWS,
+  makeMountCtx,
+  applySubset,
+  mountSubset,
+  personaBody,
+  snapshot,
+  initProject,
+  presentTools,
+  assertNoAbsentToolToken,
+  makeExec,
+} from "./helpers/mount-harness.mjs";
 
 // Apply all 12 plugins in patch order against a ctx; throw with the offending id.
 async function applyAll(ctx) {
@@ -128,25 +38,6 @@ async function applyAll(ctx) {
       mod.apply(ctx, {});
     } catch (e) {
       e.message = `${id} apply() threw: ${e.message}`;
-      throw e;
-    }
-  }
-}
-
-// Apply only a chosen SUBSET of the PATCH_ROWS plugins against a ctx, in the
-// given order (D-11). Locates each row by id/sub, imports its subpath module,
-// asserts apply() exists, and calls it with config (default {}). Throws with the
-// offending id on any apply() error, mirroring applyAll's error wrapping.
-async function applySubset(ctx, subs, config = {}) {
-  for (const sub of subs) {
-    const row = PATCH_ROWS.find((r) => r.sub === sub);
-    assert.ok(row, `applySubset: no patch row for sub "${sub}"`);
-    const mod = await import(`@dsh-gsd/bundle/${sub}`);
-    assert.equal(typeof mod.apply, "function", `${row.id}: module has no apply()`);
-    try {
-      mod.apply(ctx, config);
-    } catch (e) {
-      e.message = `${row.id} apply() threw: ${e.message}`;
       throw e;
     }
   }
@@ -334,10 +225,7 @@ describe("mount: cordis.patch.yml rows resolve", () => {
 describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
   let fs, ctx;
 
-  const exec = {
-    agent: { session: { header: { cwd: CWD } } },
-    signal: { aborted: false, addEventListener() {}, removeEventListener() {} },
-  };
+  const exec = makeExec();
 
   beforeEach(async () => {
     fs = new FakeFs();
@@ -435,65 +323,7 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
 // section, and (c) zero-loop and partial-loop degrade gracefully without
 // throwing. The full per-plugin removal suite stays phase 23 (DEGR-05).
 describe("mount: reactive loop rendering (DEGR-02/DEGR-04)", () => {
-  const exec = {
-    agent: { session: { header: { cwd: CWD } } },
-    signal: { aborted: false, addEventListener() {}, removeEventListener() {} },
-  };
-
-  // Build a fresh FakeFs + ctx with ONLY the given plugin subs applied.
-  async function mountSubset(subs) {
-    const fs = new FakeFs();
-    const ctx = makeMountCtx(fs);
-    await applySubset(ctx, subs);
-    return { fs, ctx };
-  }
-
-  // Invoke the persona section body with a per-assembly context for cwd.
-  const personaBody = (ctx, cwd = CWD) => {
-    const section = ctx.sections.find((s) => s.name === "gsd:persona");
-    assert.ok(section, "gsd:persona section not registered");
-    return section.text({ agent: { session: { header: { cwd } } } });
-  };
-  // Invoke the runtime-context snapshot provider with a per-assembly context.
-  const snapshot = (ctx, cwd = CWD) => {
-    const context = ctx.contexts.find((c) => c.name === "gsd:state");
-    assert.ok(context, "gsd:state context not registered");
-    return context.text({ agent: { session: { header: { cwd } } } });
-  };
-
-  // Bootstrap a .planning/ project (so the snapshot/gsd_status read a real
-  // STATE.md) by calling the mounted gsd_init tool.
-  async function initProject(ctx) {
-    const gsdInit = ctx.tools.find((t) => t.name === "gsd_init");
-    assert.ok(gsdInit, "gsd_init not registered");
-    await gsdInit.execute(
-      { name: "demo", milestoneName: "M1", version: "v1.0",
-        requirements: [{ id: "M1", text: "x" }],
-        phases: [{ name: "p1", goal: "do it", requirements: ["M1"] }] },
-      exec,
-    );
-  }
-
-  // The set of tool names owned by capabilities actually provided in this mount.
-  const presentTools = (ctx) =>
-    new Set(
-      [...ctx.provided.values()]
-        .filter((d) => d && Array.isArray(d.tools))
-        .flatMap((d) => d.tools),
-    );
-
-  // D-02 invariant: no `gsd_*` token appears unless its owning capability was
-  // provided in this mount. Any absent-step tool mention is a violation.
-  const assertNoAbsentToolToken = (ctx, text, label) => {
-    const present = presentTools(ctx);
-    const tokens = text.match(/gsd_[a-z]+/g) || [];
-    for (const tok of tokens) {
-      assert.ok(
-        present.has(tok),
-        `${label}: output names "${tok}" whose capability is absent in this mount`,
-      );
-    }
-  };
+  const exec = makeExec();
 
   test("partial-loop persona + snapshot drop absent steps and never name their tools (DEGR-02)", async () => {
     // Keep persona/state/core-tools/discuss/plan; drop execute,verify,
