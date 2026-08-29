@@ -9,13 +9,13 @@ next_phases: [26]
 progress:
   total_phases: 28
   completed_phases: 25
-  total_plans: 1
-  completed_plans: 65
+  total_plans: 3
+  completed_plans: 67
   percent: 89
 current_phase: 26
 current_phase_name: repo-hygiene
 current_plan: 1
-last_updated: "2026-08-29T02:55:42.402Z"
+last_updated: "2026-08-29T02:57:39.861Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 25 shipped — PR #28"
