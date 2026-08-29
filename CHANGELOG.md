@@ -7,13 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-08-29
+
 ### Added
 
-- **Milestone `public-release-readiness` (v2.1.0)** — the current in-progress milestone.
-  - **license-and-attribution** (shipped): added an MIT `LICENSE`, verified opengsd-core attribution and license compliance in `NOTICE`, and fixed the broken `gsd-core-reference.md` reference in the README.
-  - **repo-hygiene** (in progress): added `CHANGELOG.md`, `CONTRIBUTING.md`, and `CODE_OF_CONDUCT.md`, and applied the `.planning/` keep-vs-gitignore-vs-curate decision.
-  - **ci-and-security** (shipped): added a GitHub Actions test workflow (`.github/workflows/ci.yml`) running the suite on pull requests and push to `main`, committed a `package-lock.json` for reproducible `npm ci` installs, ran a full-history gitleaks secret scan confirming no credentials or tokens are exposed, and added a lightweight gitleaks CI guard that fails a PR if a new secret is introduced.
-  - **publish-research** (planned): research-backed distribution decision for the bundle.
+- **Milestone `public-launch`** — makes the bundle publish-ready for npm: version bumped to 2.2.0, full npm metadata (repository, homepage, bugs, keywords, engines, author) added to the manifest, and the files whitelist expanded to ship every README-linked documentation file.
+  - **publishable-package** (PR #33): bumped the package to `2.2.0` (package.json + package-lock.json), added the missing npm metadata fields (`repository`, `homepage`, `bugs`, `keywords`, `engines`, `author`), and expanded the `files` whitelist to ship `DISTRIBUTION.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `CHANGELOG.md` alongside the existing lib/ and docs entries.
+
+## [2.1.0] - 2026-08-29
+
+### Added
+
+- **Milestone `public-release-readiness`** — hardens the GSD bundle for public release: licensing and attribution, repository hygiene, CI and security, distribution research, and a deterministic pre-ship verification gate.
+  - **license-and-attribution** (PR #28): added an MIT `LICENSE`, verified opengsd-core attribution and license compliance in `NOTICE`, and fixed the broken `gsd-core-reference.md` reference in the README.
+  - **repo-hygiene** (PR #29): added `CHANGELOG.md`, `CONTRIBUTING.md`, and `CODE_OF_CONDUCT.md`, and applied the `.planning/` keep-vs-gitignore-vs-curate decision.
+  - **ci-and-security** (PR #30): added a GitHub Actions test workflow (`.github/workflows/ci.yml`) running the suite on pull requests and push to `main`, committed a `package-lock.json` for reproducible `npm ci` installs, ran a full-history gitleaks secret scan confirming no credentials or tokens are exposed, and added a lightweight gitleaks CI guard that fails a PR if a new secret is introduced.
+  - **publish-research** (PR #31): research-backed distribution decision for the bundle.
+  - **pre-ship-verify** (PR #32): added a new deterministic pre-ship verification gate in `gsd_ship` that runs `npm ci` + `npm test` before shipping, skippable via a flag.
 
 ## [2.0.0] - 2026-08-28
 

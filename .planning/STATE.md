@@ -1,24 +1,24 @@
 ---
 gsd_state_version: 1
-milestone: v2.1.0
-milestone_name: public-release-readiness
+milestone: v2.2.0
+milestone_name: public-launch
 status: idle
 active_phase: null
 next_action: null
-next_phases: [29]
+next_phases: [31]
 progress:
-  total_phases: 29
-  completed_phases: 29
-  total_plans: 2
-  completed_plans: 76
-  percent: 100
-current_phase: 29
-current_phase_name: pre-ship-verify
-current_plan: 2
-last_updated: "2026-08-29T06:00:21.723Z"
+  total_phases: 34
+  completed_phases: 30
+  total_plans: 71
+  completed_plans: 71
+  percent: 88
+current_phase: null
+current_phase_name: null
+current_plan: null
+last_updated: "2026-08-29T06:01:10.000Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 29 shipped — PR #32"
+stopped_at: "Phase 30 shipped — PR #33"
 paused_at: null
 ---
 # GSD STATE
@@ -143,9 +143,20 @@ _No active phase._
 - Phase 28: CONTEXT.md sealed — 8 decisions
 - Phase 28: planned — 1 plan(s) across 1 wave(s).
 - Phase 28 shipped — PR #31 (https://github.com/jaaty/dsh-gsd-bundle/pull/31)
+- quick 2026-08-29-milestone-release-v2-1-0: Release milestone public-release-readiness as v2.1.0. Orient against .planning/STATE.md first: the milestone is fully COMPLETE (29/29 phases shipped, PRs #1..#32, all merged to main — PR #32 for phase 29 was merged 2026-08-29T06:01:10Z, merge commit 856b625d7e44407109365a9c01a45b55b94804d6). Branch is main, working tree is clean, and the existing tags are v1.7.0 and v2.0.0 (there is no v2.1.0 tag yet). gh CLI is authenticated as account jaaty.
+- All git/gh commands must use explicit argument arrays; never interpolate a model- or user-supplied value into a shell string (the release-notes file path can be a fixed .planning temp path). Do not push force, do not alter protected refs, do not run git clean/reset --hard.
+- If gh CLI is unavailable or unauthenticated, create the tag and push it, and report the gh release step as a warning with the real cause — do not silently skip or fake it.
+- The working tree must be left clean on main with the v2.1.0 tag pointing at the release commit.
+- quick 2026-08-29-readme-v2-1-0-update: Update README.md to reflect the v2.1.0 milestone release. The README is stale: it still presents milestone `graceful-removal` v2.0.0 as the latest release and never mentions the v2.1.0 `public-release-readiness` milestone or the new pre-ship-verify gate. The milestone `public-release-readiness` (v2.1.0) is now complete and released (all 29 phases shipped, PRs #1..#32, merged to main; tag v2.1.0). Use CHANGELOG.md's `[2.1.0]` entry as the source of truth for the milestone content.
 - Phase 29: CONTEXT.md sealed — 6 decisions
 - Phase 29: planned — 2 plan(s) across 2 wave(s).
 - Phase 29 shipped — PR #32 (https://github.com/jaaty/dsh-gsd-bundle/pull/32)
+- Phase 30: CONTEXT.md sealed — 10 decisions
+- Phase 30: planned — 2 plan(s) across 1 wave(s).
+- Phase 30: plan 01 executed — publishable-package metadata: version bumped to 2.2.0 (manifest + lockfile in sync), six metadata fields added (repository/homepage/bugs/author/engines/keywords), files whitelist expanded to ship README-linked docs (DISTRIBUTION/CONTRIBUTING/CODE_OF_CONDUCT/CHANGELOG). 3 commits, SUMMARY.md written.
+- Phase 30: planned — 3 plan(s) across 1 wave(s).
+- Phase 30: plan 03 executed — README gap fix: reworded the v2.1 release-note bullet to drop the broken `gsd-core-reference.md` filename; npm test green 406/406 closing the regression-seal gap. 1 commit, SUMMARY.md written.
+- Phase 30 shipped — PR #33 (https://github.com/jaaty/dsh-gsd-bundle/pull/33)
 
 ### Blockers / Concerns
 _none_

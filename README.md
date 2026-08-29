@@ -10,7 +10,17 @@ Every unit of work is a **phase** that moves through these steps in order. State
 
 ## Release status
 
-**Milestone `graceful-removal` v2.0 is complete and released as `v2.0.0`** — all 24 phases shipped (PRs #1–#27, merged to `main`). The bundle covers the full GSD phase loop plus checkpoint-resume, the multi-window ledger and async-jobs manifest, the conversational UAT loop, capability gates, the real background-job runtime, codebase-query intel mode with drift detection / targeted updater, multi-window topology, and the v2.0 graceful-removal milestone: capability-services, reactive-loop-rendering, removal-verification, and composability-hardening.
+**Milestone `public-release-readiness` v2.1 is complete and released as `v2.1.0`** — all 29 phases shipped (PRs #1–#32, merged to `main`). The bundle covers the full GSD phase loop plus checkpoint-resume, the multi-window ledger and async-jobs manifest, the conversational UAT loop, capability gates, the real background-job runtime, codebase-query intel mode with drift detection / targeted updater, multi-window topology, and the v2.1 public-release-readiness milestone: license-and-attribution, repo-hygiene, ci-and-security, publish-research, and pre-ship-verify. The prior v2.0 graceful-removal milestone (capability-services, reactive-loop-rendering, removal-verification, composability-hardening) remains a prior milestone.
+
+### v2.1 release note — public-release-readiness
+
+The v2.1 milestone hardens the GSD bundle for public release — licensing and attribution, repository hygiene, CI and security, distribution research, and a deterministic pre-ship verification gate. It delivered:
+
+- **License-and-attribution** — added an MIT `LICENSE`, verified opengsd-core attribution and license compliance in `NOTICE`, and fixed the broken opengsd-core reference in the README.
+- **Repo-hygiene** — added `CHANGELOG.md`, `CONTRIBUTING.md`, and `CODE_OF_CONDUCT.md`, and applied the `.planning/` keep-vs-gitignore-vs-curate decision.
+- **Ci-and-security** — added a GitHub Actions test workflow (`.github/workflows/ci.yml`) running the suite on pull requests and push to `main`, committed a `package-lock.json` for reproducible `npm ci` installs, and added a gitleaks secret-scan guard that fails a PR if a new secret is introduced.
+- **Publish-research** — a research-backed distribution decision for the bundle, recorded in `DISTRIBUTION.md`.
+- **Pre-ship-verify** — a new deterministic pre-ship verification gate in `gsd_ship` that runs `npm ci` + `npm test` in a temp copy of the repo before pushing, skippable via a flag.
 
 ### v2.0 release note — graceful-removal
 
@@ -29,6 +39,7 @@ The v2.0 milestone proves the whole GSD plugin bundle is **swappable and customi
 - **Window ledger** — a root-level `WINDOWS.md` multi-window ledger and an `async-jobs.json` manifest, both surfaced through `gsd_status`.
 - **Conversational UAT loop** — an executor stopping at a `checkpoint:decision` / `checkpoint:human-action` task surfaces a human-facing question; `gsd_execute` pauses, waits for the answer, and resumes the checkpointed plan with that answer applied.
 - **Capability gates** — `gsd_ship` runs a set of gates (security, broken-windows, TDD-audit) before creating a PR, reports each gate's pass/fail status, and refuses to ship when a required gate fails.
+- **Pre-ship-verify gate** — `gsd_ship` runs a deterministic local verification (`npm ci` + `npm test` in a temp copy of the repo) before pushing, fails the ship on failure, and is skippable via a flag.
 - **Real background-job runtime** — a job runner that actually executes a job asynchronously, tracks its lifecycle (`running → done/failed`) in the async-jobs manifest, collects the result, and reflects real async state through `gsd_status`.
 - **Brownfield codebase mapping** — `gsd_map_codebase` analyses an existing codebase with parallel fresh-context mappers and writes 7 structured documents to `.planning/codebase/`.
 - **Capability-services** — each step plugin publishes a capability service declaring the loop step it provides; the persona and slash-command layer declare coeffects on the capabilities they need.
@@ -91,7 +102,7 @@ All tools are registered by the bundle's plugins and available to the model in a
 | `gsd_plan` | `gsd-plan` | Research + decompose the phase into bounded `PLAN.md` files ordered into dependency waves (researcher → planner → plan-checker). |
 | `gsd_execute` | `gsd-execute` | Run the phase's plans with fresh-context executors, wave by wave, with atomic commits and checkpoint-resume. |
 | `gsd_verify` | `gsd-verify` | Verify the phase goal was actually achieved; write `VERIFICATION.md` and route on its status. |
-| `gsd_ship` | `gsd-ship` | Preflight + capability gates, push the branch, create the PR, mark the phase shipped. |
+| `gsd_ship` | `gsd-ship` | Preflight + capability gates + pre-ship-verify (npm ci + npm test in a temp copy), push the branch, create the PR, mark the phase shipped. |
 | `gsd_quick` | `gsd-quick` | Sub-threshold lightweight path for work too small to warrant the full loop. |
 | `gsd_map_codebase` | `gsd-map-codebase` | Map an existing codebase with parallel fresh-context mappers → `.planning/codebase/`. |
 
@@ -139,7 +150,7 @@ All plugins are subpath exports of this one package (`@dsh-gsd/bundle/<name>`), 
 | `gsd-plan` | `./plan` | `gsd_plan` — researcher → planner → plan-checker fresh-context subagents, 3-iteration revision loop |
 | `gsd-execute` | `./execute` | `gsd_execute` — wave-based fresh-context executors, atomic commits, checkpoint-resume, conversational UAT |
 | `gsd-verify` | `./verify` | `gsd_verify` — verifier subagent → `VERIFICATION.md`, status decision tree routing |
-| `gsd-ship` | `./ship` | `gsd_ship` — preflight + capability gates, PR body assembly, `gh pr create`, STATE update |
+| `gsd-ship` | `./ship` | `gsd_ship` — preflight + capability gates + pre-ship-verify, PR body assembly, `gh pr create`, STATE update |
 | `gsd-ui` | `./ui` | `gsd_ui_phase` — `UI-SPEC.md` (ui-researcher + ui-checker) |
 | `gsd-quick` | `./quick` | `gsd_quick` — sub-threshold lightweight path → `.planning/quick/` |
 | `gsd-map-codebase` | `./map-codebase` | `gsd_map_codebase` — parallel fresh-context mapper subagents → `.planning/codebase/` (7 docs); brownfield pre-init onboarding tool |
@@ -208,7 +219,7 @@ The reference used to build this is the [opengsd-core](https://github.com/open-g
 
 ## Status
 
-**Milestone v2.0 is complete and released** (`v2.0.0`): all 24 phases shipped — live-mount, service-tools, loop-e2e, checkpoint-resume, window-ledger, loop-robustness, uat-conversation, capability-gates, job-runtime, codebase-query, phase-dir-resolution, single-source-constants, gate-dispatch, execute-checkpoint, ship-robustness, context-budget, phase-branch-isolation, job-runtime-extensions, codebase-intel-extensions, multi-window-topology, capability-services, reactive-loop-rendering, removal-verification, composability-hardening. Every plugin module loads and its `apply` registers its tools with valid schemas; the `cordis.patch.yml` merges cleanly over `dsh-base` and overrides the `agent-loop` row's config. A full live mount (resolving the subpath exports and activating the plugins) is verified, the loop has been exercised end-to-end across the shipped phases, and the v2.0 removal suite proves every step plugin can be retired with the loop still functional.
+**Milestone v2.1 is complete and released** (`v2.1.0`): all 29 phases shipped — the 24 v2.0 phases (live-mount, service-tools, loop-e2e, checkpoint-resume, window-ledger, loop-robustness, uat-conversation, capability-gates, job-runtime, codebase-query, phase-dir-resolution, single-source-constants, gate-dispatch, execute-checkpoint, ship-robustness, context-budget, phase-branch-isolation, job-runtime-extensions, codebase-intel-extensions, multi-window-topology, capability-services, reactive-loop-rendering, removal-verification, composability-hardening) plus the five v2.1 public-release-readiness phases (license-and-attribution, repo-hygiene, ci-and-security, publish-research, pre-ship-verify). Every plugin module loads and its `apply` registers its tools with valid schemas; the `cordis.patch.yml` merges cleanly over `dsh-base` and overrides the `agent-loop` row's config. A full live mount (resolving the subpath exports and activating the plugins) is verified, the loop has been exercised end-to-end across the shipped phases, and the v2.0 removal suite proves every step plugin can be retired with the loop still functional. `gsd_ship` now runs a deterministic pre-ship-verify gate (`npm ci` + `npm test` in a temp copy) before pushing, and CI runs the test suite plus a gitleaks secret-scan guard on every pull request and push to `main`.
 
 ## Contributing
 
