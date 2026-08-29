@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v3.0.0
 milestone_name: upstream-parity
-status: plan
+status: execute
 active_phase: 35
-next_action: plan-phase
+next_action: execute-phase
 next_phases: [35]
 progress:
   total_phases: 50
@@ -15,7 +15,7 @@ progress:
 current_phase: 35
 current_phase_name: pr-branch
 current_plan: 1
-last_updated: "2026-08-29T21:59:06.435Z"
+last_updated: "2026-08-29T22:08:44.221Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 34 shipped — PR #37"
@@ -180,6 +180,7 @@ _No active phase._
 - quick 2026-08-29-milestone-release-v2-2-0: Release the `public-launch` milestone as v2.2.0. Orient against `.planning/STATE.md` first: the milestone is fully COMPLETE (34/34 phases shipped, PRs #1..#37 — PR #37 for phase 34 (readme-badges) is merged to main; the last merge commit on main is ab33631a083d51014bd061bf54c7d083d45f7d18). Branch is main, working tree is clean, and the existing tags are v1.7.0, v2.0.0, and v2.1.0 (there is NO v2.2.0 tag yet). package.json version is 2.2.0 and CHANGELOG.md has a verified `## [2.2.0] - 2026-08-29` entry. gh CLI is authenticated as account jaaty.
 - quick 2026-08-29-main-branch-protection: Record the main branch protection setup as a quick-task audit entry under .planning/quick/<YYYYMMDD>-main-branch-protection/. This is a documentation-only record; no repo code changes are needed.
 - Phase 35: CONTEXT.md sealed — 10 decisions
+- Phase 35: planned — 3 plan(s) across 2 wave(s).
 
 ### Blockers / Concerns
 _none_
