@@ -7,3 +7,6 @@ node_modules/
 .planning/WINDOWS.md
 .planning/quick/
 .planning/phases/**/*-DISCUSSION-LOG.md
+
+# Alternate npm cache used by the publish/install --cache override (D-01).
+.npm-cache/
