@@ -42,6 +42,11 @@ which runs `node --test test/*.test.mjs`. Tests use `node:test` with
 out to `git` to assert repository state (e.g. that volatile `.planning/` files
 are untracked), so run them from a clean checkout.
 
+The suite also runs in **CI** via `.github/workflows/ci.yml` on every pull
+request and on push to `main`, so PRs are gated and `main` is always verified.
+Use `npm test` locally before pushing to catch the same failures CI will
+report.
+
 ## The GSD phase loop
 
 This repo is driven by the **Git Ship Done** phase loop. Every unit of work is a
@@ -88,6 +93,11 @@ Contributions follow the GSD ship flow:
 
 For small, sub-threshold changes that don't warrant the full loop, use
 `gsd_quick` instead.
+
+A **gitleaks** secret-scan guard runs on every pull request (in
+`.github/workflows/ci.yml`) and fails the PR if a new credential or token is
+introduced. Keep secrets out of commits and `.planning/` artefacts (see
+[Hygiene](#hygiene-no-secrets-in-planning) below).
 
 ## Hygiene: no secrets in `.planning/`
 
