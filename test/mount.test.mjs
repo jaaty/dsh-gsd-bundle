@@ -84,12 +84,15 @@ function makeMountCtx(fs) {
       provided.set(n, svc);
       if (n === "gsdState") gsdStateSvc = svc;
     },
-    get: (n) =>
-      n === "gsdState"
-        ? gsdStateSvc
-        : n === "subagents"
-          ? makeSubagents()
-          : provided.get(n),
+    // Phase-22 subset-mount (D-11): ctx.get returns the provided capability
+    // descriptor for any capability key (via the provided store), so the persona
+    // / gsd_status / _render helper read the *subset* of capabilities actually
+    // applied. Absent keys resolve to undefined (never throw).
+    get: (n) => {
+      if (n === "gsdState") return gsdStateSvc;
+      if (n === "subagents") return makeSubagents();
+      return provided.has(n) ? provided.get(n) : undefined;
+    },
   };
   // Invoke the effect callback synchronously (R-3); return its disposer if any.
   // gsd-commands wraps registration in ctx.effect(fn) — a no-op effect would
@@ -125,6 +128,25 @@ async function applyAll(ctx) {
       mod.apply(ctx, {});
     } catch (e) {
       e.message = `${id} apply() threw: ${e.message}`;
+      throw e;
+    }
+  }
+}
+
+// Apply only a chosen SUBSET of the PATCH_ROWS plugins against a ctx, in the
+// given order (D-11). Locates each row by id/sub, imports its subpath module,
+// asserts apply() exists, and calls it with config (default {}). Throws with the
+// offending id on any apply() error, mirroring applyAll's error wrapping.
+async function applySubset(ctx, subs, config = {}) {
+  for (const sub of subs) {
+    const row = PATCH_ROWS.find((r) => r.sub === sub);
+    assert.ok(row, `applySubset: no patch row for sub "${sub}"`);
+    const mod = await import(`@dsh-gsd/bundle/${sub}`);
+    assert.equal(typeof mod.apply, "function", `${row.id}: module has no apply()`);
+    try {
+      mod.apply(ctx, config);
+    } catch (e) {
+      e.message = `${row.id} apply() threw: ${e.message}`;
       throw e;
     }
   }
@@ -401,5 +423,203 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
       assert.ok(t.parameters !== null, `${t.name}: parameters is null`);
       assert.ok(t.output && t.output.schema, `${t.name}: missing output.schema`);
     }
+  });
+});
+
+// ── Phase-22 reactive subset-mount (D-11 / DEGR-02 / DEGR-04 / D-06) ──────────
+// Proves the reactivity contract end-to-end WITHOUT a live DSH boot: mount only
+// a chosen SUBSET of the plugin rows, route ctx.get to the provided capability
+// descriptors, and assert (a) the persona body + runtime-context snapshot omit
+// absent steps and never name their tools, (b) gsd_status hides/replaces a
+// next_action that names an absent step and prints a correct ## Available steps
+// section, and (c) zero-loop and partial-loop degrade gracefully without
+// throwing. The full per-plugin removal suite stays phase 23 (DEGR-05).
+describe("mount: reactive loop rendering (DEGR-02/DEGR-04)", () => {
+  const exec = {
+    agent: { session: { header: { cwd: CWD } } },
+    signal: { aborted: false, addEventListener() {}, removeEventListener() {} },
+  };
+
+  // Build a fresh FakeFs + ctx with ONLY the given plugin subs applied.
+  async function mountSubset(subs) {
+    const fs = new FakeFs();
+    const ctx = makeMountCtx(fs);
+    await applySubset(ctx, subs);
+    return { fs, ctx };
+  }
+
+  // Invoke the persona section body with a per-assembly context for cwd.
+  const personaBody = (ctx, cwd = CWD) => {
+    const section = ctx.sections.find((s) => s.name === "gsd:persona");
+    assert.ok(section, "gsd:persona section not registered");
+    return section.text({ agent: { session: { header: { cwd } } } });
+  };
+  // Invoke the runtime-context snapshot provider with a per-assembly context.
+  const snapshot = (ctx, cwd = CWD) => {
+    const context = ctx.contexts.find((c) => c.name === "gsd:state");
+    assert.ok(context, "gsd:state context not registered");
+    return context.text({ agent: { session: { header: { cwd } } } });
+  };
+
+  // Bootstrap a .planning/ project (so the snapshot/gsd_status read a real
+  // STATE.md) by calling the mounted gsd_init tool.
+  async function initProject(ctx) {
+    const gsdInit = ctx.tools.find((t) => t.name === "gsd_init");
+    assert.ok(gsdInit, "gsd_init not registered");
+    await gsdInit.execute(
+      { name: "demo", milestoneName: "M1", version: "v1.0",
+        requirements: [{ id: "M1", text: "x" }],
+        phases: [{ name: "p1", goal: "do it", requirements: ["M1"] }] },
+      exec,
+    );
+  }
+
+  // The set of tool names owned by capabilities actually provided in this mount.
+  const presentTools = (ctx) =>
+    new Set(
+      [...ctx.provided.values()]
+        .filter((d) => d && Array.isArray(d.tools))
+        .flatMap((d) => d.tools),
+    );
+
+  // D-02 invariant: no `gsd_*` token appears unless its owning capability was
+  // provided in this mount. Any absent-step tool mention is a violation.
+  const assertNoAbsentToolToken = (ctx, text, label) => {
+    const present = presentTools(ctx);
+    const tokens = text.match(/gsd_[a-z]+/g) || [];
+    for (const tok of tokens) {
+      assert.ok(
+        present.has(tok),
+        `${label}: output names "${tok}" whose capability is absent in this mount`,
+      );
+    }
+  };
+
+  test("partial-loop persona + snapshot drop absent steps and never name their tools (DEGR-02)", async () => {
+    // Keep persona/state/core-tools/discuss/plan; drop execute,verify,
+    // ship,ui,quick,map-codebase.
+    const { ctx } = await mountSubset(["persona", "state", "core-tools", "discuss", "plan"]);
+
+    // Capabilities actually provided: gsdOrient, gsdJobs, gsdDiscuss, gsdPlan.
+    for (const key of ["gsdOrient", "gsdJobs", "gsdDiscuss", "gsdPlan"]) {
+      assert.ok(ctx.provided.has(key), `${key} not provided`);
+    }
+    for (const key of ["gsdExecute", "gsdVerify", "gsdShip", "gsdUi", "gsdQuick", "gsdMapCodebase"]) {
+      assert.ok(!ctx.provided.has(key), `${key} should be absent`);
+    }
+
+    // Unconditional static core survives.
+    const body = personaBody(ctx);
+    assert.match(body, /Discuss/);
+    assert.match(body, /You are a Git Ship Done/);
+    // Present step paragraphs are rendered.
+    assert.match(body, /- Discuss: before planning/);
+    assert.match(body, /- Plan: research the ecosystem/);
+    // Present capability-driven tool mentions survive (gsd_status via gsdOrient
+    // rule; gsd_plan via the fresh-context spawner rule).
+    assert.match(body, /gsd_status/);
+    assert.match(body, /the gsd_plan tools spawn them/);
+    // Absent-step tools are never named.
+    for (const absent of ["gsd_execute", "gsd_verify", "gsd_ship", "gsd_ui_phase", "gsd_quick", "gsd_map_codebase"]) {
+      assert.ok(!body.includes(absent), `persona body names absent tool ${absent}`);
+    }
+    // No absent-step tool token at all (D-02 invariant).
+    assertNoAbsentToolToken(ctx, body, "persona body");
+
+    // Snapshot lists only present loop steps (discuss, plan) — no execute/verify.
+    await initProject(ctx);
+    const snap = snapshot(ctx);
+    assert.match(snap, /Available steps: discuss, plan\./);
+    for (const absent of ["execute", "verify", "ship"]) {
+      assert.ok(!snap.match(new RegExp(`Available steps:[^\\n]*${absent}`)), `snapshot advertises absent step ${absent}`);
+    }
+    assertNoAbsentToolToken(ctx, snap, "runtime-context snapshot");
+  });
+
+  test("gsd_status rewrites an absent-step next_action and shows a correct Available-steps section (DEGR-04)", async () => {
+    // Drop verify (and ui/quick/map) but keep ship so the absent verify-phase
+    // rewrites to the nearest present step (ship) rather than no-loop.
+    const { ctx } = await mountSubset(["state", "core-tools", "discuss", "plan", "execute", "ship"]);
+    await initProject(ctx);
+
+    // Set the stored next_action to verify-phase (its capability is absent).
+    const gsdState = ctx.get("gsdState");
+    assert.ok(gsdState, "gsdState not provided");
+    await gsdState.setActivePhase(CWD, 1, "verify");
+
+    const gsdStatus = ctx.tools.find((t) => t.name === "gsd_status");
+    assert.ok(gsdStatus, "gsd_status not registered");
+    const out = await gsdStatus.execute({}, exec);
+
+    // The absent verify-phase is rewritten (NOT printed verbatim).
+    assert.ok(!out.includes("Next action: verify-phase"), "absent verify-phase printed verbatim");
+    assert.match(out, /Next action: ship-phase/, "verify-phase not rewritten to nearest present step");
+    // Correct Available-steps section listing only present loop steps + info.
+    assert.match(out, /## Available steps/);
+    assert.match(out, /- discuss: gsdDiscuss \(order 10\)/);
+    assert.match(out, /- plan: gsdPlan \(order 20\)/);
+    assert.match(out, /- execute: gsdExecute \(order 30\)/);
+    assert.match(out, /- ship: gsdShip \(order 50\)/);
+    assert.ok(!out.includes("gsdVerify"), "Available steps advertises absent gsdVerify");
+    assert.ok(!out.match(/-\s*verify:/), "Available steps advertises absent verify step");
+    assertNoAbsentToolToken(ctx, out, "gsd_status output");
+  });
+
+  test("zero-loop mount degrades gracefully everywhere (D-06)", async () => {
+    // Only persona/state/core-tools → gsdOrient + gsdJobs present, no loop steps.
+    const { ctx } = await mountSubset(["persona", "state", "core-tools"]);
+    assert.ok(ctx.provided.has("gsdOrient") && ctx.provided.has("gsdJobs"), "orient/jobs should be present");
+    for (const key of ["gsdDiscuss", "gsdPlan", "gsdExecute", "gsdVerify", "gsdShip"]) {
+      assert.ok(!ctx.provided.has(key), `${key} should be absent in zero-loop`);
+    }
+    await initProject(ctx);
+
+    // Persona body: static core + no-loop notice, never names a loop tool.
+    const body = personaBody(ctx);
+    assert.match(body, /You are a Git Ship Done/);
+    assert.match(body, /No loop steps are currently available/);
+    for (const absent of ["gsd_discuss", "gsd_plan", "gsd_execute", "gsd_verify", "gsd_ship", "gsd_quick"]) {
+      assert.ok(!body.includes(absent), `zero-loop persona names absent tool ${absent}`);
+    }
+    assertNoAbsentToolToken(ctx, body, "zero-loop persona");
+
+    // Snapshot: no-available-step line, oriented through the orient surface.
+    const snap = snapshot(ctx);
+    assert.match(snap, /No loop steps are currently available\./);
+    assertNoAbsentToolToken(ctx, snap, "zero-loop snapshot");
+
+    // gsd_status: next_action replaced with the no-loop notice, never throws.
+    const gsdStatus = ctx.tools.find((t) => t.name === "gsd_status");
+    const out = await gsdStatus.execute({}, exec);
+    assert.match(out, /Next action: no available loop step/);
+    assert.ok(!out.includes("Next action: discuss-phase"), "absent discuss-phase advertised verbatim");
+    assert.match(out, /## Available steps/);
+    assert.match(out, /- no available loop step/);
+    assertNoAbsentToolToken(ctx, out, "zero-loop gsd_status");
+  });
+
+  test("full-set mount still renders present steps + tools (regression, D-11)", async () => {
+    const { ctx } = await mountSubset(["persona", "state", "core-tools", "discuss", "plan", "execute", "verify", "ship", "ui", "quick", "map-codebase"]);
+    for (const key of CAPABILITY_KEYS) assert.ok(ctx.provided.has(key), `${key} not provided`);
+    await initProject(ctx);
+
+    // Persona body keeps the present-tool surface.
+    const body = personaBody(ctx);
+    assert.match(body, /Discuss/);
+    assert.match(body, /Ship/);
+    assert.match(body, /gsd_status/);
+    assert.match(body, /gsd_quick/);
+    assertNoAbsentToolToken(ctx, body, "full-set persona");
+
+    // Snapshot lists the full loop chain in descriptor order.
+    const snap = snapshot(ctx);
+    assert.match(snap, /Available steps: discuss, ui, plan, quick, execute, verify, ship\./);
+
+    // gsd_status still advertises the stored next_action when its capability is
+    // present (after init, next_action is discuss-phase).
+    const gsdStatus = ctx.tools.find((t) => t.name === "gsd_status");
+    const out = await gsdStatus.execute({}, exec);
+    assert.match(out, /Next action: discuss-phase/, "present discuss-phase not advertised");
+    assertNoAbsentToolToken(ctx, out, "full-set gsd_status");
   });
 });
