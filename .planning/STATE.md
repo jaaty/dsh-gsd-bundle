@@ -5,17 +5,17 @@ milestone_name: public-launch
 status: idle
 active_phase: null
 next_action: null
-next_phases: [30]
+next_phases: [31]
 progress:
   total_phases: 34
-  completed_phases: 29
-  total_plans: 3
-  completed_plans: 77
-  percent: 85
-current_phase: 30
-current_phase_name: publishable-package
-current_plan: 3
-last_updated: "2026-08-29T06:53:20.174Z"
+  completed_phases: 30
+  total_plans: 71
+  completed_plans: 71
+  percent: 88
+current_phase: null
+current_phase_name: null
+current_plan: null
+last_updated: "2026-08-29T06:01:10.000Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 30 shipped — PR #33"
@@ -148,6 +148,9 @@ _No active phase._
 - If gh CLI is unavailable or unauthenticated, create the tag and push it, and report the gh release step as a warning with the real cause — do not silently skip or fake it.
 - The working tree must be left clean on main with the v2.1.0 tag pointing at the release commit.
 - quick 2026-08-29-readme-v2-1-0-update: Update README.md to reflect the v2.1.0 milestone release. The README is stale: it still presents milestone `graceful-removal` v2.0.0 as the latest release and never mentions the v2.1.0 `public-release-readiness` milestone or the new pre-ship-verify gate. The milestone `public-release-readiness` (v2.1.0) is now complete and released (all 29 phases shipped, PRs #1..#32, merged to main; tag v2.1.0). Use CHANGELOG.md's `[2.1.0]` entry as the source of truth for the milestone content.
+- Phase 29: CONTEXT.md sealed — 6 decisions
+- Phase 29: planned — 2 plan(s) across 2 wave(s).
+- Phase 29 shipped — PR #32 (https://github.com/jaaty/dsh-gsd-bundle/pull/32)
 - Phase 30: CONTEXT.md sealed — 10 decisions
 - Phase 30: planned — 2 plan(s) across 1 wave(s).
 - Phase 30: plan 01 executed — publishable-package metadata: version bumped to 2.2.0 (manifest + lockfile in sync), six metadata fields added (repository/homepage/bugs/author/engines/keywords), files whitelist expanded to ship README-linked docs (DISTRIBUTION/CONTRIBUTING/CODE_OF_CONDUCT/CHANGELOG). 3 commits, SUMMARY.md written.

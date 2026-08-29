@@ -88,7 +88,7 @@
 
 ## SHIP
 
-- [ ] SHIP-01: gsd_ship runs a deterministic local verification before pushing — a clean npm ci + npm test in a temp copy of the repo — and fails the ship if it fails, skippable via a flag.
+- [x] SHIP-01: gsd_ship runs a deterministic local verification before pushing — a clean npm ci + npm test in a temp copy of the repo — and fails the ship if it fails, skippable via a flag.
 
 ## REL
 
