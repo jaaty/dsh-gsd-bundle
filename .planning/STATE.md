@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v3.0.0
 milestone_name: upstream-parity
-status: ship
-active_phase: 35
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [35]
 progress:
   total_phases: 50
-  completed_phases: 34
+  completed_phases: 35
   total_plans: 3
   completed_plans: 80
-  percent: 68
+  percent: 70
 current_phase: 35
 current_phase_name: pr-branch
 current_plan: 3
-last_updated: "2026-08-29T22:21:32.046Z"
+last_updated: "2026-08-29T22:27:12.272Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 34 shipped — PR #37"
+stopped_at: "Phase 35 shipped — PR #38"
 paused_at: null
 ---
 # GSD STATE
@@ -181,6 +181,7 @@ _No active phase._
 - quick 2026-08-29-main-branch-protection: Record the main branch protection setup as a quick-task audit entry under .planning/quick/<YYYYMMDD>-main-branch-protection/. This is a documentation-only record; no repo code changes are needed.
 - Phase 35: CONTEXT.md sealed — 10 decisions
 - Phase 35: planned — 3 plan(s) across 2 wave(s).
+- Phase 35 shipped — PR #38 (https://github.com/jaaty/dsh-gsd-bundle/pull/38)
 
 ### Blockers / Concerns
 _none_
