@@ -27,6 +27,7 @@ import {
   initProject,
   assertNoAbsentToolToken,
 } from "./helpers/mount-harness.mjs";
+import { FENCED_PLAN, FENCED_SUMMARY, VERIFICATION_PASSED } from "./helpers/project.mjs";
 
 // ── data-driven retirement matrix (D-01/D-02) ───────────────────────────────
 // The capability set is exactly the role:"step" loop plugins; each maps to its
@@ -44,12 +45,86 @@ function retirementMatrix() {
   });
 }
 
+// ── rich fake subagents (D-05) ───────────────────────────────────────────────
+// Writes the artefacts the real subagents would produce to the FakeFs,
+// parametrized to the bootstrapped phase dir. Mirrors test/tools.test.mjs:117-207.
+function makeRichSubagents(fs) {
+  const state = { dir: null, base: null };
+  const svc = {
+    setPhaseDir(dir, base) { state.dir = dir; state.base = base; },
+    getProvider: (n) => (n === "spawn" ? { spawn: true } : undefined),
+    async start(_n, req) {
+      const label = req.label;
+      let text = "done";
+      if (label.startsWith("planner") && !label.includes("revise")) {
+        await fs.writeText({ targetKey: `${state.dir}/${state.base}-01-PLAN.md` }, FENCED_PLAN);
+        text = "## PLANNING COMPLETE";
+      } else if (label.startsWith("plan-checker")) {
+        text = "## VERIFICATION PASSED";
+      } else if (label.startsWith("verify")) {
+        await fs.writeText({ targetKey: `${state.dir}/${state.base}-VERIFICATION.md` }, VERIFICATION_PASSED);
+        text = "status: passed, score: 2/2";
+      } else if (label.startsWith("plan research")) {
+        text = "# RESEARCH\n\n## Open Questions\n\n- none (RESOLVED)\n\nStandard.";
+      }
+      return { result: { output: [{ type: "text", text }], stopReason: "completed" }, dispose: () => {} };
+    },
+  };
+  return svc;
+}
+
+// ── functional-depth smoke (D-05) ────────────────────────────────────────────
+// For a retirement, smoke the remaining offline-runnable step tools
+// (gsd_discuss / gsd_plan / gsd_verify) against the bootstrapped FakeFs project,
+// pre-seeding whatever the absent tool would have produced, and assert the
+// artefact files exist. gsd_execute / gsd_ship are never driven offline.
+async function smokeRemainingSteps(ctx, retiredSub) {
+  const gsdState = ctx.get("gsdState");
+  const { dir, base } = await gsdState.phaseDirAndBase(CWD, 1);
+  const rich = ctx.get("subagents"); // triggers the factory, capturing the mount's fs
+  rich.setPhaseDir(dir, base);
+  const exec = makeExec();
+  const has = (name) => ctx.tools.some((t) => t.name === name);
+
+  // CONTEXT — pre-seed when discuss is retired, else run gsd_discuss.
+  if (retiredSub === "discuss") {
+    await gsdState.writeArtifact(CWD, 1, "CONTEXT", "# Phase 1: p1 - Context\n\n<decisions>\n## Decisions\n- **D-01:** x\n</decisions>");
+  } else if (has("gsd_discuss")) {
+    const discuss = ctx.tools.find((t) => t.name === "gsd_discuss");
+    const res = await discuss.execute({ phase: 1, decisions: [{ area: "a", items: [{ id: "D-01", text: "x" }] }] }, exec);
+    assert.match(res, /Discuss complete/);
+    assert.ok(await gsdState.hasArtifact(CWD, 1, "CONTEXT"), "gsd_discuss did not write CONTEXT.md");
+  }
+
+  // PLAN — pre-seed when plan is retired (so gsd_verify does not early-return),
+  // else run gsd_plan (the rich planner subagent writes PLAN-01).
+  if (retiredSub === "plan") {
+    await gsdState.writeArtifact(CWD, 1, "PLAN-01", FENCED_PLAN);
+  } else if (has("gsd_plan")) {
+    const plan = ctx.tools.find((t) => t.name === "gsd_plan");
+    const res = await plan.execute({ phase: 1 }, exec);
+    assert.match(res, /gsd_plan complete/);
+    assert.ok(await gsdState.hasArtifact(CWD, 1, "PLAN-01"), "gsd_plan did not write PLAN.md");
+  }
+
+  // VERIFY — pre-seed the summary (execute is never driven offline), then run
+  // gsd_verify (the rich verify subagent writes VERIFICATION.md).
+  if (retiredSub !== "verify" && has("gsd_verify")) {
+    await gsdState.writeArtifact(CWD, 1, "SUMMARY-01", FENCED_SUMMARY);
+    const verify = ctx.tools.find((t) => t.name === "gsd_verify");
+    const res = await verify.execute({ phase: 1 }, exec);
+    assert.match(res, /verified|gaps found|human verification/);
+    assert.ok(await gsdState.hasArtifact(CWD, 1, "VERIFICATION"), "gsd_verify did not write VERIFICATION.md");
+  }
+}
+
 describe("removal: per-plugin retirement reverts effects and keeps the loop functional (DEGR-05)", () => {
   for (const { capKey, sub, tool, command, step } of retirementMatrix()) {
     test(`retiring ${capKey} reverts all six effects and keeps the loop functional`, async () => {
       const allSubs = PATCH_ROWS.map((r) => r.sub);
       const subs = allSubs.filter((s) => s !== sub);
-      const { ctx } = await mountSubset(subs);
+      const holder = { rich: null };
+      const { ctx } = await mountSubset(subs, { subagents: (fs) => (holder.rich || (holder.rich = makeRichSubagents(fs))) });
       await initProject(ctx);
 
       // Surface 1 — capability service absent.
@@ -82,6 +157,9 @@ describe("removal: per-plugin retirement reverts effects and keeps the loop func
       const expectedLine = expected ? `Next action: ${expected.step}-phase` : `Next action: no available loop step`;
       assert.match(out, new RegExp(expectedLine.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
       assertNoAbsentToolToken(ctx, out, `gsd_status (retired ${capKey})`);
+
+      // Functional depth (D-05): remaining offline-runnable step tools smoke.
+      await smokeRemainingSteps(ctx, sub);
     });
   }
 });
