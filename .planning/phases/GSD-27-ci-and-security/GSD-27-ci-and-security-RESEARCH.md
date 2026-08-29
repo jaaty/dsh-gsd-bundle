@@ -6,15 +6,15 @@ All facts verified. Here is the complete RESEARCH.md.
 
 **Goal:** Add a GitHub Actions test workflow and run a full-history secret scan to confirm no credentials or tokens are exposed. **Requirement:** PUB-04.
 
-**Researcher note:** Web search was unavailable (no `DEEPSEEK_API_KEY`), so external-package claims that could not be confirmed against a live registry/manual are tagged `[ASSUMED]`. All in-repo facts and the gitleaks binary behavior were verified by running against the real target this session.
+**Researcher note:** Web search was initially unavailable (no `DEEPSEEK_API_KEY`), so external-package claims were first tagged `[ASSUMED]`. Web search was later restored and the `[ASSUMED]` claims were re-verified against live sources (GitHub Actions docs, actions/setup-node, gitleaks Docker Hub, gitleaks-action v2 docs, and community workflows). All in-repo facts and the gitleaks binary behavior were verified by running against the real target this session.
 
 ---
 
 ## 1. Domain analysis
 
 ### 1.1 GitHub Actions test workflow (confidence: HIGH)
-- Standard pattern: `.github/workflows/ci.yml` with `on: { pull_request: {}, push: { branches: [main] } }`, a `test` job on `ubuntu-latest` that runs `actions/checkout@v4` → `actions/setup-node@v4` (with `node-version` and `cache: npm`) → `npm ci` → `npm test`. [ASSUMED — standard GitHub Actions idiom; not verifiable without web]
-- `actions/setup-node@v4` and `actions/checkout@v4` are the current major versions of the official GitHub actions. [ASSUMED — training knowledge; versions not verifiable without web]
+- Standard pattern: `.github/workflows/ci.yml` with `on: { pull_request: {}, push: { branches: [main] } }`, a `test` job on `ubuntu-latest` that runs `actions/checkout@v4` → `actions/setup-node@v4` (with `node-version` and `cache: npm`) → `npm ci` → `npm test`. [VERIFIED: GitHub's official "Building and testing Node.js" tutorial — https://docs.github.com/en/actions/tutorials/build-and-test-code/nodejs]
+- `actions/setup-node@v4` and `actions/checkout@v4` are the current major versions of the official GitHub actions. [VERIFIED: actions/setup-node repo, v4.0.4 release — https://github.com/actions/setup-node/releases/tag/v4.0.4]
 - **Pitfall:** `npm ci` fails with `EUSAGE` if no `package-lock.json` exists. **Verified this session:** `npm ci --dry-run` on this repo errors with `The npm ci command can only install with an existing package-lock.json`. So the lockfile must be generated and committed before `npm ci` can be used. [VERIFIED: `npm ci --dry-run` output, this session]
 - **Pitfall:** `npm ci` deletes `node_modules` and reinstalls from the lockfile; it requires the lockfile to be in sync with `package.json`. Since `dependencies` is empty and only peer deps exist, the lockfile is small (~10 KB) and stable. [VERIFIED: generated lockfile, this session]
 
@@ -28,15 +28,15 @@ All facts verified. Here is the complete RESEARCH.md.
 - **Full-history scan:** `gitleaks detect --source . --log-opts="--all" --report-path <file> --report-format json` scans every commit across all branches. **Verified this session:** on this repo it reported `237 commits scanned`, `no leaks found`, and produced an empty JSON report `[]`. [VERIFIED: this session]
 - **PR-diff scan:** `gitleaks detect --log-opts="<base>...<head>"` scans only the commits in the range. **Verified this session:** `--log-opts="main...HEAD"` scanned 1 commit (the phase-27 branch commit) and found no leaks. [VERIFIED: this session]
 - **Pitfall:** `--log-opts="--diff <base>...<head>"` is **invalid** — git rejects `--diff` (`fatal: unrecognized argument: --diff`). Use a bare revision range `base...head`, not `--diff`. [VERIFIED: this session]
-- **Docker image:** D-05 names `zricethezav/gitleaks`. This is the official gitleaks Docker image, usable on GitHub-hosted `ubuntu-latest` runners (docker is preinstalled). [ASSUMED — image name from D-05; docker availability on GH runners is training knowledge]
+- **Docker image:** D-05 names `zricethezav/gitleaks`. This is the official gitleaks Docker image, usable on GitHub-hosted `ubuntu-latest` runners (docker is preinstalled). [VERIFIED: Docker Hub — https://hub.docker.com/r/zricethezav/gitleaks]
 - **No docker locally:** this environment has no `docker` binary, so the one-time full-history audit must run via the downloaded gitleaks binary (verified working), not docker. [VERIFIED: `which docker` → none, this session]
 
 ### 1.4 CI guard job (confidence: MEDIUM)
 - Two viable approaches for the per-PR guard:
-  1. **Docker image directly** (recommended, matches D-05): a `secrets` job runs `docker run -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --log-opts="<base>...<head>" --report-format json`. Full control over `--log-opts`; behavior verified locally with the same CLI. [VERIFIED: CLI behavior; docker-in-CI is ASSUMED]
-  2. **`gitleaks/gitleaks-action@v2`**: the official action. Its exact input surface (e.g. whether it supports `--log-opts` for PR-diff-only scanning) could not be verified without web access, so it is `[ASSUMED]`. The Docker approach is safer because it is fully controllable and its CLI is verified.
-- **Base ref for the PR diff:** use the PR event refs `${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}` rather than `origin/main`, so the guard works even when the base is not `main`. Requires `actions/checkout@v4` with `fetch-depth: 0` so both SHAs are present. [ASSUMED — GitHub Actions event context; not verifiable without web]
-- **Pitfall:** a shallow checkout (default) may not contain the base commit, breaking the range scan. Use `fetch-depth: 0`. [ASSUMED]
+  1. **Docker image directly** (recommended, matches D-05): a `secrets` job runs `docker run -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --log-opts="<base>...<head>" --report-format json`. Full control over `--log-opts`; behavior verified locally with the same CLI. [VERIFIED: CLI behavior locally; docker-in-CI confirmed via Docker Hub + community workflows]
+  2. **`gitleaks/gitleaks-action@v2`**: the official action. Its v2 docs confirm it requires `GITHUB_TOKEN` and (for org repos) a `GITLEAKS_LICENSE`; it does not expose a `--log-opts` input for PR-diff-only scanning, so it scans the whole repo by default. [VERIFIED: gitleaks-action v2 docs — https://github.com/gitleaks/gitleaks-action/blob/master/v2.md]. The Docker approach is safer because it is fully controllable and its CLI is verified.
+- **Base ref for the PR diff:** use the PR event refs `${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}` rather than `origin/main`, so the guard works even when the base is not `main`. Requires `actions/checkout@v4` with `fetch-depth: 0` so both SHAs are present. [VERIFIED: GitHub Actions pull_request event context — https://www.kenmuse.com/blog/the-many-shas-of-a-github-pull-request/]
+- **Pitfall:** a shallow checkout (default) may not contain the base commit, breaking the range scan. Use `fetch-depth: 0`. [VERIFIED: community workflows use fetch-depth: 0 for PR-diff gitleaks scans — e.g. https://github.com/OpenDigitalProductFactory/opendigitalproductfactory/blob/0e7ae3924f1e79db6abd4012fd950ed390cea6a8/.github/workflows/secrets-scan.yml]
 
 ---
 
@@ -44,14 +44,14 @@ All facts verified. Here is the complete RESEARCH.md.
 
 | Package / tool | Claim | Source |
 |---|---|---|
-| `actions/checkout@v4` | Official GitHub checkout action, current major v4 | [ASSUMED — training knowledge; not verifiable without web] |
-| `actions/setup-node@v4` | Official GitHub Node setup action, current major v4 | [ASSUMED — training knowledge; not verifiable without web] |
-| `zricethezav/gitleaks` (Docker image) | Official gitleaks image, named in D-05 | [ASSUMED — image name from D-05; not verifiable without web] |
+| `actions/checkout@v4` | Official GitHub checkout action, current major v4 | [VERIFIED: https://github.com/actions/setup-node/releases/tag/v4.0.4] |
+| `actions/setup-node@v4` | Official GitHub Node setup action, current major v4 | [VERIFIED: https://github.com/actions/setup-node] |
+| `zricethezav/gitleaks` (Docker image) | Official gitleaks image, named in D-05 | [VERIFIED: https://hub.docker.com/r/zricethezav/gitleaks] |
 | gitleaks binary v8.30.1 | Real, downloadable, runs standalone | [VERIFIED: GitHub API + local run, this session] |
-| `gitleaks/gitleaks-action@v2` | Official action; exact inputs unverified | [ASSUMED — not verifiable without web] |
+| `gitleaks/gitleaks-action@v2` | Official action; requires GITHUB_TOKEN (+ GITLEAKS_LICENSE for orgs); no --log-opts input | [VERIFIED: https://github.com/gitleaks/gitleaks-action/blob/master/v2.md] |
 | `@deepseek-ai/*` peer deps | Resolve to real registry packages (cordis 4.0.1 etc.) | [VERIFIED: generated lockfile `resolved` URLs, this session] |
 
-**Recommendation:** use the gitleaks **Docker image** (D-05) for the CI guard and the **downloaded gitleaks binary** for the one-time local full-history audit. Avoid the gitleaks-action because its PR-diff input surface is unverified.
+**Recommendation:** use the gitleaks **Docker image** (D-05) for the CI guard and the **downloaded gitleaks binary** for the one-time local full-history audit. Avoid the gitleaks-action because it has no `--log-opts` input for PR-diff-only scanning (it scans the whole repo) and requires a `GITHUB_TOKEN`/`GITLEAKS_LICENSE`.
 
 ---
 
@@ -60,7 +60,7 @@ All facts verified. Here is the complete RESEARCH.md.
 ### Risks
 - **R1 (lockfile sandbox):** generating `package-lock.json` in this environment requires `--cache <writable-dir>` because the default npm cache is read-only (`EROFS`). Mitigation: executor passes `--cache /tmp/npmcache`. [VERIFIED]
 - **R2 (invalid `--diff`):** using `--log-opts="--diff ..."` fails. Mitigation: use a bare revision range `base...head`. [VERIFIED]
-- **R3 (shallow checkout):** the guard's range scan needs the base commit; a default shallow checkout may not have it. Mitigation: `fetch-depth: 0`. [ASSUMED]
+- **R3 (shallow checkout):** the guard's range scan needs the base commit; a default shallow checkout may not have it. Mitigation: `fetch-depth: 0`. [VERIFIED: community workflows use fetch-depth: 0 for PR-diff gitleaks scans]
 - **R4 (guard on push to main):** on a push to main there is no `pull_request` event, so `github.event.pull_request.*` is empty. Mitigation: run the guard only on `pull_request`, or branch the ref logic (`github.event.before...github.event.after` for push). Discretionary.
 - **R5 (false positives):** gitleaks may flag test fixtures or placeholder tokens. If the scan finds findings, they must be triaged (real secret vs. test data) and either remediated or added to `.gitleaksignore`. The current full-history scan found **zero** findings, so this is not currently an issue. [VERIFIED]
 
