@@ -377,6 +377,12 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
       /do NOT advance to the next step until the user issues an explicit command/,
       "context provider did not render the wait-for-command contract",
     );
+    // The snapshot is capability-aware (D-03/D-08): it lists the ordered
+    // available loop steps of the full-set mount. gsdOrient is present, so
+    // gsd_status is named as the orienting surface.
+    assert.match(out, /Available steps:/, "context provider did not render the available-steps annotation");
+    assert.match(out, /discuss/, "available-steps annotation missing the discuss step");
+    assert.match(out, /Use gsd_status for the full STATE\.md\./, "gsdOrient present but gsd_status not named");
   });
 
   test("uninitialised-cwd branch renders the orientation hint", () => {
