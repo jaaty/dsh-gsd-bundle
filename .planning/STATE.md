@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v2.0
 milestone_name: graceful-removal
-status: ship
-active_phase: 23
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [23]
 progress:
   total_phases: 24
-  completed_phases: 22
+  completed_phases: 23
   total_plans: 2
   completed_plans: 61
-  percent: 92
+  percent: 96
 current_phase: 23
 current_phase_name: removal-verification
 current_plan: 2
-last_updated: "2026-08-29T01:51:08.503Z"
+last_updated: "2026-08-29T01:51:56.332Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 22 shipped — PR #25"
+stopped_at: "Phase 23 shipped — PR #26"
 paused_at: null
 ---
 # GSD STATE
@@ -117,6 +117,7 @@ _No active phase._
 - Phase 23: planned — 2 plan(s) across 2 wave(s).
 - Phase 23: plan 01 executed — extracted shared fake-ctx mount harness to test/helpers/mount-harness.mjs (D-07) + optional subagents factory (OQ-1); mount suite refactored to import it; 373 tests green.
 - Phase 23: plan 02 executed — per-plugin removal suite test/removal.test.mjs (DEGR-05): data-driven matrix over the 5 step plugins, six effects-reverted surfaces, functional-depth smoke of remaining offline-runnable step tools, execute/ship present+registered+schema-sound; 378 tests green.
+- Phase 23 shipped — PR #26 (https://github.com/jaaty/dsh-gsd-bundle/pull/26)
 
 ### Blockers / Concerns
 _none_

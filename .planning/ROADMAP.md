@@ -26,7 +26,7 @@
 | 20 | [x] multi-window-topology | Support concurrent multi-window phases on a shared base branch with a merge topology, earlier phase-branch push, and auto-commit of out-of-flow artefacts. | MW-01 … MW-02 … MW-03 |
 | 21 | [x] capability-services | Each step plugin publishes a capability service declaring the loop step it provides, and the persona and slash-command layer declare coeffects on the capabilities they need. | DEGR-01 … DEGR-03 |
 | 22 | [x] reactive-loop-rendering | Re-render the persona, runtime-context snapshot, and gsd_status from the available step capabilities so absent steps are skipped and no missing tool is ever instructed. | DEGR-02 … DEGR-04 |
-| 23 | removal-verification | Add an automated per-plugin removal test proving every single step plugin can be retired with its effects reverted and the remaining loop still functional end-to-end. | DEGR-05 |
+| 23 | [x] removal-verification | Add an automated per-plugin removal test proving every single step plugin can be retired with its effects reverted and the remaining loop still functional end-to-end. | DEGR-05 |
 | 24 | composability-hardening | Effect-scope the background-job live registry to its owning fiber and declare the subagents coeffect in every consuming plugin so temporal and spatial composability hold for the job runtime and subagent paths. | DEGR-06 … DEGR-07 |
 
 ## Progress
@@ -55,5 +55,5 @@
 | 20 | multi-window-topology | [x] Complete | 2026-08-29 |
 | 21 | capability-services | [x] Complete | 2026-08-29 |
 | 22 | reactive-loop-rendering | [x] Complete | 2026-08-29 |
-| 23 | removal-verification | pending |  |
+| 23 | removal-verification | [x] Complete | 2026-08-29 |
 | 24 | composability-hardening | pending |  |
