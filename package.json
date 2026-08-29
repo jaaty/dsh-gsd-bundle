@@ -5,7 +5,8 @@
   "type": "module",
   "main": "./lib/persona.js",
   "scripts": {
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "prepublishOnly": "node --test test/*.test.mjs"
   },
   "exports": {
     ".": {
@@ -67,5 +68,8 @@
     "@deepseek-ai/cordis": "*",
     "@deepseek-ai/dsh-llm": "*"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
 }
