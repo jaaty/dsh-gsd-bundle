@@ -1,5 +1,7 @@
 # dsh-gsd-bundle
 
+[![CI](https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml/badge?branch=main)](https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml)
+
 A **plugin bundle for [DeepSeek Harness](https://github.com/deepseek-ai/dsh)** (dsh) that reimplements [opengsd-core](https://github.com/open-gsd/gsd-core) — **Git Ship Done (GSD)** — as a set of host-plane Cordis plugins. It replaces the default agent-loop behaviour with the GSD phase loop, so every session becomes a disciplined, artefact-driven engineering loop.
 
 ```
