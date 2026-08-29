@@ -216,6 +216,31 @@ describe("tdd-audit gate", () => {
     );
     assert.equal(res.status, "pass");
   });
+
+  test("interleaved test:/feat: commits in oldest-first order pass", async () => {
+    // ORDERING CONTRACT: commitSubjects are delivered oldest-first. A sequence
+    // that opens with test( then feat( passes; this is the shape that git log
+    // --reverse hands the gate (see fetchGitData). Under the old newest-first
+    // delivery the gate inspected the reverse order and spuriously failed this.
+    const res = tddAuditGate(
+      [{ id: "GSD-36-x-02", phase: "36", plan: "2", type: "tdd" }],
+      ["test(36-02): a", "feat(36-02): b", "test(36-02): c", "feat(36-02): d"],
+    );
+    assert.equal(res.status, "pass");
+    assert.deepEqual(res.findings, []);
+  });
+
+  test("a genuinely missing test: before feat:/fix: still fails (mirror)", async () => {
+    // Even with oldest-first input, a scope whose commits never open with a
+    // test: subject must keep failing so the gate is not trivially satisfied.
+    const res = tddAuditGate(
+      [{ id: "GSD-36-x-03", phase: "36", plan: "3", type: "tdd" }],
+      ["feat(36-03): a", "test(36-03): b"],
+    );
+    assert.equal(res.status, "fail");
+    assert.equal(res.findings[0].planId, "GSD-36-x-03");
+    assert.match(res.findings[0].reason, /test:/);
+  });
 });
 
 describe("resolveGatesConfig", () => {
@@ -353,7 +378,8 @@ describe("fetchGitData", () => {
       case "symbolic-ref:refs/remotes/origin/HEAD": return "origin/main";
       case "merge-base:HEAD": return "abc123";
       case "diff:--name-only": return "src/a.js\nb/.env";
-      case "log:--format=%s": return "test(08-01): a\nfeat(08-01): b";
+      // git log returns NEWEST-first; fetchGitData must reverse to oldest-first.
+      case "log:--reverse": return "feat(08-01): b\ntest(08-01): a";
       default: return "";
     }
   };
@@ -376,6 +402,21 @@ describe("fetchGitData", () => {
     } finally {
       await import("node:fs/promises").then((fs) => fs.rm(dir, { recursive: true, force: true }));
     }
+  });
+
+  test("commit subjects are returned in oldest-first order", async () => {
+    // ORDERING CONTRACT: git log --format=%s returns NEWEST-first, but the gate
+    // (tddAuditGate) requires oldest-first. fetchGitData must reverse so the
+    // shipped commitSubjects honour the chronologically-ordered contract.
+    const git = (cwd, args) => {
+      if (args[0] === "symbolic-ref") return "origin/main";
+      if (args[0] === "merge-base") return "abc123";
+      if (args[0] === "diff") return "";
+      if (args[0] === "log") return "feat(08-01): z\ntest(08-01): y";
+      return "";
+    };
+    const res = await fetchGitData(process.cwd(), git, undefined);
+    assert.deepEqual(res.commitSubjects, ["test(08-01): y", "feat(08-01): z"]);
   });
 
   test("empty merge-base (HEAD == base) -> empty changed files and subjects", async () => {
@@ -411,7 +452,7 @@ describe("fetchGitData", () => {
         case "symbolic-ref:refs/remotes/origin/HEAD": return Promise.resolve("origin/main");
         case "merge-base:HEAD": return Promise.resolve("abc123");
         case "diff:--name-only": return Promise.resolve("src/a.js\nb/.env");
-        case "log:--format=%s": return Promise.resolve("test(08-01): a\nfeat(08-01): b");
+        case "log:--reverse": return Promise.resolve("feat(08-01): b\ntest(08-01): a");
         default: return Promise.resolve("");
       }
     };
