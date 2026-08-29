@@ -152,6 +152,7 @@ _No active phase._
 - Phase 30: planned — 2 plan(s) across 1 wave(s).
 - Phase 30: plan 01 executed — publishable-package metadata: version bumped to 2.2.0 (manifest + lockfile in sync), six metadata fields added (repository/homepage/bugs/author/engines/keywords), files whitelist expanded to ship README-linked docs (DISTRIBUTION/CONTRIBUTING/CODE_OF_CONDUCT/CHANGELOG). 3 commits, SUMMARY.md written.
 - Phase 30: planned — 3 plan(s) across 1 wave(s).
+- Phase 30: plan 03 executed — README gap fix: reworded the v2.1 release-note bullet to drop the broken `gsd-core-reference.md` filename; npm test green 406/406 closing the regression-seal gap. 1 commit, SUMMARY.md written.
 
 ### Blockers / Concerns
 _none_
