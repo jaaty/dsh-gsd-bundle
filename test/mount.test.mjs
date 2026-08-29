@@ -27,6 +27,7 @@ import {
   presentTools,
   assertNoAbsentToolToken,
   makeExec,
+  makeSubagents,
 } from "./helpers/mount-harness.mjs";
 
 // Apply all 12 plugins in patch order against a ctx; throw with the offending id.
@@ -119,7 +120,9 @@ describe("mount: all 12 plugins activate", () => {
   let fs, ctx;
   beforeEach(() => {
     fs = new FakeFs();
-    ctx = makeMountCtx(fs);
+    // Supply subagents so the gsd_job sub-fiber activates (DEGR-07 D-05) and
+    // the full 14-tool surface is registered.
+    ctx = makeMountCtx(fs, { subagents: makeSubagents() });
   });
 
   test("applies all 12 plugins in patch order without throwing", async () => {
@@ -219,7 +222,7 @@ describe("mount: cordis.patch.yml rows resolve", () => {
 
     // Cross-check captured tool names against the expected 13.
     const fs = new FakeFs();
-    const ctx = makeMountCtx(fs);
+    const ctx = makeMountCtx(fs, { subagents: makeSubagents() });
     await applyAll(ctx);
     const toolNames = ctx.tools.map((t) => t.name).sort();
     assert.deepEqual(toolNames, [...EXPECTED_TOOL_NAMES].sort(), "registered tool names mismatch");
@@ -237,7 +240,7 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
 
   beforeEach(async () => {
     fs = new FakeFs();
-    ctx = makeMountCtx(fs);
+    ctx = makeMountCtx(fs, { subagents: makeSubagents() });
     await applyAll(ctx);
   });
 
