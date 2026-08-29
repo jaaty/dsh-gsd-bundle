@@ -220,6 +220,12 @@ Research, planning, execution, and verification run as one-shot fresh-context su
 This is a faithful reimplementation of opengsd-core's **phase loop and artefact schemas**, not a port of its CLI (`gsd_run`) or its full capability/gate ecosystem. Deliberate simplifications:
 
 - **No per-plan git worktrees.** Executors run on the shared working tree. The plan-checker's same-wave non-overlap guarantee (Dimension 3) makes the shared tree safe; the post-merge regression gate becomes a per-wave test run rather than a worktree merge.
+
+### Clean-PR branch
+
+At ship time `gsd_ship` derives a `phase-<N>-clean` review branch that excludes the per-phase planning subtree `.planning/phases/` (D-01/D-02) while keeping the durable cross-phase files (`STATE.md`, `ROADMAP.md`, `REQUIREMENTS.md`, `PROJECT.md`, `config.json`, `.planning/codebase/`), applies the phase's real-code changes as one squash commit, and creates the phase PR from it. A doc-only phase that changes no code falls back to shipping the phase-`<N>` branch as-is (D-07). Disable via `workflow.clean_pr_branch: false` in `.planning/config.json` or the `gsd_ship` `no_clean_pr` parameter (D-09).
+
+
 - **`gsd_run` is not wrapped.** The opengsd CLI query/check/state commands are reimplemented as in-process `gsdState` service methods (no separate `gsd_run` process).
 - **Capability gates** are implemented as a focused set — `security`, `broken_windows`, `tdd_audit` — run by `gsd_ship` before PR creation, with per-gate pass/fail reporting and a `skip_gates` escape hatch. The broader opengsd gate ecosystem (e.g. `ui.safety-gate`) is not ported.
 - **`gsd_map_codebase` `--query` intel mode** is implemented (the `intel.enabled` capability ecosystem — drift detection via the `.map-manifest.json`, the `gsd-intel-updater` targeted re-map, a structured answer object, and subtree `queryScope` scoping). The full parallel map, `--fast` single-focus scan, and `--paths` incremental-remap scoping are all implemented; the existing-check's interactive refresh/update/skip choice is surfaced as `force` / `paths` parameters (a tool cannot hold a multi-turn interview).

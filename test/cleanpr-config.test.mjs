@@ -37,3 +37,9 @@ test("lib/state.js defaults clean_pr_branch: true inside the workflow block (D-0
     "clean_pr_branch: true, sits inside the workflow object (before the workflow close brace)"
   );
 });
+
+test("README documents the Clean-PR branch behaviour (D-01/D-05/D-07/D-09)", async () => {
+  const src = await readSource("../README.md");
+  assert.ok(src.includes("Clean-PR branch"), "README mentions Clean-PR branch");
+  assert.ok(src.includes("phase-<N>-clean"), "README mentions the phase-<N>-clean naming");
+});
