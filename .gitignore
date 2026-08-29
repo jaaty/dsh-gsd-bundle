@@ -6,4 +6,4 @@ node_modules/
 .planning/async-jobs.json
 .planning/WINDOWS.md
 .planning/quick/
-.planning/phases/*/*-DISCUSSION-LOG.md
+.planning/phases/**/*-DISCUSSION-LOG.md
