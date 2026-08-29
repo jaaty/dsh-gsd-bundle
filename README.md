@@ -133,6 +133,16 @@ All plugins are subpath exports of this one package (`@dsh-gsd/bundle/<name>`), 
 | `gsd-map-codebase` | `./map-codebase` | `gsd_map_codebase` — parallel fresh-context mapper subagents → `.planning/codebase/` (7 docs); brownfield pre-init onboarding tool |
 | `gsd-commands` | `./commands` | the `/gsd-*` slash-commands — thin routers that inject a user message telling the agent to run the matching tool |
 
+### Extending the bundle
+
+You're encouraged to **author your own plugins** for your bundle and swap them in/out as you see fit. Each plugin is a subpath export of the package (`@dsh-gsd/bundle/<name>`) that publishes a capability service and registers its tools/commands via `apply(ctx)`. To add or replace a step:
+
+1. Write a plugin module following the same pattern — a `name`, an `inject` coeffect list, and an `apply(ctx)` that registers tools and publishes a capability.
+2. Add it as a row in your `cordis.patch.yml`, or override an existing row's `name` to point at your module.
+3. Because the persona, runtime-context snapshot, and `gsd_status` render reactively from the available capabilities, a retired or replaced step is simply skipped — the remaining loop keeps working.
+
+The automated per-plugin removal suite proves this: every step plugin can be retired with its effects reverted and the loop still functional end-to-end.
+
 ### `.planning/` artefacts (faithful to opengsd-core)
 
 ```
