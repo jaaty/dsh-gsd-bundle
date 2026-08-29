@@ -12,7 +12,7 @@ import { resolvePlanDep, parseFrontmatter } from "../lib/_shared.js";
 import { CODEBASE_QUERY_PROMPT } from "../lib/_agents.js";
 import { apply as applyCommands } from "../lib/commands.js";
 import { FakeFs, stateCtx, realFsAdapter } from "./helpers/fake-fs.mjs";
-import { buildProject, FENCED_PLAN, FENCELESS_PLAN, FENCED_SUMMARY, VERIFICATION_PASSED } from "./helpers/project.mjs";
+import { buildProject, FENCED_PLAN, FENCELESS_PLAN, FENCED_SUMMARY, VERIFICATION_PASSED, VERIFICATION_GAPS } from "./helpers/project.mjs";
 
 const CWD = "/project";
 let fs;
@@ -591,6 +591,54 @@ describe("gsd_plan closed-phase gate", () => {
   test("force=true clears the gate and plans anyway", async () => {
     const { t } = await registerTool("plan", "gsd_plan");
     const res = await t.execute({ phase: 1, force: true, skipResearch: true }, exec);
+    assert.match(res, /gsd_plan complete/);
+  });
+});
+
+describe("gsd_plan gap-closure fix-plan guard", () => {
+  beforeEach(async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    await svc.writeArtifact(CWD, 1, "CONTEXT", "# ctx");
+    // gaps_found status so the closed-phase gate does not block gap-closure planning
+    await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_GAPS);
+    // seed an existing NON-gap plan so listPlans is non-empty — the bug: plans
+    // exist from the standard run but no fix plan (gap_closure: true) is present.
+    await svc.writeArtifact(CWD, 1, "PLAN-01", FENCED_PLAN.replace("gap_closure: true", "gap_closure: false"));
+    ctx = makeCtx();
+  });
+
+  test("fails loud when the planner produces no gap_closure fix plan", async () => {
+    // Custom subagents: the planner claims ## PLANNING COMPLETE but writes no
+    // fix plan file — reproducing the silent-loss bug the guard must catch.
+    const subagents = {
+      getProvider: (n) => (n === "spawn" ? { spawn: true } : undefined),
+      async start(_n, req) {
+        const label = req.label;
+        let text = "done";
+        if (label.startsWith("planner")) {
+          text = "## PLANNING COMPLETE\nWrote the fix plan.";
+          // deliberately do NOT write any gap_closure plan file
+        } else if (label.startsWith("plan research")) {
+          text = "# RESEARCH\n\n## Open Questions\n\n- none (RESOLVED)\n\nStandard.";
+        }
+        return { result: { output: [{ type: "text", text }], stopReason: "completed", structured: undefined }, dispose: () => {} };
+      },
+    };
+    const { t, c } = await registerTool("plan", "gsd_plan");
+    // registerTool builds its own context via makeCtx(); override the returned
+    // context's subagents so the planner claims success without writing a fix plan.
+    c.get = (n) => (n === "gsdState" ? svc : n === "subagents" ? subagents : n === "tools" ? { register() {} } : undefined);
+    const res = await t.execute({ phase: 1, gaps: true, skipResearch: true }, exec);
+    assert.match(res, /no fix plan \(gap_closure: true\)/);
+    assert.match(res, /--gaps-only would run nothing/);
+  });
+
+  test("succeeds when the planner writes a gap_closure fix plan", async () => {
+    // makeSubagents() writes plan-01 with gap_closure: true for the planner, so
+    // the guard sees a fix plan and proceeds.
+    const { t } = await registerTool("plan", "gsd_plan");
+    const res = await t.execute({ phase: 1, gaps: true, skipResearch: true }, exec);
     assert.match(res, /gsd_plan complete/);
   });
 });
