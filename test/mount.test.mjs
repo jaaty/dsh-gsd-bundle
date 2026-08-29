@@ -131,6 +131,14 @@ describe("mount: all 12 plugins activate", () => {
     assert.ok(ctx.sections.length === 1, `expected 1 section, got ${ctx.sections.length}`);
     assert.ok(ctx.contexts.length === 1, `expected 1 context, got ${ctx.contexts.length}`);
 
+    // DEGR-06: core-tools provides the jobs runtime service and registers a
+    // fire-and-forget unload-cancel cleanup effect. Invoking the disposer (the
+    // actual un-awaited path) must never throw.
+    assert.ok(ctx.provided.has("gsdJobsRuntime"), "gsdJobsRuntime service was not provided");
+    const cancelEffect = ctx.effects.find((e) => e.label === "gsdJobsRuntime.cancelAll");
+    assert.ok(cancelEffect, "gsdJobsRuntime.cancelAll cleanup effect was not registered");
+    assert.doesNotThrow(() => cancelEffect.disposer(), "invoking the unload-cancel disposer must never throw");
+
     // DEGR-01: all 10 capability services are provided with the documented
     // descriptor shape (D-03: key/step/role/tools/commands/order). Built from
     // CAPABILITY_KEYS so test and source never drift (D-02 camelCase keys).

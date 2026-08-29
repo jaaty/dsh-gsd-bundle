@@ -77,6 +77,7 @@ export function makeMountCtx(fs, { subagents } = {}) {
   const sections = [];
   const contexts = [];
   const provided = new Map();
+  const effects = [];
   gsdStateSvc = undefined;
 
   const ctx = {
@@ -107,12 +108,17 @@ export function makeMountCtx(fs, { subagents } = {}) {
       return provided.has(n) ? provided.get(n) : undefined;
     },
   };
+  // Record registered effects (label + disposer) so tests can assert the
+  // unload-cancel cleanup wiring and invoke its disposer (DEGR-06).
+  ctx.effects = effects;
   // Invoke the effect callback synchronously (R-3); return its disposer if any.
   // gsd-commands wraps registration in ctx.effect(fn) — a no-op effect would
   // capture zero commands, so fn() MUST run here.
-  ctx.effect = (fn, _label) => {
+  ctx.effect = (fn, label) => {
     const d = fn();
-    return typeof d === "function" ? d : () => {};
+    const disposer = typeof d === "function" ? d : () => {};
+    effects.push({ label, disposer });
+    return disposer;
   };
   // Per-command sub-fiber API (Plan 03 / RESEARCH 1.6): ctx.inject(injectKeys,
   // callback) mirrors ctx.effect's synchronous behaviour. The host "commands"
