@@ -15,7 +15,7 @@ progress:
 current_phase: 28
 current_phase_name: publish-research
 current_plan: 1
-last_updated: "2026-08-29T06:02:23.175Z"
+last_updated: "2026-08-29T06:10:27.497Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 28 shipped — PR #31"
@@ -144,18 +144,26 @@ _No active phase._
 - Phase 28: planned — 1 plan(s) across 1 wave(s).
 - Phase 28 shipped — PR #31 (https://github.com/jaaty/dsh-gsd-bundle/pull/31)
 - quick 2026-08-29-milestone-release-v2-1-0: Release milestone public-release-readiness as v2.1.0. Orient against .planning/STATE.md first: the milestone is fully COMPLETE (29/29 phases shipped, PRs #1..#32, all merged to main — PR #32 for phase 29 was merged 2026-08-29T06:01:10Z, merge commit 856b625d7e44407109365a9c01a45b55b94804d6). Branch is main, working tree is clean, and the existing tags are v1.7.0 and v2.0.0 (there is no v2.1.0 tag yet). gh CLI is authenticated as account jaaty.
-
-Do the full milestone release end to end and commit + tag atomically:
-1. Confirm the working tree is clean on main and that all 29 phase PRs (#1..#32) are merged to main.
-2. Build release notes for v2.1.0 summarizing the milestone: the public-release-readiness milestone (v2.1.0) covers phases 25-29 — license-and-attribution (PR #28), repo-hygiene (PR #29), ci-and-security (PR #30), publish-research (PR #31), and pre-ship-verify (PR #32, the new deterministic pre-ship npm ci + npm test verification gate in gsd_ship, skippable via a flag). Write the release notes to a fixed .planning temp path (e.g. .planning/.release-notes-v2.1.0.md).
-3. Create the annotated git tag v2.1.0 pointing at the current main HEAD (the release commit) and push it to origin.
-4. Create the GitHub release for v2.1.0 via `gh release create` using the release-notes file as the body, targeting the v2.1.0 tag.
-5. Record the release in the CHANGELOG.md (add a v2.1.0 entry) and commit that atomically with the tag.
-
-Constraints (MANDATORY):
 - All git/gh commands must use explicit argument arrays; never interpolate a model- or user-supplied value into a shell string (the release-notes file path can be a fixed .planning temp path). Do not push force, do not alter protected refs, do not run git clean/reset --hard.
 - If gh CLI is unavailable or unauthenticated, create the tag and push it, and report the gh release step as a warning with the real cause — do not silently skip or fake it.
 - The working tree must be left clean on main with the v2.1.0 tag pointing at the release commit.
+- quick 2026-08-29-readme-v2-1-0-update: Update README.md to reflect the v2.1.0 milestone release. The README is stale: it still presents milestone `graceful-removal` v2.0.0 as the latest release and never mentions the v2.1.0 `public-release-readiness` milestone or the new pre-ship-verify gate. The milestone `public-release-readiness` (v2.1.0) is now complete and released (all 29 phases shipped, PRs #1..#32, merged to main; tag v2.1.0). Use CHANGELOG.md's `[2.1.0]` entry as the source of truth for the milestone content.
+
+Make these targeted edits to README.md (do not rewrite the whole file; preserve the existing structure, tone, and the v2.0 content as a prior milestone):
+
+1. **Release status section (line ~13):** Update the lead line to state that milestone `public-release-readiness` v2.1.0 is complete and released as `v2.1.0` (all 29 phases shipped, PRs #1–#32, merged to main), and that the bundle now additionally covers the v2.1 public-release-readiness milestone: license-and-attribution, repo-hygiene, ci-and-security, publish-research, and pre-ship-verify. Keep the v2.0 milestone as a prior milestone.
+
+2. **Add a v2.1.0 release note** (mirroring the existing "v2.0 release note — graceful-removal" subsection) titled e.g. "### v2.1 release note — public-release-readiness", listing the five phases it delivered: license-and-attribution (MIT LICENSE, opengsd-core attribution/NOTICE, fixed gsd-core-reference.md), repo-hygiene (CHANGELOG, CONTRIBUTING, CODE_OF_CONDUCT, .planning/ keep-vs-gitignore-vs-curate decision), ci-and-security (GitHub Actions test workflow + gitleaks secret-scan guard, package-lock.json), publish-research (research-backed distribution decision in DISTRIBUTION.md), and pre-ship-verify (a new deterministic pre-ship verification gate in gsd_ship that runs npm ci + npm test in a temp copy before pushing, skippable via a flag).
+
+3. **Features section (line ~31):** Extend the "Capability gates" bullet (or add a sibling bullet) to mention the new pre-ship-verify gate: gsd_ship runs a deterministic local verification (npm ci + npm test in a temp copy of the repo) before pushing, fails the ship on failure, and is skippable via a flag.
+
+4. **gsd_ship tool row (line ~94):** Update the purpose to mention the pre-ship-verify gate, e.g. "Preflight + capability gates + pre-ship-verify (npm ci + npm test in a temp copy), push the branch, create the PR, mark the phase shipped."
+
+5. **gsd-ship plugin row (line ~142):** Update to mention the pre-ship-verify gate, e.g. "gsd_ship — preflight + capability gates + pre-ship-verify, PR body assembly, gh pr create, STATE update".
+
+6. **Status section (line ~211):** Update to state that milestone v2.1.0 (public-release-readiness) is complete and released, listing the 29 phases (the 24 v2.0 phases plus license-and-attribution, repo-hygiene, ci-and-security, publish-research, pre-ship-verify), and note the pre-ship-verify gate and the CI + gitleaks guard.
+
+Constraints: do not change any code, package.json, or other files — README.md only. Do not touch the v2.0 release-note subsection's content (keep it as a prior milestone). Keep the README's existing tone and markdown style. After editing, verify the README no longer claims v2.0.0 is the latest release and that it mentions v2.1.0 and the pre-ship-verify gate. Commit the change atomically with a conventional-commit message (e.g. `docs(readme): document v2.1.0 public-release-readiness release`).
 
 ### Blockers / Concerns
 _none_
