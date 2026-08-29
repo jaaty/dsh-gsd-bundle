@@ -1,3 +1,0 @@
-# Phase 6: loop-robustness — Discussion Log
-
-Discussed phase 6 (loop-robustness) with the user. Precisely identified both bugs: (1) DUR-05 — the PLANNER_PROMPT depends_on guidance (lib/_agents.js:51) uses the non-prefixed example '01-auth-01' but the real plan id is project-code-prefixed (GSD-01-auth-01), so exact-match resolution in planIndex never matches (the phase-3 wave-2-skip bug); (2) DUR-06 — gsd_quick writes TASK.md via raw node:fs/promises (lib/quick.js:55-57), bypassing ctx.fs. User chose: (1) prompt fix + normalization (correct PLANNER_PROMPT + add prefix-tolerant resolution), fail-loud on unresolvable depends_on; (2) a new GsdState quick-record accessor routing TASK.md through ctx.fs, mirroring the phase-5 root-level accessor pattern.

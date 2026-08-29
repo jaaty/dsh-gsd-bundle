@@ -5,20 +5,20 @@ milestone_name: public-release-readiness
 status: idle
 active_phase: null
 next_action: null
-next_phases: [25]
+next_phases: [26]
 progress:
   total_phases: 28
-  completed_phases: 25
-  total_plans: 1
-  completed_plans: 65
-  percent: 89
-current_phase: 25
-current_phase_name: license-and-attribution
-current_plan: 1
-last_updated: "2026-08-29T02:44:24.466Z"
+  completed_phases: 26
+  total_plans: 3
+  completed_plans: 70
+  percent: 93
+current_phase: 26
+current_phase_name: repo-hygiene
+current_plan: 3
+last_updated: "2026-08-29T03:59:22.778Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 25 shipped — PR #28"
+stopped_at: "Phase 26 shipped — PR #29"
 paused_at: null
 ---
 # GSD STATE
@@ -129,6 +129,14 @@ _No active phase._
 - Phase 25: CONTEXT.md sealed — 5 decisions
 - Phase 25: planned — 1 plan(s) across 1 wave(s).
 - Phase 25 shipped — PR #28 (https://github.com/jaaty/dsh-gsd-bundle/pull/28)
+- Phase 26: CONTEXT.md sealed — 9 decisions
+- Phase 26: planned — 3 plan(s) across 2 wave(s).
+- Phase 26: planned — 3 plan(s) across 2 wave(s).
+- Phase 26: planned — 3 plan(s) across 2 wave(s).
+- Phase 26: planned — 3 plan(s) across 2 wave(s).
+- Phase 26: planned — 3 plan(s) across 2 wave(s).
+- Phase 26: planned — 3 plan(s) across 2 wave(s).
+- Phase 26 shipped — PR #29 (https://github.com/jaaty/dsh-gsd-bundle/pull/29)
 
 ### Blockers / Concerns
 _none_

@@ -1,3 +1,0 @@
-# Phase 16: context-budget — Discussion Log
-
-Oriented with gsd_status (idle, phase 16 pending). Inspected lib/_runner.js planningContext (lines 36-46), its 5 call sites (plan/verify/execute/ui/map-codebase), config.json context_window=200000, and confirmed test/dedup.test.mjs is unrelated (CQ-02 single-source constants). Interviewed the user on the 5 grey areas: (1) budget caps total of entry contents only; (2) default = ~45% of config context_window with hardcoded fallback; (3) per-file cap first then trim from the end; (4) return {text, truncated} + append inline audit note; (5) dedup identical content entries and drop repeating labels. All recommendations accepted.

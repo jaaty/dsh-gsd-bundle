@@ -1,1 +1,9 @@
 node_modules/
+
+# .planning/ curate decision (D-06/D-07): keep durable artefacts tracked,
+# gitignore the volatile churn. These files remain on disk (the GSD tools keep
+# writing them) but are not tracked.
+.planning/async-jobs.json
+.planning/WINDOWS.md
+.planning/quick/
+.planning/phases/**/*-DISCUSSION-LOG.md

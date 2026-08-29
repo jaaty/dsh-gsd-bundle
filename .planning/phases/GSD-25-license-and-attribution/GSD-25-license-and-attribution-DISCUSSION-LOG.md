@@ -1,3 +1,0 @@
-# Phase 25: license-and-attribution — Discussion Log
-
-Interviewed the user on the four grey areas in phase 25 scope. (1) LICENSE copyright holder: chose GitHub handle 'jaaty', year 2026. (2) opengsd-core license verification: the user confirmed it is MIT via https://github.com/open-gsd/gsd-core?tab=MIT-1-ov-file (I could not web-search — no API key). (3) gsd-core-reference.md resolution: chose to remove the broken reference and replace it with a link to the opengsd-core repo, not regenerate the file. (4) Attribution mechanism: chose a NOTICE file plus the existing README prose. All decisions recorded as D-01..D-05.

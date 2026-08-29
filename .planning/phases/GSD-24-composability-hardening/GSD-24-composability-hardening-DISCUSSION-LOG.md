@@ -1,3 +1,0 @@
-# Phase 24: composability-hardening — Discussion Log
-
-Interviewed the user on the four grey areas in phase 24 scope. (1) Registry ownership: chose a jobs runtime service object mirroring gsdState, provided by core-tools, owning the live map with a ctx.effect cleanup that cancels running jobs on unload. (2) Unload-cancel: chose best-effort 'cancelled' manifest write per running job, swallowing failures. (3) Coeffect hardness: chose a hard required 'subagents' coeffect in inject on the subagent-driven plugins (plan/execute/verify/quick/ui/map-codebase). (4) core-tools scope: chose a sub-fiber coeffect on the gsd_job tool only, so gsd_init/gsd_status/gsdOrient/gsdJobs stay active when subagents is absent. All decisions recorded as D-01..D-06.
