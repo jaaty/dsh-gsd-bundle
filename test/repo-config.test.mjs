@@ -88,3 +88,46 @@ test("repo topics include all seven configured topics (REL-04, D-02)", () => {
     );
   }
 });
+
+// Shell out to "gh api repos/jaaty/dsh-gsd-bundle/private-vulnerability-reporting
+// --jq .enabled" and return the trimmed output. This setting is NOT exposed by
+// "gh repo view --json" (there is no private-vulnerability-reporting field
+// there), so it MUST be queried via the REST API (D-03). On a non-zero exit,
+// throw an Error carrying the real gh stderr (D-04 fail-loudly).
+function ghVulnReportingEnabled() {
+  let out;
+  try {
+    out = execFileSync(
+      "gh",
+      [
+        "api",
+        "repos/jaaty/dsh-gsd-bundle/private-vulnerability-reporting",
+        "--jq",
+        ".enabled",
+      ],
+      { cwd: ROOT, encoding: "utf8" },
+    );
+  } catch (err) {
+    throw new Error(
+      `gh api private-vulnerability-reporting failed: ${err.stderr}`,
+    );
+  }
+  return out.trim();
+}
+
+test("repo is public (OQ-1 prerequisite for D-03)", () => {
+  const { isPrivate } = ghRepoView("isPrivate");
+  assert.equal(
+    isPrivate,
+    false,
+    "repo is private, but private vulnerability reporting requires a public repo (OQ-1)",
+  );
+});
+
+test("private vulnerability reporting is enabled (REL-04, D-03)", () => {
+  assert.equal(
+    ghVulnReportingEnabled(),
+    "true",
+    "private vulnerability reporting is not enabled (D-03)",
+  );
+});
