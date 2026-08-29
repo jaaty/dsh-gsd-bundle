@@ -45,9 +45,21 @@ The v2.0 milestone proves the whole GSD plugin bundle is **swappable and customi
 
 ## Install
 
-Add the bundle to a dsh profile (it layers after `dsh-base`):
+See [DISTRIBUTION.md](DISTRIBUTION.md) for the research-backed distribution decision.
+
+Add the bundle to a dsh profile (it layers after `dsh-base`). The **primary** install path is the npm registry:
 
 ```sh
+dsh plugin --profile <name> add @dsh-gsd/bundle
+dsh --profile <name> web   # or tui / headless
+```
+
+### Alternative — install from source
+
+If you prefer a local/git checkout over the registry package, clone this repo and point `dsh plugin add` at the checkout path (pnpm resolves the local spec the same way it resolves the registry name):
+
+```sh
+git clone https://github.com/jaaty/dsh-gsd-bundle.git
 dsh plugin --profile <name> add <path-to-this-bundle>
 dsh --profile <name> web   # or tui / headless
 ```
