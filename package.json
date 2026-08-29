@@ -59,6 +59,9 @@
     "./ship": {
       "default": "./lib/ship.js"
     },
+    "./spec": {
+      "default": "./lib/spec.js"
+    },
     "./ui": {
       "default": "./lib/ui.js"
     },

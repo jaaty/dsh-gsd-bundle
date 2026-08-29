@@ -5,20 +5,20 @@ milestone_name: upstream-parity
 status: idle
 active_phase: null
 next_action: null
-next_phases: [35]
+next_phases: [36]
 progress:
   total_phases: 50
-  completed_phases: 35
+  completed_phases: 36
   total_plans: 3
-  completed_plans: 80
-  percent: 70
-current_phase: 35
-current_phase_name: pr-branch
+  completed_plans: 83
+  percent: 72
+current_phase: 36
+current_phase_name: spec-phase
 current_plan: 3
-last_updated: "2026-08-29T22:27:12.272Z"
+last_updated: "2026-08-29T23:04:53.069Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 35 shipped — PR #38"
+stopped_at: "Phase 36 shipped — PR #39"
 paused_at: null
 ---
 # GSD STATE
@@ -182,6 +182,10 @@ _No active phase._
 - Phase 35: CONTEXT.md sealed — 10 decisions
 - Phase 35: planned — 3 plan(s) across 2 wave(s).
 - Phase 35 shipped — PR #38 (https://github.com/jaaty/dsh-gsd-bundle/pull/38)
+- Phase 36: CONTEXT.md sealed — 12 decisions
+- Phase 36: planned — 3 plan(s) across 3 wave(s).
+- quick 2026-08-29-fix-tdd-audit-commit-ordering: Fix a latent bug in the ship pipeline's tdd_audit gate that blocks gsd_ship for any plan with interleaved test/feat commits.
+- Phase 36 shipped — PR #39 (https://github.com/jaaty/dsh-gsd-bundle/pull/39)
 
 ### Blockers / Concerns
 _none_

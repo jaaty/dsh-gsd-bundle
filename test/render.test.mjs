@@ -37,9 +37,9 @@ function without(...keys) {
 // A zero-loop subset: only informational/onboarding capabilities remain.
 const NO_LOOP = FULL.filter((d) => !["step", "optional", "alternate"].includes(d.role));
 
-// The pure loop-step order (by descriptor.order): discuss 10, ui 15, plan 20,
-// quick 25, execute 30, verify 40, ship 50.
-const LOOP_ORDER = ["gsdDiscuss", "gsdUi", "gsdPlan", "gsdQuick", "gsdExecute", "gsdVerify", "gsdShip"];
+// The pure loop-step order (by descriptor.order): spec 5, discuss 10, ui 15,
+// plan 20, quick 25, execute 30, verify 40, ship 50.
+const LOOP_ORDER = ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdQuick", "gsdExecute", "gsdVerify", "gsdShip"];
 
 describe("availableCapabilities", () => {
   test("collects only truthy object descriptors from the getCap thunk, in CAPABILITY_KEYS order", () => {
@@ -105,7 +105,7 @@ describe("loopSteps / informationEntries ordering (D-08)", () => {
     const subset = without("gsdVerify");
     assert.deepEqual(
       loopSteps(subset).map((d) => d.key),
-      ["gsdDiscuss", "gsdUi", "gsdPlan", "gsdQuick", "gsdExecute", "gsdShip"],
+      ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdQuick", "gsdExecute", "gsdShip"],
     );
   });
 
@@ -132,8 +132,8 @@ describe("effectiveRoutableStep (D-04/D-06/D-10)", () => {
   });
 
   test("falls back to the first present loop step for a null/unknown next_action", () => {
-    assert.equal(effectiveRoutableStep("done", FULL).key, "gsdDiscuss");
-    assert.equal(effectiveRoutableStep("done", without("gsdDiscuss")).key, "gsdUi");
+    assert.equal(effectiveRoutableStep("done", FULL).key, "gsdSpec");
+    assert.equal(effectiveRoutableStep("done", without("gsdDiscuss")).key, "gsdSpec");
   });
 
   test("returns null when no loop step remains", () => {
@@ -146,11 +146,14 @@ describe("renderAvailableSteps / NO_LOOP_NOTICE (D-08/D-06)", () => {
   test("lists loop steps ascending by order before informational entries", () => {
     const out = renderAvailableSteps(FULL);
     const lines = out.split("\n");
+    assert.ok(out.includes("spec: gsdSpec (order 5)"));
     assert.ok(out.includes("discuss: gsdDiscuss (order 10)"));
     assert.ok(out.includes("verify: gsdVerify (order 40)"));
     assert.ok(out.includes("map-codebase: gsdMapCodebase"));
     assert.ok(lines.includes("- orient: gsdOrient"));
     assert.ok(lines.includes("- jobs: gsdJobs"));
+    // spec precedes discuss (order 5 before 10).
+    assert.ok(lines.indexOf(lines.find((l) => l.startsWith("- spec:"))) < lines.indexOf(lines.find((l) => l.startsWith("- discuss:"))));
     // discuss precedes verify (order 10 before 40).
     assert.ok(lines.indexOf(lines.find((l) => l.startsWith("- discuss:"))) < lines.indexOf(lines.find((l) => l.startsWith("- verify:"))));
   });
