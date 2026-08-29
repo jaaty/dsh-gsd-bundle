@@ -9,13 +9,13 @@ next_phases: [29]
 progress:
   total_phases: 29
   completed_phases: 28
-  total_plans: 74
-  completed_plans: 74
+  total_plans: 2
+  completed_plans: 75
   percent: 97
 current_phase: 29
 current_phase_name: pre-ship-verify
 current_plan: 1
-last_updated: "2026-08-29T05:56:21.672Z"
+last_updated: "2026-08-29T05:57:49.870Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 28 shipped — PR #31"
