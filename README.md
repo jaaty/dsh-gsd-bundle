@@ -10,7 +10,16 @@ Every unit of work is a **phase** that moves through these steps in order. State
 
 ## Release status
 
-**Milestone `job-intel-multiwindow` v1.7 is complete and released as `v1.7.0`** — all 20 phases shipped (PRs #1–#23, merged to `main`). The bundle covers the full GSD phase loop plus checkpoint-resume, the multi-window ledger and async-jobs manifest, the conversational UAT loop, capability gates, the real background-job runtime, codebase-query intel mode with drift detection / targeted updater, and phase-20 multi-window topology.
+**Milestone `graceful-removal` v2.0 is complete and released as `v2.0.0`** — all 24 phases shipped (PRs #1–#27, merged to `main`). The bundle covers the full GSD phase loop plus checkpoint-resume, the multi-window ledger and async-jobs manifest, the conversational UAT loop, capability gates, the real background-job runtime, codebase-query intel mode with drift detection / targeted updater, multi-window topology, and the v2.0 graceful-removal milestone: capability-services, reactive-loop-rendering, removal-verification, and composability-hardening.
+
+### v2.0 release note — graceful-removal
+
+The v2.0 milestone proves the whole GSD plugin bundle is **swappable and customizable** — every step plugin can be retired and the loop keeps working. It delivered:
+
+- **Capability-services** — each step plugin publishes a capability service declaring the loop step it provides; the persona and slash-command layer declare coeffects on the capabilities they need.
+- **Reactive-loop-rendering** — the persona, runtime-context snapshot, and `gsd_status` re-render from the available step capabilities, so absent steps are skipped and no missing tool is ever instructed.
+- **Removal-verification** — an automated per-plugin removal test proving every single step plugin can be retired with its effects reverted and the remaining loop still functional end-to-end.
+- **Composability-hardening** — the background-job live registry is effect-scoped to its owning fiber so unload/HMR cancels running jobs, and the subagents coeffect is declared in every consuming plugin so temporal and spatial composability hold for the job runtime and subagent paths.
 
 ## Features
 
@@ -170,7 +179,7 @@ The reference used to build this is in `gsd-core-reference.md` (compiled from th
 
 ## Status
 
-**Milestone v1.7 is complete and released** (`v1.7.0`): all 20 phases shipped — live-mount, service-tools, loop-e2e, checkpoint-resume, window-ledger, loop-robustness, uat-conversation, capability-gates, job-runtime, codebase-query, phase-dir-resolution, single-source-constants, gate-dispatch, execute-checkpoint, ship-robustness, context-budget, phase-branch-isolation, job-runtime-extensions, codebase-intel-extensions, multi-window-topology. Every plugin module loads and its `apply` registers its tools with valid schemas; the `cordis.patch.yml` merges cleanly over `dsh-base` and overrides the `agent-loop` row's config. A full live mount (resolving the subpath exports and activating the plugins) is verified, and the loop has been exercised end-to-end across the shipped phases.
+**Milestone v2.0 is complete and released** (`v2.0.0`): all 24 phases shipped — live-mount, service-tools, loop-e2e, checkpoint-resume, window-ledger, loop-robustness, uat-conversation, capability-gates, job-runtime, codebase-query, phase-dir-resolution, single-source-constants, gate-dispatch, execute-checkpoint, ship-robustness, context-budget, phase-branch-isolation, job-runtime-extensions, codebase-intel-extensions, multi-window-topology, capability-services, reactive-loop-rendering, removal-verification, composability-hardening. Every plugin module loads and its `apply` registers its tools with valid schemas; the `cordis.patch.yml` merges cleanly over `dsh-base` and overrides the `agent-loop` row's config. A full live mount (resolving the subpath exports and activating the plugins) is verified, the loop has been exercised end-to-end across the shipped phases, and the v2.0 removal suite proves every step plugin can be retired with the loop still functional.
 
 ## License
 

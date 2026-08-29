@@ -1,5 +1,7 @@
 # Roadmap — graceful-removal (v2.0)
 
+> **Released as `v2.0.0`** — all 24 phases shipped (PRs #1–#27, merged to `main`). Milestone `graceful-removal` v2.0 is complete and released.
+
 24 phase(s) | requirements mapped per phase
 
 | # | Phase | Goal | Requirements |

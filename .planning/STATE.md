@@ -18,7 +18,7 @@ current_plan: 3
 last_updated: "2026-08-29T02:16:42.975Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 24 shipped — PR #27"
+stopped_at: "Milestone v2.0 released — v2.0.0 (all 24 phases shipped)"
 paused_at: null
 ---
 # GSD STATE
@@ -121,6 +121,7 @@ _No active phase._
 - Phase 24: CONTEXT.md sealed — 6 decisions
 - Phase 24: planned — 3 plan(s) across 2 wave(s).
 - Phase 24 shipped — PR #27 (https://github.com/jaaty/dsh-gsd-bundle/pull/27)
+- Milestone v2.0 released — v2.0.0 (all 24 phases shipped, PRs #1..#27, merged to main).
 
 ### Blockers / Concerns
 _none_
