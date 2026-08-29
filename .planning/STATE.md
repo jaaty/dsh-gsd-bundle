@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v2.0
 milestone_name: graceful-removal
-status: plan
+status: execute
 active_phase: 24
-next_action: plan-phase
+next_action: execute-phase
 next_phases: [24]
 progress:
   total_phases: 24
@@ -15,7 +15,7 @@ progress:
 current_phase: 24
 current_phase_name: composability-hardening
 current_plan: 2
-last_updated: "2026-08-29T01:56:08.182Z"
+last_updated: "2026-08-29T02:01:55.435Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 23 shipped — PR #26"
@@ -119,6 +119,7 @@ _No active phase._
 - Phase 23: plan 02 executed — per-plugin removal suite test/removal.test.mjs (DEGR-05): data-driven matrix over the 5 step plugins, six effects-reverted surfaces, functional-depth smoke of remaining offline-runnable step tools, execute/ship present+registered+schema-sound; 378 tests green.
 - Phase 23 shipped — PR #26 (https://github.com/jaaty/dsh-gsd-bundle/pull/26)
 - Phase 24: CONTEXT.md sealed — 6 decisions
+- Phase 24: planned — 3 plan(s) across 2 wave(s).
 
 ### Blockers / Concerns
 _none_
