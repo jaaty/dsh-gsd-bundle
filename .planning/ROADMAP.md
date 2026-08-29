@@ -39,7 +39,7 @@
 | 33 | [x] github-repo-config | Configure the GitHub repository with searchable topics and a homepage URL for discoverability and canonical linking. [REL-04] | REL-04 |
 | 34 | [x] readme-badges | Add CI-status, license, and npm-version badges to the README so the public repo signals health and provenance at a glance. [REL-05] | REL-05 |
 | 35 | [x] pr-branch | Add a clean-PR-branch path so gsd_ship creates a review branch that filters out .planning/ commits, leaving reviewers with only real code changes. | GAP-01 |
-| 36 | spec-phase | Add a spec-phase step that produces a SPEC.md with falsifiable requirements gated by an ambiguity-scoring score before discuss. | GAP-02 |
+| 36 | [x] spec-phase | Add a spec-phase step that produces a SPEC.md with falsifiable requirements gated by an ambiguity-scoring score before discuss. | GAP-02 |
 | 37 | gap-analysis | Add a post-planning gap-analysis that emits a REQ-ID/D-ID versus plan-body coverage table after PLAN.md generation. | GAP-03 |
 | 38 | code-review | Add a code-review pass that reviews a phase's changed source into REVIEW.md and a --fix companion that applies findings with per-fix atomic commits into REVIEW-FIX.md. | GAP-04 |
 | 39 | ui-review | Add a retroactive 6-pillar UI audit that reviews implemented frontend code against the UI-SPEC. | GAP-05 |
@@ -94,7 +94,7 @@
 | 33 | github-repo-config | [x] Complete | 2026-08-29 |
 | 34 | readme-badges | [x] Complete | 2026-08-29 |
 | 35 | pr-branch | [x] Complete | 2026-08-29 |
-| 36 | spec-phase | pending |  |
+| 36 | spec-phase | [x] Complete | 2026-08-29 |
 | 37 | gap-analysis | pending |  |
 | 38 | code-review | pending |  |
 | 39 | ui-review | pending |  |

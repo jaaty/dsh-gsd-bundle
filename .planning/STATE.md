@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v3.0.0
 milestone_name: upstream-parity
-status: ship
-active_phase: 36
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [36]
 progress:
   total_phases: 50
-  completed_phases: 35
+  completed_phases: 36
   total_plans: 3
   completed_plans: 83
-  percent: 70
+  percent: 72
 current_phase: 36
 current_phase_name: spec-phase
 current_plan: 3
-last_updated: "2026-08-29T23:00:22.189Z"
+last_updated: "2026-08-29T23:04:53.069Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 35 shipped — PR #38"
+stopped_at: "Phase 36 shipped — PR #39"
 paused_at: null
 ---
 # GSD STATE
@@ -185,16 +185,7 @@ _No active phase._
 - Phase 36: CONTEXT.md sealed — 12 decisions
 - Phase 36: planned — 3 plan(s) across 3 wave(s).
 - quick 2026-08-29-fix-tdd-audit-commit-ordering: Fix a latent bug in the ship pipeline's tdd_audit gate that blocks gsd_ship for any plan with interleaved test/feat commits.
-
-ROOT CAUSE: `tddAuditGate` in `lib/gates.js` (lines 130-158) expects `commitSubjects` in CHRONOLOGICAL (oldest-first) order: it breaks as soon as it sees a `feat(`/`fix(` subject, requiring a `test(` subject to appear BEFORE any `feat(`/`fix(`. But `fetchGitData` in `lib/gates.js` (the `commitSubjects` construction at what is now around the bottom of the function, `git log --format=%s ${mergeBase}..HEAD`) returns commits NEWEST-FIRST (git log default). With newest-first input, the gate inspects the sequence backwards and reports a spurious "missing test: commit before feat:/fix:" finding.
-
-THE FIX: Make `fetchGitData` return `commitSubjects` in chronological (oldest-first) order. The minimal, correct change is to reverse the array from the git log output, e.g. append `git log --reverse --format=%s ${mergeBase}..HEAD` OR add `.reverse()` after building the list. Prefer the explicit `--reverse` flag on the git log invocation (single source, no extra pass). Confirm the only consumer of `commitSubjects` is `tddAuditGate` (grep `commitSubjects` and `GATE_DISPATCH` — the tdd_audit `run: (d) => tddAuditGate(d.plans || [], d.commitSubjects)`), so reversing cannot break any other consumer; if another consumer exists that depends on newest-first, instead reverse ONLY inside `tddAuditGate` before filtering. State which choice you made and why.
-
-TEST REQUIREMENT (TDD): Add/extend a regression unit test in `test/gates.test.mjs` that pins the ordering contract for the tdd_audit gate — construct a `tddAuditGate` call (or the appropriate exported test) with a scope whose commits are chronologically [`test(36-02): ...`, `feat(36-02): ...`, `test(36-02): ...`, `feat(36-02): ...`] and assert it returns status 'pass' (oldest-first order passes), and/or a mirrored case with a genuinely-missing test-first that still fails. Also add a test asserting `fetchGitData` returns oldest-first commit subjects to lock the source contract. Follow the existing test conventions in test/gates.test.mjs (node:test, assert).
-
-VERIFICATION: Run `npm test` — the full suite must pass (currently 473 tests; it may grow by your new tests). Also reproduce the original failing scenario by running the phase-36 tdd_audit gate offline against the real commits: `node --input-type=module -e` importing tddAuditGate + fetchGitData and confirming the phase-36 tdd plans pass with the fixed ordering. Do NOT modify lib/spec.js, lib/discuss.js, or any phase-36 implementation logic — only the gate/ship ordering and its tests.
-
-Commit atomically (test commit first, then fix commit) on the current branch, following the repo's conventional-commit conventions. Write a one-line entry under .planning/quick/<YYYYMMDD>-<slug>/ noting the change. If the working tree is not clean or you are not on a feature branch, orient against .planning/STATE.md first and report it — but do not create a new branch or otherwise disturb phase 36's shipped state.
+- Phase 36 shipped — PR #39 (https://github.com/jaaty/dsh-gsd-bundle/pull/39)
 
 ### Blockers / Concerns
 _none_
