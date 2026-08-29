@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v2.2.0
 milestone_name: public-launch
-status: verify
+status: ship
 active_phase: 33
-next_action: verify-phase
+next_action: ship-phase
 next_phases: [33]
 progress:
   total_phases: 34
@@ -15,7 +15,7 @@ progress:
 current_phase: 33
 current_phase_name: github-repo-config
 current_plan: 1
-last_updated: "2026-08-29T19:25:00.000Z"
+last_updated: "2026-08-29T19:29:17.705Z"
 state_head: null
 last_activity: 2026-08-29
 stopped_at: "Phase 32 shipped — PR #35"
@@ -25,7 +25,7 @@ paused_at: null
 
 ## Current Position
 
-_Phase 33 (github-repo-config) executed; ready for verify._
+_No active phase._
 
 ## Accumulated Context
 
