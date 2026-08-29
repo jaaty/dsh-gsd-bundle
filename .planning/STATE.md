@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v2.2.0
 milestone_name: public-launch
-status: ship
-active_phase: 30
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [30]
 progress:
   total_phases: 34
-  completed_phases: 28
+  completed_phases: 29
   total_plans: 3
   completed_plans: 77
-  percent: 82
+  percent: 85
 current_phase: 30
 current_phase_name: publishable-package
 current_plan: 3
-last_updated: "2026-08-29T06:52:57.732Z"
+last_updated: "2026-08-29T06:53:20.174Z"
 state_head: null
 last_activity: 2026-08-29
-stopped_at: "Phase 28 shipped — PR #31"
+stopped_at: "Phase 30 shipped — PR #33"
 paused_at: null
 ---
 # GSD STATE
@@ -153,6 +153,7 @@ _No active phase._
 - Phase 30: plan 01 executed — publishable-package metadata: version bumped to 2.2.0 (manifest + lockfile in sync), six metadata fields added (repository/homepage/bugs/author/engines/keywords), files whitelist expanded to ship README-linked docs (DISTRIBUTION/CONTRIBUTING/CODE_OF_CONDUCT/CHANGELOG). 3 commits, SUMMARY.md written.
 - Phase 30: planned — 3 plan(s) across 1 wave(s).
 - Phase 30: plan 03 executed — README gap fix: reworded the v2.1 release-note bullet to drop the broken `gsd-core-reference.md` filename; npm test green 406/406 closing the regression-seal gap. 1 commit, SUMMARY.md written.
+- Phase 30 shipped — PR #33 (https://github.com/jaaty/dsh-gsd-bundle/pull/33)
 
 ### Blockers / Concerns
 _none_

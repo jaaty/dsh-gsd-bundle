@@ -33,7 +33,7 @@
 | 27 | [x] ci-and-security | Add a GitHub Actions test workflow and run a full-history secret scan to confirm no credentials or tokens are exposed. | PUB-04 |
 | 28 | [x] publish-research | Research how other dsh plugins are distributed (npm publish vs clone-and-install-from-source) and document a research-backed distribution decision. | PUB-05 |
 | 29 | pre-ship-verify | Add a deterministic pre-ship local verification gate to gsd_ship that runs a clean npm ci + npm test in a temp copy of the repo before pushing, fails the ship on failure, and is skippable via a flag. | SHIP-01 |
-| 30 | publishable-package | Make package.json publish-ready for v2.2.0: bump the version to match the milestone, add the missing metadata fields (repository, homepage, bugs, keywords, engines, author), and expand the files field to ship every doc the README links to. [REL-01] | REL-01 |
+| 30 | [x] publishable-package | Make package.json publish-ready for v2.2.0: bump the version to match the milestone, add the missing metadata fields (repository, homepage, bugs, keywords, engines, author), and expand the files field to ship every doc the README links to. [REL-01] | REL-01 |
 | 31 | npm-publish | Publish @dsh-gsd/bundle to the npm registry as v2.2.0, satisfying the prepublishOnly test gate, and verify the published package is installable. [REL-02] | REL-02 |
 | 32 | security-policy-templates | Add a SECURITY.md vulnerability-reporting policy and GitHub issue + pull-request templates so public contributors know how to report issues and open PRs. [REL-03] | REL-03 |
 | 33 | github-repo-config | Configure the GitHub repository with searchable topics and a homepage URL for discoverability and canonical linking. [REL-04] | REL-04 |
@@ -72,7 +72,7 @@
 | 27 | ci-and-security | [x] Complete | 2026-08-29 |
 | 28 | publish-research | [x] Complete | 2026-08-29 |
 | 29 | pre-ship-verify | pending |  |
-| 30 | publishable-package | pending |  |
+| 30 | publishable-package | [x] Complete | 2026-08-29 |
 | 31 | npm-publish | pending |  |
 | 32 | security-policy-templates | pending |  |
 | 33 | github-repo-config | pending |  |
