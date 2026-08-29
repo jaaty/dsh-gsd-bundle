@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Milestone `public-release-readiness` (v2.1.0)** — the current in-progress milestone.
   - **license-and-attribution** (shipped): added an MIT `LICENSE`, verified opengsd-core attribution and license compliance in `NOTICE`, and fixed the broken `gsd-core-reference.md` reference in the README.
   - **repo-hygiene** (in progress): added `CHANGELOG.md`, `CONTRIBUTING.md`, and `CODE_OF_CONDUCT.md`, and applied the `.planning/` keep-vs-gitignore-vs-curate decision.
-  - **ci-and-security** (planned): a GitHub Actions test workflow and a full-history secret scan.
+  - **ci-and-security** (shipped): added a GitHub Actions test workflow (`.github/workflows/ci.yml`) running the suite on pull requests and push to `main`, committed a `package-lock.json` for reproducible `npm ci` installs, ran a full-history gitleaks secret scan confirming no credentials or tokens are exposed, and added a lightweight gitleaks CI guard that fails a PR if a new secret is introduced.
   - **publish-research** (planned): research-backed distribution decision for the bundle.
 
 ## [2.0.0] - 2026-08-28
