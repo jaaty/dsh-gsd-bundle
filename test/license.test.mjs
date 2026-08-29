@@ -44,3 +44,25 @@ test("package.json license field is MIT and matches the LICENSE file (D-05)", as
   const license = await readRepoFile("LICENSE");
   assert.ok(license.includes("MIT License"), "LICENSE does not declare the MIT license");
 });
+
+test("NOTICE exists and credits opengsd-core with its upstream copyright (PUB-02, D-02/D-03)", async () => {
+  const notice = await readRepoFile("NOTICE");
+  assert.ok(notice.includes("opengsd-core"), "NOTICE does not name opengsd-core");
+  assert.ok(
+    notice.includes("Copyright (c) 2026 Open GSD"),
+    "NOTICE does not carry the upstream copyright line (D-02/D-03)",
+  );
+  assert.ok(
+    notice.includes("https://github.com/open-gsd/gsd-core"),
+    "NOTICE does not link the opengsd-core repo",
+  );
+  assert.ok(notice.includes("MIT License"), "NOTICE does not state the MIT license");
+});
+
+test("NOTICE ships in the published npm tarball (files array includes NOTICE)", async () => {
+  const pkg = JSON.parse(await readRepoFile("package.json"));
+  assert.ok(
+    Array.isArray(pkg.files) && pkg.files.includes("NOTICE"),
+    "package.json files array does not include NOTICE",
+  );
+});
