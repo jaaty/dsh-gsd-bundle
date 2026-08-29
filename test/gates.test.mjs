@@ -378,8 +378,9 @@ describe("fetchGitData", () => {
       case "symbolic-ref:refs/remotes/origin/HEAD": return "origin/main";
       case "merge-base:HEAD": return "abc123";
       case "diff:--name-only": return "src/a.js\nb/.env";
-      // git log returns NEWEST-first; fetchGitData must reverse to oldest-first.
-      case "log:--reverse": return "feat(08-01): b\ntest(08-01): a";
+      // The fake is keyed on `log:--reverse`; git log --reverse returns
+      // OLDEST-first, which is the ordering fetchGitData must hand the gate.
+      case "log:--reverse": return "test(08-01): a\nfeat(08-01): b";
       default: return "";
     }
   };
@@ -405,14 +406,14 @@ describe("fetchGitData", () => {
   });
 
   test("commit subjects are returned in oldest-first order", async () => {
-    // ORDERING CONTRACT: git log --format=%s returns NEWEST-first, but the gate
-    // (tddAuditGate) requires oldest-first. fetchGitData must reverse so the
-    // shipped commitSubjects honour the chronologically-ordered contract.
+    // ORDERING CONTRACT: the tdd_audit gate requires commitSubjects in oldest-first
+    // order. fetchGitData requests git log --reverse so git itself emits oldest-first;
+    // this locks that the adapter preserves that chronologically-ordered contract.
     const git = (cwd, args) => {
       if (args[0] === "symbolic-ref") return "origin/main";
       if (args[0] === "merge-base") return "abc123";
       if (args[0] === "diff") return "";
-      if (args[0] === "log") return "feat(08-01): z\ntest(08-01): y";
+      if (args[0] === "log") return "test(08-01): y\nfeat(08-01): z";
       return "";
     };
     const res = await fetchGitData(process.cwd(), git, undefined);
@@ -452,7 +453,7 @@ describe("fetchGitData", () => {
         case "symbolic-ref:refs/remotes/origin/HEAD": return Promise.resolve("origin/main");
         case "merge-base:HEAD": return Promise.resolve("abc123");
         case "diff:--name-only": return Promise.resolve("src/a.js\nb/.env");
-        case "log:--reverse": return Promise.resolve("feat(08-01): b\ntest(08-01): a");
+        case "log:--reverse": return Promise.resolve("test(08-01): a\nfeat(08-01): b");
         default: return Promise.resolve("");
       }
     };
