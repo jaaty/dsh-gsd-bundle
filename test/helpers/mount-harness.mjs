@@ -32,6 +32,7 @@ export const PATCH_ROWS = [
   { id: "gsd-code-review", sub: "code-review" },
   { id: "gsd-ui-review", sub: "ui-review" },
   { id: "gsd-verify", sub: "verify" },
+  { id: "gsd-validate-phase", sub: "validate" },
   { id: "gsd-ship", sub: "ship" },
   { id: "gsd-ui", sub: "ui" },
   { id: "gsd-quick", sub: "quick" },

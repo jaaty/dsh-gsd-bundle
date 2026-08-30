@@ -16,7 +16,7 @@ import { mountSubset, makeSubagents } from "./helpers/mount-harness.mjs";
 
 // The seven subagent-driven plugins (D-04). Each must declare 'subagents' as a
 // hard required coeffect in its inject array.
-const SUBAGENT_DRIVEN_SUBS = ["spec", "plan", "execute", "verify", "quick", "ui", "map-codebase"];
+const SUBAGENT_DRIVEN_SUBS = ["spec", "plan", "execute", "verify", "quick", "ui", "map-codebase", "validate"];
 
 // The non-subagent core-tools surfaces that must stay active when subagents is
 // absent (D-05, phase-22 D-03 graceful degradation).

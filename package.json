@@ -74,6 +74,9 @@
     "./ui-review": {
       "default": "./lib/ui-review.js"
     },
+    "./validate": {
+      "default": "./lib/validate-phase.js"
+    },
     "./quick": {
       "default": "./lib/quick.js"
     },

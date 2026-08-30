@@ -82,6 +82,13 @@
     - id: gsd-verify
       name: '@dsh-gsd/bundle/verify'
 
+    # The post-verify, pre-ship validate-phase step: a deterministic requirement→
+    # test coverage scan (COVERED/PARTIAL/MISSING/Manual-Only) writes VALIDATION.md
+    # for a COMPLETED phase (Plan 01). The gap-plan test-writer subagent lands in
+    # Plan 02. Soft gate; never blocks gsd_ship.
+    - id: gsd-validate-phase
+      name: '@dsh-gsd/bundle/validate'
+
     - id: gsd-ship
       name: '@dsh-gsd/bundle/ship'
 

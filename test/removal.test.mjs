@@ -1,16 +1,16 @@
-// Per-plugin removal suite (DEGR-05 / phase 23).
+// Per-plugin removal suite (DEGR-05 / phases 23 + 40).
 //
-// For each of the 5 role:"step" loop plugins (gsdDiscuss, gsdPlan, gsdExecute,
-// gsdVerify, gsdShip), mount the full plugin set minus that one row (D-03:
-// never-apply / subset mount) and assert (a) all six effects-reverted surfaces
-// are absent (D-04), (b) the remaining loop is still functional end-to-end —
-// render/routing/gsd_status coherence plus offline-runnable smoke calls of the
-// remaining step tools producing their artefacts (D-05) — and (c) gsd_execute /
-// gsd_ship are present + registered + schema-sound only (their git/gh/subagent
-// paths are not driven offline). The matrix is data-driven from CAPABILITY_KEYS
-// + PATCH_ROWS (D-02) and routing semantics are reused from lib/_render.js
-// effectiveRoutableStep (D-06). Offline only (FakeFs + fake-ctx, no live DSH
-// boot, no LLM/git/gh) per D-08.
+// For each of the 6 role:"step" loop plugins (gsdDiscuss, gsdPlan, gsdExecute,
+// gsdVerify, gsdValidatePhase, gsdShip), mount the full plugin set minus that one
+// row (D-03: never-apply / subset mount) and assert (a) all six effects-reverted
+// surfaces are absent (D-04), (b) the remaining loop is still functional
+// end-to-end — render/routing/gsd_status coherence plus offline-runnable smoke
+// calls of the remaining step tools producing their artefacts (D-05) — and (c)
+// gsd_execute / gsd_ship are present + registered + schema-sound only (their
+// git/gh/subagent paths are not driven offline). The matrix is data-driven from
+// CAPABILITY_KEYS + PATCH_ROWS (D-02) and routing semantics are reused from
+// lib/_render.js effectiveRoutableStep (D-06). Offline only (FakeFs + fake-ctx,
+// no live DSH boot, no LLM/git/gh) per D-08.
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
@@ -119,6 +119,10 @@ async function smokeRemainingSteps(ctx, retiredSub) {
 }
 
 describe("removal: per-plugin retirement reverts effects and keeps the loop functional (DEGR-05)", () => {
+  // DEGR-05 / phases 23 + 40: the validate-phase step must participate in the
+  // retirement matrix like every other role:"step" loop plugin.
+  assert.ok(STEP_CAPS.includes("gsdValidatePhase"), "validate-phase is missing from the role:step retirement matrix (DEGR-05)");
+
   for (const { capKey, sub, tool, command, step } of retirementMatrix()) {
     test(`retiring ${capKey} reverts all six effects and keeps the loop functional`, async () => {
       const allSubs = PATCH_ROWS.map((r) => r.sub);
