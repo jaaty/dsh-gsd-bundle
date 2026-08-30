@@ -9,8 +9,8 @@ import assert from "node:assert/strict";
 import { ROLES, CAPABILITY_KEYS, buildCapability } from "../lib/_capabilities.js";
 
 describe("capability key surface (DEGR-01)", () => {
-  test("exposes exactly the 11 known keys", () => {
-    assert.equal(CAPABILITY_KEYS.length, 11);
+  test("exposes exactly the 12 known keys", () => {
+    assert.equal(CAPABILITY_KEYS.length, 12);
     for (const key of [
       "gsdOrient",
       "gsdJobs",
@@ -18,6 +18,7 @@ describe("capability key surface (DEGR-01)", () => {
       "gsdDiscuss",
       "gsdUi",
       "gsdPlan",
+      "gsdGapAnalysis",
       "gsdExecute",
       "gsdVerify",
       "gsdShip",
@@ -101,6 +102,26 @@ describe("loop ordering by order value (D-11)", () => {
     const ex = buildCapability("gsdExecute").order;
     const quick = buildCapability("gsdQuick").order;
     assert.ok(ui < quick && quick < ex, "quick(25) sorts between ui(15) and execute(30)");
+  });
+
+  test("gsdGapAnalysis is a step at order 22, rerouting plan->gap-analysis->execute (D-02)", () => {
+    const gap = buildCapability("gsdGapAnalysis");
+    assert.equal(gap.role, "step");
+    assert.equal(gap.order, 22);
+    assert.equal(gap.step, "gap-analysis");
+    assert.deepEqual(gap.tools, ["gsd_gap_analysis"]);
+    assert.deepEqual(gap.commands, ["gsd-gap-analysis"]);
+    assert.deepEqual(gap.next, ["gsdExecute"]);
+    assert.deepEqual(gap.produces, ["COVERAGE.md"]);
+    assert.deepEqual(gap.consumes, ["PLAN.md", "CONTEXT.md"]);
+    const plan = buildCapability("gsdPlan");
+    const quick = buildCapability("gsdQuick");
+    const execute = buildCapability("gsdExecute");
+    assert.ok(gap.order > plan.order, "gap-analysis(22) sorts after plan(20)");
+    assert.ok(gap.order < quick.order, "gap-analysis(22) sorts before quick(25)");
+    assert.ok(gap.order < execute.order, "gap-analysis(22) sorts before execute(30)");
+    assert.deepEqual(plan.next, ["gsdGapAnalysis"], "gsdPlan.next rerouted to gsdGapAnalysis");
+    assert.deepEqual(gap.next, ["gsdExecute"], "gsdGapAnalysis.next points at gsdExecute");
   });
 });
 
