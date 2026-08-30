@@ -9,8 +9,8 @@ import assert from "node:assert/strict";
 import { ROLES, CAPABILITY_KEYS, buildCapability } from "../lib/_capabilities.js";
 
 describe("capability key surface (DEGR-01)", () => {
-  test("exposes exactly the 13 known keys", () => {
-    assert.equal(CAPABILITY_KEYS.length, 13);
+  test("exposes exactly the 14 known keys", () => {
+    assert.equal(CAPABILITY_KEYS.length, 14);
     for (const key of [
       "gsdOrient",
       "gsdJobs",
@@ -21,6 +21,7 @@ describe("capability key surface (DEGR-01)", () => {
       "gsdGapAnalysis",
       "gsdExecute",
       "gsdCodeReview",
+      "gsdUiReview",
       "gsdVerify",
       "gsdShip",
       "gsdQuick",
@@ -66,6 +67,22 @@ describe("capability mapping (D-04)", () => {
 
   test("gsdMapCodebase exposes two tools", () => {
     assert.deepEqual(buildCapability("gsdMapCodebase").tools, ["gsd_map_codebase", "gsd_intel_updater"]);
+  });
+
+  test("gsdUiReview is a step at order 36, between code-review (35) and verify (40)", () => {
+    const ui = buildCapability("gsdUiReview");
+    assert.equal(ui.role, "step");
+    assert.equal(ui.order, 36);
+    assert.equal(ui.step, "ui-review");
+    assert.deepEqual(ui.tools, ["gsd_ui_review"]);
+    assert.deepEqual(ui.commands, ["gsd-ui-review"]);
+    assert.deepEqual(ui.next, ["gsdVerify"]);
+    assert.deepEqual(ui.produces, ["UI-REVIEW.md"]);
+    assert.deepEqual(ui.consumes, ["SUMMARY.md"]);
+    const review = buildCapability("gsdCodeReview");
+    const verify = buildCapability("gsdVerify");
+    assert.ok(ui.order > review.order, "ui-review(36) sorts after code-review(35)");
+    assert.ok(ui.order < verify.order, "ui-review(36) sorts before verify(40)");
   });
 
   test("role values match the D-04 mapping", () => {
