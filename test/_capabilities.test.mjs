@@ -9,8 +9,8 @@ import assert from "node:assert/strict";
 import { ROLES, CAPABILITY_KEYS, buildCapability } from "../lib/_capabilities.js";
 
 describe("capability key surface (DEGR-01)", () => {
-  test("exposes exactly the 14 known keys", () => {
-    assert.equal(CAPABILITY_KEYS.length, 14);
+  test("exposes exactly the 15 known keys", () => {
+    assert.equal(CAPABILITY_KEYS.length, 15);
     for (const key of [
       "gsdOrient",
       "gsdJobs",
@@ -23,6 +23,7 @@ describe("capability key surface (DEGR-01)", () => {
       "gsdCodeReview",
       "gsdUiReview",
       "gsdVerify",
+      "gsdValidatePhase",
       "gsdShip",
       "gsdQuick",
       "gsdMapCodebase",
@@ -83,6 +84,22 @@ describe("capability mapping (D-04)", () => {
     const verify = buildCapability("gsdVerify");
     assert.ok(ui.order > review.order, "ui-review(36) sorts after code-review(35)");
     assert.ok(ui.order < verify.order, "ui-review(36) sorts before verify(40)");
+  });
+
+  test("gsdValidatePhase is a step at order 45, between verify (40) and ship (50)", () => {
+    const vp = buildCapability("gsdValidatePhase");
+    assert.equal(vp.role, "step");
+    assert.equal(vp.step, "validate");
+    assert.equal(vp.order, 45);
+    assert.deepEqual(vp.tools, ["gsd_validate_phase"]);
+    assert.deepEqual(vp.commands, ["gsd-validate-phase"]);
+    assert.deepEqual(vp.next, ["gsdShip"]);
+    assert.deepEqual(vp.produces, ["VALIDATION.md"]);
+    assert.deepEqual(vp.consumes, ["SUMMARY.md", "VERIFICATION.md"]);
+    const verify = buildCapability("gsdVerify");
+    const ship = buildCapability("gsdShip");
+    assert.ok(vp.order > verify.order, "validate-phase(45) sorts after verify(40)");
+    assert.ok(vp.order < ship.order, "validate-phase(45) sorts before ship(50)");
   });
 
   test("role values match the D-04 mapping", () => {
