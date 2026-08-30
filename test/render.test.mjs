@@ -38,9 +38,9 @@ function without(...keys) {
 const NO_LOOP = FULL.filter((d) => !["step", "optional", "alternate"].includes(d.role));
 
 // The pure loop-step order (by descriptor.order): spec 5, discuss 10, ui 15,
-// plan 20, gap-analysis 22, quick 25, execute 30, code-review 35, verify 40,
-// ship 50.
-const LOOP_ORDER = ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdGapAnalysis", "gsdQuick", "gsdExecute", "gsdCodeReview", "gsdVerify", "gsdShip"];
+// plan 20, gap-analysis 22, quick 25, execute 30, code-review 35, ui-review 36,
+// verify 40, ship 50.
+const LOOP_ORDER = ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdGapAnalysis", "gsdQuick", "gsdExecute", "gsdCodeReview", "gsdUiReview", "gsdVerify", "gsdShip"];
 
 describe("availableCapabilities", () => {
   test("collects only truthy object descriptors from the getCap thunk, in CAPABILITY_KEYS order", () => {
@@ -107,7 +107,7 @@ describe("loopSteps / informationEntries ordering (D-08)", () => {
     const subset = without("gsdVerify");
     assert.deepEqual(
       loopSteps(subset).map((d) => d.key),
-      ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdGapAnalysis", "gsdQuick", "gsdExecute", "gsdCodeReview", "gsdShip"],
+      ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdGapAnalysis", "gsdQuick", "gsdExecute", "gsdCodeReview", "gsdUiReview", "gsdShip"],
     );
   });
 

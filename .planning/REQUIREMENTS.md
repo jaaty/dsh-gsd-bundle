@@ -104,7 +104,7 @@
 - [x] GAP-02: A spec-phase step precedes discuss and produces a SPEC.md with falsifiable requirements gated by an ambiguity-scoring score (≤0.20 across weighted dimensions).
 - [x] GAP-03: After PLAN.md files are generated, a post-planning gap-analysis emits a coverage table cross-referencing every REQ-ID and D-ID from REQUIREMENTS.md and CONTEXT.md against plan bodies.
 - [x] GAP-04: A code-review pass reviews a phase's changed source files and produces REVIEW.md; a --fix companion applies findings with per-fix atomic commits and produces REVIEW-FIX.md.
-- [ ] GAP-05: A retroactive 6-pillar UI audit reviews implemented frontend code against the UI-SPEC and produces a UI-audit report.
+- [x] GAP-05: A retroactive 6-pillar UI audit reviews implemented frontend code against the UI-SPEC and produces a UI-audit report.
 - [ ] GAP-06: A retro validate-phase audit maps executed work back to tests and manual evidence, identifies validation gaps, and produces tests to close those gaps for a completed phase.
 - [ ] GAP-07: A safe undo path can roll back a phase's or plan's commits using the phase manifest, with dependency checks and a confirmation gate before execution.
 - [ ] GAP-08: A health diagnostic inspects .planning/ integrity (phase/plan numbering, orphan SUMMARYs, config validation) and offers non-destructive repair.

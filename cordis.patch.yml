@@ -72,6 +72,13 @@
     - id: gsd-code-review
       name: '@dsh-gsd/bundle/code-review'
 
+    # The post-execute UI audit step (between code-review and verify): a
+    # fresh-context gsd-ui-auditor subagent scores 6 pillars 1-4 each (overall
+    # /24) against the UI-SPEC (or abstract 6-pillar standards) and writes
+    # UI-REVIEW.md. Soft gate; never blocks gsd_verify.
+    - id: gsd-ui-review
+      name: '@dsh-gsd/bundle/ui-review'
+
     - id: gsd-verify
       name: '@dsh-gsd/bundle/verify'
 
