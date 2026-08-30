@@ -15,7 +15,7 @@ progress:
 current_phase: 41
 current_phase_name: undo
 current_plan: 1
-last_updated: "2026-08-30T05:09:35.974Z"
+last_updated: "2026-08-30T05:16:12.353Z"
 state_head: null
 last_activity: 2026-08-30
 stopped_at: "Phase 36 shipped — PR #39"
@@ -196,6 +196,33 @@ _No active phase._
 - Phase 40: planned — 2 plan(s) across 2 wave(s).
 - Phase 41: CONTEXT.md sealed — 12 decisions
 - Phase 41: planned — 1 plan(s) across 1 wave(s); checker issues remain after 3 iterations (manual review).
+- quick 2026-08-30-pr-body-key-decisions-phase-scoped: Fix a bug in how gsd_ship assembles the "Key Decisions" section of the PR description, so it lists only the decisions made within the shipped phase's PR instead of the project-wide accumulated decision ledger.
+
+ROOT CAUSE: In lib/ship.js, the PR body's "### Key Decisions" section renders `state.body.decisions`, which is the project-wide ledger that every `addDecision` call appends to forever (each phase seals CONTEXT and each ship appends "Phase N shipped — PR #X"). So the section grows across every PR back to the project's start.
+
+DESIRED BEHAVIOR: The "Key Decisions" section must list only the decisions made within the phase being shipped — i.e. the phase's CONTEXT.md decisions (`- **D-NN:** <text>` entries from the `<decisions>` block). If the phase's CONTEXT is unavailable or has no decisions, render `(none)` — do NOT fall back to the global `state.body.decisions` ledger (that is the bug).
+
+IMPLEMENTATION (follow the repo's existing conventions exactly):
+
+1. lib/ship.js:
+   - The line `const state = await s.readState(cwd);` (around line 201) is used ONLY by the Key-Decisions render. Once you fix the render, REMOVE this unused `state` read.
+   - Read the phase CONTEXT artifact: `const ctxText = await s.readArtifact(cwd, args.phase, "CONTEXT").catch(() => "");`
+   - Build the decisions list with a new shared pure helper: `const decisions = parseDecisionEntries(ctxText);`
+   - Replace the `### Key Decisions` render (currently `...(state.body.decisions.length ? state.body.decisions.map((d) => \`- ${d}\`) : ["(none)"])`) with `...(decisions.length ? decisions.map((d) => \`- **${d.id}:** ${d.text}\`) : ["(none)"])`.
+   - Import `parseDecisionEntries` from `./_shared.js`.
+
+2. lib/_shared.js — add a new exported pure, I/O-free helper:
+   `export function parseDecisionEntries(md)` returning an array of `{ id, text }` objects parsed from CONTEXT.md decision lines of the EXACT format written by lib/discuss.js line 138: `- **D-NN:** <text>`. Use a global+multiline regex anchored per line, e.g. `/^-\s+\*\*(D-\d+):\*\*\s*(.*)$/gm`, and `.trim()` each captured text. Deduplicate by id and sort ascending by the numeric part of the id (mirror how gap-analysis's parseDecisionIds orders: `Number(id.slice(2))`). Plain bullets without a D-ID must NOT match (e.g. `- some note`, `- **Claude's Discretion:** ...` must not be matched unless they are exactly `- **D-NN:** ...`). Respect whole-ID safety: a `D-01` token must never be produced by matching inside `D-010` — the literal `:\*\*` terminator after the digits enforces this.
+
+3. lib/gap-analysis.js — REIMPLEMENT the existing exported `parseDecisionIds(md)` to DELEGATE to the new shared helper (single source of truth for CONTEXT decision parsing), preserving its EXACT current behavior (dedup + ascending sort by numeric id), because test/gap-analysis.test.mjs pins that behavior (tests at lines 86-116: verbatim discuss.js format deduped ascending with no plain-bullet false positives; D-01 vs D-010 whole-ID safety; empty → []). Import `parseDecisionEntries` from `./_shared.js`. Keep `parseDecisionIds` exported with the same signature.
+
+4. Tests (node:test, following the existing style in test/_shared.test.mjs): add a `describe`/`test` block exercising `parseDecisionEntries` — the verbatim discuss.js `- **D-NN:** text` format returns the correct `{id, text}` pairs (e.g. `- **D-01:** first decision` → `[{ id: "D-01", text: "first decision" }]`), plain-bullet non-decision lines are skipped, D-01 does not match inside D-010 (whole-ID safety), dedup works, and empty/no-decision input returns `[]`.
+
+CONSTRAINTS:
+- No new runtime dependencies; use only node builtins.
+- Keep all existing tests green: run `npm test` and confirm the FULL suite passes (baseline is ~450+ tests including test/gap-analysis.test.mjs and test/ship*.test.mjs). The existing ship test suites do not assert the Key-Decisions content, so this change must not break them.
+- Preserve the security discipline: no shell interpolation anywhere; the change is pure JS parsing + a readArtifact call.
+- Do NOT touch any other code. Do NOT remove the `s.readArtifact` CONTEXT read from other tools.
 
 ### Blockers / Concerns
 _none_
