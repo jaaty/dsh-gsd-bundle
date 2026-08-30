@@ -55,6 +55,12 @@
     - id: gsd-plan
       name: '@dsh-gsd/bundle/plan'
 
+    # The post-planning coverage step (between plan and execute): emits a
+    # REQ-ID/D-ID vs plan coverage table (COVERAGE.md) via a deterministic
+    # literal-ID scan, no sub-agent. Soft gate; never blocks gsd_execute.
+    - id: gsd-gap-analysis
+      name: '@dsh-gsd/bundle/gap-analysis'
+
     - id: gsd-execute
       name: '@dsh-gsd/bundle/execute'
 

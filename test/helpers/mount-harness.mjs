@@ -17,8 +17,8 @@ import { FakeFs } from "./fake-fs.mjs";
 
 export const CWD = "/project";
 
-// The 13 plugin rows in cordis.patch.yml insert order (D-03), verbatim from
-// cordis.patch.yml:34-84. Each {id, sub} maps the patch row id to the
+// The 14 plugin rows in cordis.patch.yml insert order (D-03), verbatim from
+// cordis.patch.yml. Each {id, sub} maps the patch row id to the
 // @dsh-gsd/bundle/<sub> subpath export.
 export const PATCH_ROWS = [
   { id: "gsd-persona", sub: "persona" },
@@ -27,6 +27,7 @@ export const PATCH_ROWS = [
   { id: "gsd-discuss", sub: "discuss" },
   { id: "gsd-spec", sub: "spec" },
   { id: "gsd-plan", sub: "plan" },
+  { id: "gsd-gap-analysis", sub: "gap-analysis" },
   { id: "gsd-execute", sub: "execute" },
   { id: "gsd-verify", sub: "verify" },
   { id: "gsd-ship", sub: "ship" },
@@ -62,7 +63,7 @@ export function makeExec(cwd = CWD) {
 // provider reads (R-1: a separately-constructed GsdState renders "no project").
 let gsdStateSvc;
 
-// Build a single shared fake ctx that satisfies all 13 plugins' inject arrays
+// Build a single shared fake ctx that satisfies all 14 plugins' inject arrays
 // and captures every registration surface. CRITICAL (R-3): ctx.effect MUST
 // invoke its callback synchronously or gsd-commands captures zero commands.
 // `subagents` may be a service object OR a factory `(fs) => service`; when

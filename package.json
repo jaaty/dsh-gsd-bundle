@@ -62,6 +62,9 @@
     "./spec": {
       "default": "./lib/spec.js"
     },
+    "./gap-analysis": {
+      "default": "./lib/gap-analysis.js"
+    },
     "./ui": {
       "default": "./lib/ui.js"
     },
