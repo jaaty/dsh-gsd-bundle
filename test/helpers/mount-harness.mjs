@@ -17,7 +17,7 @@ import { FakeFs } from "./fake-fs.mjs";
 
 export const CWD = "/project";
 
-// The 15 plugin rows in cordis.patch.yml insert order (D-03), verbatim from
+// The 18 plugin rows in cordis.patch.yml insert order (D-03), verbatim from
 // cordis.patch.yml. Each {id, sub} maps the patch row id to the
 // @dsh-gsd/bundle/<sub> subpath export.
 export const PATCH_ROWS = [
@@ -33,6 +33,7 @@ export const PATCH_ROWS = [
   { id: "gsd-ui-review", sub: "ui-review" },
   { id: "gsd-verify", sub: "verify" },
   { id: "gsd-validate-phase", sub: "validate" },
+  { id: "gsd-undo", sub: "undo" },
   { id: "gsd-ship", sub: "ship" },
   { id: "gsd-ui", sub: "ui" },
   { id: "gsd-quick", sub: "quick" },

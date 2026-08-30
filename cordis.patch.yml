@@ -89,6 +89,12 @@
     - id: gsd-validate-phase
       name: '@dsh-gsd/bundle/validate'
 
+    # The out-of-band undo tool (/gsd-undo): reverts a phase's or plan's commits
+    # via git revert with dependency checks and a dry-run-by-default confirmation
+    # gate. Not a loop step.
+    - id: gsd-undo
+      name: '@dsh-gsd/bundle/undo'
+
     - id: gsd-ship
       name: '@dsh-gsd/bundle/ship'
 
