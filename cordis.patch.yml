@@ -95,6 +95,13 @@
     - id: gsd-undo
       name: '@dsh-gsd/bundle/undo'
 
+    # The out-of-band health diagnostic (/gsd-health): inspects .planning/
+    # integrity (phase/plan numbering, orphan SUMMARYs, config.json validation,
+    # STATE/ROADMAP disagreement, phase-dir naming) and offers non-destructive
+    # config-only repair. Deterministic pure-JS scan, no sub-agent. Not a loop step.
+    - id: gsd-health
+      name: '@dsh-gsd/bundle/health'
+
     - id: gsd-ship
       name: '@dsh-gsd/bundle/ship'
 

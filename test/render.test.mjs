@@ -100,8 +100,8 @@ describe("loopSteps / informationEntries ordering (D-08)", () => {
   test("informationEntries returns orient|jobs|onboarding|out-of-band in CAPABILITY_KEYS position", () => {
     const keys = informationEntries(FULL).map((d) => d.key);
     // map-codebase (index 0) then orient (1) then jobs (2); gsdUndo (out-of-band)
-    // is last in CAPABILITY_KEYS after gsdShip.
-    assert.deepEqual(keys, ["gsdMapCodebase", "gsdOrient", "gsdJobs", "gsdUndo"]);
+    // and gsdHealth (out-of-band) are last in CAPABILITY_KEYS after gsdShip.
+    assert.deepEqual(keys, ["gsdMapCodebase", "gsdOrient", "gsdJobs", "gsdUndo", "gsdHealth"]);
   });
 
   test("loopSteps excludes a removed step and keeps ascending order", () => {
