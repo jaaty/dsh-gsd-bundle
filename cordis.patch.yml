@@ -64,6 +64,14 @@
     - id: gsd-execute
       name: '@dsh-gsd/bundle/execute'
 
+    # The post-execute code-review step (between execute and verify): a
+    # fresh-context reviewer subagent produces REVIEW.md with severity-classified
+    # findings (BLOCKER/WARNING/INFO); an optional --fix companion applies
+    # findings with per-fix atomic commits into REVIEW-FIX.md. Soft gate;
+    # never blocks gsd_verify.
+    - id: gsd-code-review
+      name: '@dsh-gsd/bundle/code-review'
+
     - id: gsd-verify
       name: '@dsh-gsd/bundle/verify'
 
