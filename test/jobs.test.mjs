@@ -342,9 +342,12 @@ describe("job runtime (real child processes)", () => {
     const job = await launchJob(runtime, ctx, s, tmp, { kind: "subagent", prompt: "x" });
     assert.equal(job.status, "running", "under capacity the subagent job runs");
     await runtime.cancelAll();
-    const { entries } = await s.readJobs(tmp);
-    const e = entries.find((x) => x.id === job.id);
-    assert.ok(e, "job still present in the manifest");
+    // cancelAll's updateJob and the subagent's settle handler both write the
+    // manifest concurrently via non-atomic read-modify-write; poll until the
+    // cancellation converges to status "failed" before asserting (avoids a
+    // transient corrupt/empty read making the job appear missing).
+    const e = await waitForStatus(s, tmp, job.id, "failed");
+    assert.ok(e, "job present in the manifest after the cancellation converges");
     assert.equal(e.reason.reason, "cancelled", "unload-cancel writes 'cancelled' to the manifest");
   });
 
@@ -355,9 +358,11 @@ describe("job runtime (real child processes)", () => {
     });
     assert.equal(job.status, "running", "under capacity the shell job runs");
     await runtime.cancelAll();
-    const { entries } = await s.readJobs(tmp);
-    const e = entries.find((x) => x.id === job.id);
-    assert.ok(e, "job still present in the manifest");
+    // Same concurrent-writer race as the subagent test above: cancelAll's
+    // updateJob and the settle handler both patch the manifest. Poll until the
+    // cancellation converges to status "failed" before asserting.
+    const e = await waitForStatus(s, tmp, job.id, "failed");
+    assert.ok(e, "job present in the manifest after the cancellation converges");
     assert.equal(e.reason.reason, "cancelled", "unload-cancel writes 'cancelled' to the manifest");
   });
 
