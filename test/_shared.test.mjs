@@ -24,6 +24,7 @@ import {
   decisionIdFor,
   awaitingDecision,
   awaitingMarker,
+  parseDecisionEntries,
 } from "../lib/_shared.js";
 
 describe("frontmatter parse/stringify", () => {
@@ -320,5 +321,74 @@ describe("conversational UAT helpers (D-01/D-03/D-04/D-05/D-06)", () => {
       assert.ok(marker.includes(`checkpoint:${kind}`), `kind ${kind} present`);
       assert.ok(marker.startsWith("GSD_AWAITING_HUMAN: plan p"));
     }
+  });
+});
+
+describe("parseDecisionEntries (CONTEXT decision parsing, single source of truth)", () => {
+  test("parses verbatim discuss.js `- **D-NN:** text` into {id,text} pairs", async () => {
+    // BUG (gsd_ship Key Decisions): the PR body rendered the project-wide
+    // state.body.decisions ledger instead of just this phase's CONTEXT
+    // decisions. parseDecisionEntries is the shared pure helper that scopes
+    // the render to the phase.
+    const md = [
+      "# Phase 1: x - Context",
+      "<decisions>",
+      "## Decisions",
+      "### Area",
+      "- **D-01:** first decision",
+      "- **D-14:** last decision",
+      "- **D-03:** middle decision",
+      "</decisions>",
+    ].join("\n");
+    assert.deepEqual(parseDecisionEntries(md), [
+      { id: "D-01", text: "first decision" },
+      { id: "D-03", text: "middle decision" },
+      { id: "D-14", text: "last decision" },
+    ]);
+  });
+
+  test("plain-bullet non-decision lines are skipped (no false positives)", () => {
+    const md = [
+      "<decisions>",
+      "## Decisions",
+      "### Area",
+      "- **D-01:** real decision",
+      "### Claude's Discretion",
+      "- some plain bullet without a D-ID",
+      "- another discretion note",
+      "- **Claude's Discretion:** not a D-ID",
+      "</decisions>",
+    ].join("\n");
+    assert.deepEqual(parseDecisionEntries(md), [{ id: "D-01", text: "real decision" }]);
+  });
+
+  test("D-01 does NOT match inside D-010 (whole-ID safety)", () => {
+    const md = "- **D-010:** ten\n- **D-01:** one\n";
+    assert.deepEqual(parseDecisionEntries(md), [
+      { id: "D-01", text: "one" },
+      { id: "D-010", text: "ten" },
+    ]);
+  });
+
+  test("deduplicates by id (first occurrence wins) and sorts ascending", () => {
+    const md = "- **D-03:** c\n- **D-01:** a\n- **D-01:** dup\n- **D-02:** b\n";
+    assert.deepEqual(parseDecisionEntries(md), [
+      { id: "D-01", text: "a" },
+      { id: "D-02", text: "b" },
+      { id: "D-03", text: "c" },
+    ]);
+  });
+
+  test("empty / no-decision input returns []", () => {
+    assert.deepEqual(parseDecisionEntries("# no decisions here\n"), []);
+    assert.deepEqual(parseDecisionEntries(""), []);
+    assert.deepEqual(parseDecisionEntries(null), []);
+    assert.deepEqual(parseDecisionEntries(undefined), []);
+  });
+
+  test("trims whitespace from the captured text", () => {
+    assert.deepEqual(parseDecisionEntries("- **D-01:**   padded text   \n"), [
+      { id: "D-01", text: "padded text" },
+    ]);
   });
 });
