@@ -80,6 +80,9 @@
     "./undo": {
       "default": "./lib/undo.js"
     },
+    "./health": {
+      "default": "./lib/health.js"
+    },
     "./quick": {
       "default": "./lib/quick.js"
     },
