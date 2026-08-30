@@ -24,7 +24,7 @@ import {
   renderPersonaBody,
 } from "../lib/_render.js";
 
-// Full set of all 13 descriptors, in CAPABILITY_KEYS order (frozen, like the
+// Full set of all 16 descriptors, in CAPABILITY_KEYS order (frozen, like the
 // real capability store).
 const FULL = CAPABILITY_KEYS.map(buildCapability);
 
@@ -97,10 +97,11 @@ describe("loopSteps / informationEntries ordering (D-08)", () => {
     );
   });
 
-  test("informationEntries returns orient|jobs|onboarding in CAPABILITY_KEYS position", () => {
+  test("informationEntries returns orient|jobs|onboarding|out-of-band in CAPABILITY_KEYS position", () => {
     const keys = informationEntries(FULL).map((d) => d.key);
-    // map-codebase (index 0) then orient (1) then jobs (2).
-    assert.deepEqual(keys, ["gsdMapCodebase", "gsdOrient", "gsdJobs"]);
+    // map-codebase (index 0) then orient (1) then jobs (2); gsdUndo (out-of-band)
+    // is last in CAPABILITY_KEYS after gsdShip.
+    assert.deepEqual(keys, ["gsdMapCodebase", "gsdOrient", "gsdJobs", "gsdUndo"]);
   });
 
   test("loopSteps excludes a removed step and keeps ascending order", () => {

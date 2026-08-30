@@ -106,7 +106,7 @@
 - [x] GAP-04: A code-review pass reviews a phase's changed source files and produces REVIEW.md; a --fix companion applies findings with per-fix atomic commits and produces REVIEW-FIX.md.
 - [x] GAP-05: A retroactive 6-pillar UI audit reviews implemented frontend code against the UI-SPEC and produces a UI-audit report.
 - [x] GAP-06: A retro validate-phase audit maps executed work back to tests and manual evidence, identifies validation gaps, and produces tests to close those gaps for a completed phase.
-- [ ] GAP-07: A safe undo path can roll back a phase's or plan's commits using the phase manifest, with dependency checks and a confirmation gate before execution.
+- [x] GAP-07: A safe undo path can roll back a phase's or plan's commits using the phase manifest, with dependency checks and a confirmation gate before execution.
 - [ ] GAP-08: A health diagnostic inspects .planning/ integrity (phase/plan numbering, orphan SUMMARYs, config validation) and offers non-destructive repair.
 - [ ] GAP-09: Milestone close-gate audits aggregate phase verifications to confirm the milestone met its definition of done, and a cross-phase UAT audit lists outstanding items before close.
 - [ ] GAP-10: An extract-learnings path accumulates decisions, lessons, patterns, and surprises from completed phase artifacts into a LEARNINGS.md that carries forward across phases.

@@ -9,8 +9,8 @@ import assert from "node:assert/strict";
 import { ROLES, CAPABILITY_KEYS, buildCapability } from "../lib/_capabilities.js";
 
 describe("capability key surface (DEGR-01)", () => {
-  test("exposes exactly the 15 known keys", () => {
-    assert.equal(CAPABILITY_KEYS.length, 15);
+  test("exposes exactly the 16 known keys", () => {
+    assert.equal(CAPABILITY_KEYS.length, 16);
     for (const key of [
       "gsdOrient",
       "gsdJobs",
@@ -25,6 +25,7 @@ describe("capability key surface (DEGR-01)", () => {
       "gsdVerify",
       "gsdValidatePhase",
       "gsdShip",
+      "gsdUndo",
       "gsdQuick",
       "gsdMapCodebase",
     ]) {
@@ -32,8 +33,8 @@ describe("capability key surface (DEGR-01)", () => {
     }
   });
 
-  test("role enum is the D-03 six-tuple", () => {
-    assert.deepEqual(ROLES, ["step", "optional", "alternate", "onboarding", "orient", "jobs"]);
+  test("role enum is the D-03 seven-tuple", () => {
+    assert.deepEqual(ROLES, ["step", "optional", "alternate", "onboarding", "orient", "jobs", "out-of-band"]);
   });
 
   test("every key builds a descriptor with the documented shape", () => {

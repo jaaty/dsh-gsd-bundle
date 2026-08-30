@@ -3,19 +3,19 @@ gsd_state_version: 1
 milestone: v3.0.0
 milestone_name: upstream-parity
 status: ship
-active_phase: 40
+active_phase: 41
 next_action: ship-phase
-next_phases: [40]
+next_phases: [41]
 progress:
   total_phases: 50
   completed_phases: 36
-  total_plans: 2
-  completed_plans: 92
+  total_plans: 1
+  completed_plans: 93
   percent: 72
-current_phase: 40
-current_phase_name: validate-phase
-current_plan: 2
-last_updated: "2026-08-30T04:14:28.325Z"
+current_phase: 41
+current_phase_name: undo
+current_plan: 1
+last_updated: "2026-08-30T05:09:35.974Z"
 state_head: null
 last_activity: 2026-08-30
 stopped_at: "Phase 36 shipped — PR #39"
@@ -194,6 +194,8 @@ _No active phase._
 - Phase 39: planned — 2 plan(s) across 2 wave(s).
 - Phase 40: CONTEXT.md sealed — 12 decisions
 - Phase 40: planned — 2 plan(s) across 2 wave(s).
+- Phase 41: CONTEXT.md sealed — 12 decisions
+- Phase 41: planned — 1 plan(s) across 1 wave(s); checker issues remain after 3 iterations (manual review).
 
 ### Blockers / Concerns
 _none_
