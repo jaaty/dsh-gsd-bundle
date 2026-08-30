@@ -53,6 +53,9 @@
     "./execute": {
       "default": "./lib/execute.js"
     },
+    "./code-review": {
+      "default": "./lib/code-review.js"
+    },
     "./verify": {
       "default": "./lib/verify.js"
     },

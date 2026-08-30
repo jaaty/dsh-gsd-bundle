@@ -3,19 +3,19 @@ gsd_state_version: 1
 milestone: v3.0.0
 milestone_name: upstream-parity
 status: ship
-active_phase: 37
+active_phase: 38
 next_action: ship-phase
-next_phases: [37]
+next_phases: [38]
 progress:
   total_phases: 50
   completed_phases: 36
-  total_plans: 3
-  completed_plans: 86
+  total_plans: 2
+  completed_plans: 88
   percent: 72
-current_phase: 37
-current_phase_name: gap-analysis
-current_plan: 3
-last_updated: "2026-08-30T00:35:00.454Z"
+current_phase: 38
+current_phase_name: code-review
+current_plan: 2
+last_updated: "2026-08-30T01:29:27.535Z"
 state_head: null
 last_activity: 2026-08-30
 stopped_at: "Phase 36 shipped — PR #39"
@@ -188,6 +188,8 @@ _No active phase._
 - Phase 36 shipped — PR #39 (https://github.com/jaaty/dsh-gsd-bundle/pull/39)
 - Phase 37: CONTEXT.md sealed — 14 decisions
 - Phase 37: planned — 3 plan(s) across 3 wave(s).
+- Phase 38: CONTEXT.md sealed — 14 decisions
+- Phase 38: planned — 2 plan(s) across 2 wave(s).
 
 ### Blockers / Concerns
 _none_

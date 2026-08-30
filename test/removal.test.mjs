@@ -148,12 +148,16 @@ describe("removal: per-plugin retirement reverts effects and keeps the loop func
       // Surface 6 — gsd_status rewrites a stored next_action targeting it.
       const gsdState = ctx.get("gsdState");
       await gsdState.setActivePhase(CWD, 1, step);
+      // Read the actual stored next_action (some steps like spec/code-review
+      // route to a different next action than the `${step}-phase` convention).
+      const stateAfter = await gsdState.readState(CWD);
+      const storedNextAction = stateAfter.frontmatter.next_action;
       const gsdStatus = ctx.tools.find((t) => t.name === "gsd_status");
       const out = await gsdStatus.execute({}, makeExec());
       const presentDescs = [...ctx.provided.values()].filter(
         (d) => d && typeof d === "object" && typeof d.key === "string" && Array.isArray(d.tools),
       );
-      const expected = effectiveRoutableStep(`${step}-phase`, presentDescs);
+      const expected = effectiveRoutableStep(storedNextAction, presentDescs);
       const expectedLine = expected ? `Next action: ${expected.step}-phase` : `Next action: no available loop step`;
       assert.match(out, new RegExp(expectedLine.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
       assertNoAbsentToolToken(ctx, out, `gsd_status (retired ${capKey})`);
