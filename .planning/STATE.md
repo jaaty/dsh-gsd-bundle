@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v3.0.0
 milestone_name: upstream-parity
-status: ship
-active_phase: 43
-next_action: ship-phase
-next_phases: [43]
+status: discuss
+active_phase: 44
+next_action: discuss-phase
+next_phases: [44]
 progress:
   total_phases: 50
-  completed_phases: 36
-  total_plans: 2
-  completed_plans: 98
-  percent: 72
-current_phase: 43
-current_phase_name: milestone-audit
-current_plan: 2
-last_updated: "2026-08-31T04:13:15.708Z"
+  completed_phases: 43
+  total_plans: 0
+  completed_plans: 113
+  percent: 86
+current_phase: 44
+current_phase_name: learnings
+current_plan: null
+last_updated: "2026-08-31T05:19:09.652Z"
 state_head: null
 last_activity: 2026-08-31
-stopped_at: "Phase 36 shipped — PR #39"
+stopped_at: "Phase 43 shipped — PR #48"
 paused_at: null
 ---
 # GSD STATE
@@ -212,6 +212,13 @@ _No active phase._
 - Phase 43: CONTEXT.md sealed — 8 decisions
 - Phase 43: planned — 2 plan(s) across 2 wave(s).
 - Phase 43: COVERAGE.md written (coverage 67%, gaps: D-01, D-02, D-05)
+- Phase 37 shipped — PR #40 (https://github.com/jaaty/dsh-gsd-bundle/pull/40)
+- Phase 38 shipped — PR #41 (https://github.com/jaaty/dsh-gsd-bundle/pull/41)
+- Phase 39 shipped — PR #42 (https://github.com/jaaty/dsh-gsd-bundle/pull/42)
+- Phase 40 shipped — PR #43 (https://github.com/jaaty/dsh-gsd-bundle/pull/43)
+- Phase 41 shipped — PR #44 (https://github.com/jaaty/dsh-gsd-bundle/pull/44)
+- Phase 42 shipped — PR #47 (https://github.com/jaaty/dsh-gsd-bundle/pull/47)
+- Phase 43 shipped — PR #48 (https://github.com/jaaty/dsh-gsd-bundle/pull/48)
 
 ### Blockers / Concerns
 _none_

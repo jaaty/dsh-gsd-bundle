@@ -40,13 +40,13 @@
 | 34 | [x] readme-badges | Add CI-status, license, and npm-version badges to the README so the public repo signals health and provenance at a glance. [REL-05] | REL-05 |
 | 35 | [x] pr-branch | Add a clean-PR-branch path so gsd_ship creates a review branch that filters out .planning/ commits, leaving reviewers with only real code changes. | GAP-01 |
 | 36 | [x] spec-phase | Add a spec-phase step that produces a SPEC.md with falsifiable requirements gated by an ambiguity-scoring score before discuss. | GAP-02 |
-| 37 | gap-analysis | Add a post-planning gap-analysis that emits a REQ-ID/D-ID versus plan-body coverage table after PLAN.md generation. | GAP-03 |
-| 38 | code-review | Add a code-review pass that reviews a phase's changed source into REVIEW.md and a --fix companion that applies findings with per-fix atomic commits into REVIEW-FIX.md. | GAP-04 |
-| 39 | ui-review | Add a retroactive 6-pillar UI audit that reviews implemented frontend code against the UI-SPEC. | GAP-05 |
-| 40 | validate-phase | Add a retro validate-phase audit that maps executed work to tests and manual evidence and produces tests to close validation gaps for a completed phase. | GAP-06 |
-| 41 | undo | Add a safe undo path that rolls back a phase's or plan's commits via the phase manifest with dependency checks and a confirmation gate. | GAP-07 |
-| 42 | health | Add a health diagnostic that inspects .planning/ integrity and offers non-destructive repair. | GAP-08 |
-| 43 | milestone-audit | Add milestone close-gate and cross-phase UAT audits that confirm a milestone met its definition of done before close. | GAP-09 |
+| 37 | [x] gap-analysis | Add a post-planning gap-analysis that emits a REQ-ID/D-ID versus plan-body coverage table after PLAN.md generation. | GAP-03 |
+| 38 | [x] code-review | Add a code-review pass that reviews a phase's changed source into REVIEW.md and a --fix companion that applies findings with per-fix atomic commits into REVIEW-FIX.md. | GAP-04 |
+| 39 | [x] ui-review | Add a retroactive 6-pillar UI audit that reviews implemented frontend code against the UI-SPEC. | GAP-05 |
+| 40 | [x] validate-phase | Add a retro validate-phase audit that maps executed work to tests and manual evidence and produces tests to close validation gaps for a completed phase. | GAP-06 |
+| 41 | [x] undo | Add a safe undo path that rolls back a phase's or plan's commits via the phase manifest with dependency checks and a confirmation gate. | GAP-07 |
+| 42 | [x] health | Add a health diagnostic that inspects .planning/ integrity and offers non-destructive repair. | GAP-08 |
+| 43 | [x] milestone-audit | Add milestone close-gate and cross-phase UAT audits that confirm a milestone met its definition of done before close. | GAP-09 |
 | 44 | learnings | Add an extract-learnings path that accumulates decisions, lessons, patterns, and surprises into a carrying-forward LEARNINGS.md. | GAP-10 |
 | 45 | graphify | Add a project knowledge graph built in .planning/graphs/ with a tool to build, query, and inspect it. | GAP-11 |
 | 46 | mempalace | Add a cross-session memory integration that performs deliberate recall before discuss/plan and verbatim capture at phase boundaries. | GAP-12 |
@@ -95,13 +95,13 @@
 | 34 | readme-badges | [x] Complete | 2026-08-29 |
 | 35 | pr-branch | [x] Complete | 2026-08-29 |
 | 36 | spec-phase | [x] Complete | 2026-08-29 |
-| 37 | gap-analysis | pending |  |
-| 38 | code-review | pending |  |
-| 39 | ui-review | pending |  |
-| 40 | validate-phase | pending |  |
-| 41 | undo | pending |  |
-| 42 | health | pending |  |
-| 43 | milestone-audit | pending |  |
+| 37 | gap-analysis | [x] Complete | 2026-08-29 |
+| 38 | code-review | [x] Complete | 2026-08-29 |
+| 39 | ui-review | [x] Complete | 2026-08-29 |
+| 40 | validate-phase | [x] Complete | 2026-08-29 |
+| 41 | undo | [x] Complete | 2026-08-29 |
+| 42 | health | [x] Complete | 2026-08-30 |
+| 43 | milestone-audit | [x] Complete | 2026-08-30 |
 | 44 | learnings | pending |  |
 | 45 | graphify | pending |  |
 | 46 | mempalace | pending |  |
