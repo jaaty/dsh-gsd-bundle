@@ -9,8 +9,8 @@ import assert from "node:assert/strict";
 import { ROLES, CAPABILITY_KEYS, buildCapability } from "../lib/_capabilities.js";
 
 describe("capability key surface (DEGR-01)", () => {
-  test("exposes exactly the 17 known keys", () => {
-    assert.equal(CAPABILITY_KEYS.length, 17);
+  test("exposes exactly the 18 known keys", () => {
+    assert.equal(CAPABILITY_KEYS.length, 18);
     for (const key of [
       "gsdOrient",
       "gsdJobs",
@@ -29,6 +29,7 @@ describe("capability key surface (DEGR-01)", () => {
       "gsdHealth",
       "gsdQuick",
       "gsdMapCodebase",
+      "gsdMilestoneAudit",
     ]) {
       assert.ok(CAPABILITY_KEYS.includes(key), `missing capability key ${key}`);
     }
@@ -102,6 +103,19 @@ describe("capability mapping (D-04)", () => {
     const ship = buildCapability("gsdShip");
     assert.ok(vp.order > verify.order, "validate-phase(45) sorts after verify(40)");
     assert.ok(vp.order < ship.order, "validate-phase(45) sorts before ship(50)");
+  });
+
+  test("gsdMilestoneAudit is a step at order 52, after ship (50)", () => {
+    const ma = buildCapability("gsdMilestoneAudit");
+    assert.equal(ma.role, "step");
+    assert.equal(ma.step, "milestone-audit");
+    assert.equal(ma.order, 52);
+    assert.deepEqual(ma.tools, ["gsd_milestone_audit"]);
+    assert.deepEqual(ma.commands, []);
+    assert.deepEqual(ma.produces, ["AUDIT.md"]);
+    assert.deepEqual(ma.consumes, ["VERIFICATION.md", "ROADMAP.md", "REQUIREMENTS.md"]);
+    const ship = buildCapability("gsdShip");
+    assert.ok(ma.order > ship.order, "milestone-audit(52) sorts after ship(50)");
   });
 
   test("role values match the D-04 mapping", () => {

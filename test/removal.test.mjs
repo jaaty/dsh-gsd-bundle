@@ -122,6 +122,7 @@ describe("removal: per-plugin retirement reverts effects and keeps the loop func
   // DEGR-05 / phases 23 + 40: the validate-phase step must participate in the
   // retirement matrix like every other role:"step" loop plugin.
   assert.ok(STEP_CAPS.includes("gsdValidatePhase"), "validate-phase is missing from the role:step retirement matrix (DEGR-05)");
+  assert.ok(STEP_CAPS.includes("gsdMilestoneAudit"), "milestone-audit is missing from the role:step retirement matrix (DEGR-05)");
 
   for (const { capKey, sub, tool, command, step } of retirementMatrix()) {
     test(`retiring ${capKey} reverts all six effects and keeps the loop functional`, async () => {

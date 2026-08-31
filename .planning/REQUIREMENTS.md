@@ -108,7 +108,7 @@
 - [x] GAP-06: A retro validate-phase audit maps executed work back to tests and manual evidence, identifies validation gaps, and produces tests to close those gaps for a completed phase.
 - [x] GAP-07: A safe undo path can roll back a phase's or plan's commits using the phase manifest, with dependency checks and a confirmation gate before execution.
 - [x] GAP-08: A health diagnostic inspects .planning/ integrity (phase/plan numbering, orphan SUMMARYs, config validation) and offers non-destructive repair.
-- [ ] GAP-09: Milestone close-gate audits aggregate phase verifications to confirm the milestone met its definition of done, and a cross-phase UAT audit lists outstanding items before close.
+- [x] GAP-09: Milestone close-gate audits aggregate phase verifications to confirm the milestone met its definition of done, and a cross-phase UAT audit lists outstanding items before close.
 - [ ] GAP-10: An extract-learnings path accumulates decisions, lessons, patterns, and surprises from completed phase artifacts into a LEARNINGS.md that carries forward across phases.
 - [ ] GAP-11: A project knowledge graph is built in .planning/graphs/ and can be queried and inspected through a graphify tool.
 - [ ] GAP-12: A cross-session memory integration performs deliberate recall before discuss/plan and verbatim capture at phase boundaries (mempalace).

@@ -3,21 +3,21 @@ gsd_state_version: 1
 milestone: v3.0.0
 milestone_name: upstream-parity
 status: ship
-active_phase: 42
+active_phase: 43
 next_action: ship-phase
-next_phases: [42]
+next_phases: [43]
 progress:
   total_phases: 50
   completed_phases: 36
-  total_plans: 3
-  completed_plans: 96
+  total_plans: 2
+  completed_plans: 98
   percent: 72
-current_phase: 42
-current_phase_name: health
-current_plan: 3
-last_updated: "2026-08-30T15:36:57.591Z"
+current_phase: 43
+current_phase_name: milestone-audit
+current_plan: 2
+last_updated: "2026-08-31T04:13:15.708Z"
 state_head: null
-last_activity: 2026-08-30
+last_activity: 2026-08-31
 stopped_at: "Phase 36 shipped — PR #39"
 paused_at: null
 ---
@@ -209,6 +209,9 @@ _No active phase._
 - Commit atomically with a clear message describing the flake hardening.
 - Phase 42: CONTEXT.md sealed — 10 decisions
 - Phase 42: planned — 3 plan(s) across 3 wave(s).
+- Phase 43: CONTEXT.md sealed — 8 decisions
+- Phase 43: planned — 2 plan(s) across 2 wave(s).
+- Phase 43: COVERAGE.md written (coverage 67%, gaps: D-01, D-02, D-05)
 
 ### Blockers / Concerns
 _none_
