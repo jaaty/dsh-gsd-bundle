@@ -35,6 +35,7 @@ export const PATCH_ROWS = [
   { id: "gsd-validate-phase", sub: "validate" },
   { id: "gsd-undo", sub: "undo" },
   { id: "gsd-health", sub: "health" },
+  { id: "gsd-milestone-audit", sub: "milestone-audit" },
   { id: "gsd-ship", sub: "ship" },
   { id: "gsd-ui", sub: "ui" },
   { id: "gsd-quick", sub: "quick" },

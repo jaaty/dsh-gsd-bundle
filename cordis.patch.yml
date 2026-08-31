@@ -102,6 +102,14 @@
     - id: gsd-health
       name: '@dsh-gsd/bundle/health'
 
+    # The milestone-close audit step (between ship and the release quick-tasks):
+    # a deterministic close-gate aggregates per-phase verifications to confirm the
+    # milestone met its definition of done, plus a cross-phase UAT outstanding-items
+    # list, emitted as one milestone-scoped audit report. Soft gate; never blocks
+    # the release. Does not advance STATE.
+    - id: gsd-milestone-audit
+      name: '@dsh-gsd/bundle/milestone-audit'
+
     - id: gsd-ship
       name: '@dsh-gsd/bundle/ship'
 

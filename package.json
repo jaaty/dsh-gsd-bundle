@@ -89,6 +89,9 @@
     "./map-codebase": {
       "default": "./lib/map-codebase.js"
     },
+    "./milestone-audit": {
+      "default": "./lib/milestone-audit.js"
+    },
     "./commands": {
       "default": "./lib/commands.js"
     },

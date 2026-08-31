@@ -1,9 +1,9 @@
 // Offline activation harness for @dsh-gsd/bundle (Phase 1: live-mount).
 //
-// Proves the 19 cordis.patch.yml plugin rows activate inside a fake DSH host:
+// Proves the 20 cordis.patch.yml plugin rows activate inside a fake DSH host:
 // each subpath export resolves, apply() runs against one shared fake ctx, and
 // the full registration surface is captured (1 persona section, 1 runtime-
-// context provider, gsdState service, 21 gsd_* tools, 19 /gsd-* commands).
+// context provider, gsdState service, 22 gsd_* tools, 19 /gsd-* commands).
 // Offline only (D-01/D-02): FakeFs + fake-ctx, no live DSH boot, no LLM/git/gh.
 
 import { test, describe, beforeEach } from "node:test";
@@ -30,7 +30,7 @@ import {
   makeSubagents,
 } from "./helpers/mount-harness.mjs";
 
-// Apply all 19 plugins in patch order against a ctx; throw with the offending id.
+// Apply all 20 plugins in patch order against a ctx; throw with the offending id.
 async function applyAll(ctx) {
   for (const { id, sub } of PATCH_ROWS) {
     const mod = await import(`@dsh-gsd/bundle/${sub}`);
@@ -101,13 +101,13 @@ const EXPECTED_INSERT_ROWS = PATCH_ROWS.map(({ id, sub }) => ({
   spec: `@dsh-gsd/bundle/${sub}`,
 }));
 
-// Expected registered tool names (21) — verified against the real modules.
+// Expected registered tool names (22) — verified against the real modules.
 const EXPECTED_TOOL_NAMES = [
   "gsd_init", "gsd_status", "gsd_progress", "gsd_new_milestone",
   "gsd_discuss", "gsd_spec_phase", "gsd_plan", "gsd_gap_analysis",
   "gsd_execute", "gsd_code_review", "gsd_ui_review", "gsd_verify", "gsd_validate_phase", "gsd_undo", "gsd_ship", "gsd_ui_phase",
   "gsd_quick", "gsd_map_codebase", "gsd_job", "gsd_intel_updater",
-  "gsd_health",
+  "gsd_health", "gsd_milestone_audit",
 ];
 
 // Expected registered command names (19) — from lib/commands.js (D-03).
@@ -119,7 +119,7 @@ const EXPECTED_COMMAND_NAMES = [
   "gsd-health",
 ];
 
-describe("mount: all 19 plugins activate", () => {
+describe("mount: all 20 plugins activate", () => {
   let fs, ctx;
   beforeEach(() => {
     fs = new FakeFs();
@@ -128,11 +128,11 @@ describe("mount: all 19 plugins activate", () => {
     ctx = makeMountCtx(fs, { subagents: makeSubagents() });
   });
 
-  test("applies all 19 plugins in patch order without throwing", async () => {
+  test("applies all 20 plugins in patch order without throwing", async () => {
     await applyAll(ctx);
     assert.ok(ctx.provided.has("gsdState"), "gsdState service was not provided");
     assert.ok(ctx.provided.get("gsdState") instanceof GsdState, "gsdState is not a GsdState instance");
-    assert.ok(ctx.tools.length === 21, `expected 21 tools, got ${ctx.tools.length}`);
+    assert.ok(ctx.tools.length === 22, `expected 22 tools, got ${ctx.tools.length}`);
     assert.ok(ctx.commands.length === 19, `expected 19 commands, got ${ctx.commands.length}`);
     assert.ok(ctx.sections.length === 1, `expected 1 section, got ${ctx.sections.length}`);
     assert.ok(ctx.contexts.length === 1, `expected 1 context, got ${ctx.contexts.length}`);
@@ -144,7 +144,7 @@ describe("mount: all 19 plugins activate", () => {
     // DEGR-01: all 16 capability services are provided with the documented
     // descriptor shape (D-03: key/step/role/tools/commands/order). Built from
     // CAPABILITY_KEYS so test and source never drift (D-02 camelCase keys).
-    assert.ok(CAPABILITY_KEYS.length === 17, `expected 17 capability keys, got ${CAPABILITY_KEYS.length}`);
+    assert.ok(CAPABILITY_KEYS.length === 18, `expected 18 capability keys, got ${CAPABILITY_KEYS.length}`);
     for (const key of CAPABILITY_KEYS) {
       const cap = ctx.provided.get(key);
       assert.ok(cap, `capability ${key} was not provided`);
@@ -188,7 +188,7 @@ describe("mount: all 19 plugins activate", () => {
 });
 
 describe("mount: cordis.patch.yml rows resolve", () => {
-  test("override row present, 19 insert rows resolve via exports + import()", async () => {
+  test("override row present, 20 insert rows resolve via exports + import()", async () => {
     const { overridePresent, agentLoopConfigRaw, insertRows } = await readPatchRows();
 
     // D-03: the agent-loop override row is asserted only for presence + that it
@@ -199,9 +199,9 @@ describe("mount: cordis.patch.yml rows resolve", () => {
       "agent-loop override does not configure a gsd agent",
     );
 
-    // Exactly the 19 insert rows (D-03).
-    assert.ok(insertRows.length === 19, `expected 19 insert rows, got ${insertRows.length}`);
-    assert.deepEqual(insertRows, EXPECTED_INSERT_ROWS, "parsed insert rows differ from the expected 19");
+    // Exactly the 20 insert rows (D-03).
+    assert.ok(insertRows.length === 20, `expected 20 insert rows, got ${insertRows.length}`);
+    assert.deepEqual(insertRows, EXPECTED_INSERT_ROWS, "parsed insert rows differ from the expected 20");
 
     // Each row's name resolves through package.json exports and import().
     const pkgPath = path.resolve(import.meta.dirname, "../package.json");
@@ -219,7 +219,7 @@ describe("mount: cordis.patch.yml rows resolve", () => {
       assert.equal(typeof mod.apply, "function", `${id}: apply is not a function`);
     }
 
-    // Cross-check captured tool names against the expected 21.
+    // Cross-check captured tool names against the expected 22.
     const fs = new FakeFs();
     const ctx = makeMountCtx(fs, { subagents: makeSubagents() });
     await applyAll(ctx);
@@ -310,10 +310,10 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
     assert.match(out, /no \.planning\/ project found/);
   });
 
-  test("all 21 registered tools have a valid compiled schema", () => {
+  test("all 22 registered tools have a valid compiled schema", () => {
     // apply() not throwing already proves defineTool compiled the schema (D-04);
     // assert the shape explicitly for every tool.
-    assert.equal(ctx.tools.length, 21);
+    assert.equal(ctx.tools.length, 22);
     for (const t of ctx.tools) {
       assert.equal(typeof t.name, "string", `${t.name}: name is not a string`);
       assert.equal(typeof t.description, "string", `${t.name}: description is not a string`);
@@ -439,7 +439,7 @@ describe("mount: reactive loop rendering (DEGR-02/DEGR-04)", () => {
   });
 
   test("full-set mount still renders present steps + tools (regression, D-11)", async () => {
-    const { ctx } = await mountSubset(["persona", "state", "core-tools", "discuss", "spec", "plan", "gap-analysis", "execute", "code-review", "ui-review", "verify", "validate", "undo", "ship", "ui", "quick", "map-codebase", "health"], { subagents: makeSubagents() });
+    const { ctx } = await mountSubset(["persona", "state", "core-tools", "discuss", "spec", "plan", "gap-analysis", "execute", "code-review", "ui-review", "verify", "validate", "undo", "ship", "milestone-audit", "ui", "quick", "map-codebase", "health"], { subagents: makeSubagents() });
     for (const key of CAPABILITY_KEYS) assert.ok(ctx.provided.has(key), `${key} not provided`);
     await initProject(ctx);
 
@@ -455,7 +455,7 @@ describe("mount: reactive loop rendering (DEGR-02/DEGR-04)", () => {
     // discuss at order 5; gap-analysis order 22 slots between plan and quick;
     // validate order 45 slots between verify and ship).
     const snap = snapshot(ctx);
-    assert.match(snap, /Available steps: spec, discuss, ui, plan, gap-analysis, quick, execute, code-review, ui-review, verify, validate, ship\./);
+    assert.match(snap, /Available steps: spec, discuss, ui, plan, gap-analysis, quick, execute, code-review, ui-review, verify, validate, ship, milestone-audit\./);
 
     // gsd_status still advertises the stored next_action when its capability is
     // present (after init, the first routable loop step is spec at order 5, so
