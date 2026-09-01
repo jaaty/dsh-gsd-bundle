@@ -117,6 +117,12 @@
     - id: gsd-learnings
       name: '@dsh-gsd/bundle/learnings'
 
+    # The graphify advisory step (after learnings): builds a project knowledge
+    # graph in .planning/graphs/ from a deterministic pure-JS scan. Soft gate;
+    # never blocks ship. Does not advance STATE.
+    - id: gsd-graphify
+      name: '@dsh-gsd/bundle/graphify'
+
     - id: gsd-ship
       name: '@dsh-gsd/bundle/ship'
 

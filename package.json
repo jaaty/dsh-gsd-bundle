@@ -95,6 +95,9 @@
     "./learnings": {
       "default": "./lib/learnings.js"
     },
+    "./graphify": {
+      "default": "./lib/graphify.js"
+    },
     "./commands": {
       "default": "./lib/commands.js"
     },
