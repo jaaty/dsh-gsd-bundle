@@ -110,6 +110,13 @@
     - id: gsd-milestone-audit
       name: '@dsh-gsd/bundle/milestone-audit'
 
+    # The extract-learnings advisory step (after milestone-audit): accumulates
+    # decisions, lessons, patterns, and surprises from a completed phase's
+    # artefacts into a carrying-forward .planning/LEARNINGS.md. Soft gate;
+    # never blocks ship. Does not advance STATE.
+    - id: gsd-learnings
+      name: '@dsh-gsd/bundle/learnings'
+
     - id: gsd-ship
       name: '@dsh-gsd/bundle/ship'
 
