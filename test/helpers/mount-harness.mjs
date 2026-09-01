@@ -37,6 +37,7 @@ export const PATCH_ROWS = [
   { id: "gsd-health", sub: "health" },
   { id: "gsd-milestone-audit", sub: "milestone-audit" },
   { id: "gsd-learnings", sub: "learnings" },
+  { id: "gsd-graphify", sub: "graphify" },
   { id: "gsd-ship", sub: "ship" },
   { id: "gsd-ui", sub: "ui" },
   { id: "gsd-quick", sub: "quick" },
