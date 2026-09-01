@@ -47,7 +47,7 @@
 | 41 | [x] undo | Add a safe undo path that rolls back a phase's or plan's commits via the phase manifest with dependency checks and a confirmation gate. | GAP-07 |
 | 42 | [x] health | Add a health diagnostic that inspects .planning/ integrity and offers non-destructive repair. | GAP-08 |
 | 43 | [x] milestone-audit | Add milestone close-gate and cross-phase UAT audits that confirm a milestone met its definition of done before close. | GAP-09 |
-| 44 | learnings | Add an extract-learnings path that accumulates decisions, lessons, patterns, and surprises into a carrying-forward LEARNINGS.md. | GAP-10 |
+| 44 | [x] learnings | Add an extract-learnings path that accumulates decisions, lessons, patterns, and surprises into a carrying-forward LEARNINGS.md. | GAP-10 |
 | 45 | graphify | Add a project knowledge graph built in .planning/graphs/ with a tool to build, query, and inspect it. | GAP-11 |
 | 46 | mempalace | Add a cross-session memory integration that performs deliberate recall before discuss/plan and verbatim capture at phase boundaries. | GAP-12 |
 | 47 | assumption-delta | Add an advisory assumption-delta checkpoint that surfaces one identity-model question when a phase makes something plural/optional/chosen that used to be singular/required/derived. | GAP-13 |
@@ -59,50 +59,50 @@
 
 | # | Phase | Status | Date |
 |---|-------|--------|------|
-| 01 | live-mount | [x] Complete | 2026-08-29 |
-| 02 | service-tools | [x] Complete | 2026-08-29 |
-| 03 | loop-e2e | [x] Complete | 2026-08-29 |
-| 04 | checkpoint-resume | [x] Complete | 2026-08-29 |
-| 05 | window-ledger | [x] Complete | 2026-08-29 |
-| 06 | loop-robustness | [x] Complete | 2026-08-29 |
-| 07 | uat-conversation | [x] Complete | 2026-08-29 |
-| 08 | capability-gates | [x] Complete | 2026-08-29 |
-| 09 | job-runtime | [x] Complete | 2026-08-29 |
-| 10 | codebase-query | [x] Complete | 2026-08-29 |
-| 11 | phase-dir-resolution | [x] Complete | 2026-08-29 |
-| 12 | single-source-constants | [x] Complete | 2026-08-29 |
-| 13 | gate-dispatch | [x] Complete | 2026-08-29 |
-| 14 | execute-checkpoint | [x] Complete | 2026-08-29 |
-| 15 | ship-robustness | [x] Complete | 2026-08-29 |
-| 16 | context-budget | [x] Complete | 2026-08-29 |
-| 17 | phase-branch-isolation | [x] Complete | 2026-08-29 |
-| 18 | job-runtime-extensions | [x] Complete | 2026-08-29 |
-| 19 | codebase-intel-extensions | [x] Complete | 2026-08-29 |
-| 20 | multi-window-topology | [x] Complete | 2026-08-29 |
-| 21 | capability-services | [x] Complete | 2026-08-29 |
-| 22 | reactive-loop-rendering | [x] Complete | 2026-08-29 |
-| 23 | removal-verification | [x] Complete | 2026-08-29 |
-| 24 | composability-hardening | [x] Complete | 2026-08-29 |
-| 25 | license-and-attribution | [x] Complete | 2026-08-29 |
-| 26 | repo-hygiene | [x] Complete | 2026-08-29 |
-| 27 | ci-and-security | [x] Complete | 2026-08-29 |
-| 28 | publish-research | [x] Complete | 2026-08-29 |
-| 29 | pre-ship-verify | [x] Complete | 2026-08-29 |
-| 30 | publishable-package | [x] Complete | 2026-08-29 |
-| 31 | npm-publish | [x] Complete | 2026-08-29 |
-| 32 | security-policy-templates | [x] Complete | 2026-08-29 |
-| 33 | github-repo-config | [x] Complete | 2026-08-29 |
-| 34 | readme-badges | [x] Complete | 2026-08-29 |
-| 35 | pr-branch | [x] Complete | 2026-08-29 |
-| 36 | spec-phase | [x] Complete | 2026-08-29 |
-| 37 | gap-analysis | [x] Complete | 2026-08-29 |
-| 38 | code-review | [x] Complete | 2026-08-29 |
-| 39 | ui-review | [x] Complete | 2026-08-29 |
-| 40 | validate-phase | [x] Complete | 2026-08-29 |
-| 41 | undo | [x] Complete | 2026-08-29 |
-| 42 | health | [x] Complete | 2026-08-30 |
-| 43 | milestone-audit | [x] Complete | 2026-08-30 |
-| 44 | learnings | pending |  |
+| 01 | live-mount | [x] Complete | 2026-09-01 |
+| 02 | service-tools | [x] Complete | 2026-09-01 |
+| 03 | loop-e2e | [x] Complete | 2026-09-01 |
+| 04 | checkpoint-resume | [x] Complete | 2026-09-01 |
+| 05 | window-ledger | [x] Complete | 2026-09-01 |
+| 06 | loop-robustness | [x] Complete | 2026-09-01 |
+| 07 | uat-conversation | [x] Complete | 2026-09-01 |
+| 08 | capability-gates | [x] Complete | 2026-09-01 |
+| 09 | job-runtime | [x] Complete | 2026-09-01 |
+| 10 | codebase-query | [x] Complete | 2026-09-01 |
+| 11 | phase-dir-resolution | [x] Complete | 2026-09-01 |
+| 12 | single-source-constants | [x] Complete | 2026-09-01 |
+| 13 | gate-dispatch | [x] Complete | 2026-09-01 |
+| 14 | execute-checkpoint | [x] Complete | 2026-09-01 |
+| 15 | ship-robustness | [x] Complete | 2026-09-01 |
+| 16 | context-budget | [x] Complete | 2026-09-01 |
+| 17 | phase-branch-isolation | [x] Complete | 2026-09-01 |
+| 18 | job-runtime-extensions | [x] Complete | 2026-09-01 |
+| 19 | codebase-intel-extensions | [x] Complete | 2026-09-01 |
+| 20 | multi-window-topology | [x] Complete | 2026-09-01 |
+| 21 | capability-services | [x] Complete | 2026-09-01 |
+| 22 | reactive-loop-rendering | [x] Complete | 2026-09-01 |
+| 23 | removal-verification | [x] Complete | 2026-09-01 |
+| 24 | composability-hardening | [x] Complete | 2026-09-01 |
+| 25 | license-and-attribution | [x] Complete | 2026-09-01 |
+| 26 | repo-hygiene | [x] Complete | 2026-09-01 |
+| 27 | ci-and-security | [x] Complete | 2026-09-01 |
+| 28 | publish-research | [x] Complete | 2026-09-01 |
+| 29 | pre-ship-verify | [x] Complete | 2026-09-01 |
+| 30 | publishable-package | [x] Complete | 2026-09-01 |
+| 31 | npm-publish | [x] Complete | 2026-09-01 |
+| 32 | security-policy-templates | [x] Complete | 2026-09-01 |
+| 33 | github-repo-config | [x] Complete | 2026-09-01 |
+| 34 | readme-badges | [x] Complete | 2026-09-01 |
+| 35 | pr-branch | [x] Complete | 2026-09-01 |
+| 36 | spec-phase | [x] Complete | 2026-09-01 |
+| 37 | gap-analysis | [x] Complete | 2026-09-01 |
+| 38 | code-review | [x] Complete | 2026-09-01 |
+| 39 | ui-review | [x] Complete | 2026-09-01 |
+| 40 | validate-phase | [x] Complete | 2026-09-01 |
+| 41 | undo | [x] Complete | 2026-09-01 |
+| 42 | health | [x] Complete | 2026-09-01 |
+| 43 | milestone-audit | [x] Complete | 2026-09-01 |
+| 44 | learnings | [x] Complete | 2026-09-01 |
 | 45 | graphify | pending |  |
 | 46 | mempalace | pending |  |
 | 47 | assumption-delta | pending |  |
