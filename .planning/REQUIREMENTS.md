@@ -109,7 +109,7 @@
 - [x] GAP-07: A safe undo path can roll back a phase's or plan's commits using the phase manifest, with dependency checks and a confirmation gate before execution.
 - [x] GAP-08: A health diagnostic inspects .planning/ integrity (phase/plan numbering, orphan SUMMARYs, config validation) and offers non-destructive repair.
 - [x] GAP-09: Milestone close-gate audits aggregate phase verifications to confirm the milestone met its definition of done, and a cross-phase UAT audit lists outstanding items before close.
-- [ ] GAP-10: An extract-learnings path accumulates decisions, lessons, patterns, and surprises from completed phase artifacts into a LEARNINGS.md that carries forward across phases.
+- [x] GAP-10: An extract-learnings path accumulates decisions, lessons, patterns, and surprises from completed phase artifacts into a LEARNINGS.md that carries forward across phases.
 - [ ] GAP-11: A project knowledge graph is built in .planning/graphs/ and can be queried and inspected through a graphify tool.
 - [ ] GAP-12: A cross-session memory integration performs deliberate recall before discuss/plan and verbatim capture at phase boundaries (mempalace).
 - [ ] GAP-13: An advisory assumption-delta checkpoint detects when a phase makes something plural, optional, or chosen that used to be singular, required, or derived, and surfaces one identity-model question.

@@ -57,7 +57,7 @@ describe("ship.js async conversion (static)", () => {
   test("fetchGitData is awaited and preflightError is exported", async () => {
     const src = await readFile(new URL("../lib/ship.js", import.meta.url), "utf8");
     assert.match(src, /await fetchGitData\(cwd, git, defaultBranch\)/, "fetchGitData awaited with the async git helper");
-    assert.match(src, /export\s*\{\s*name,\s*inject,\s*apply,\s*preflightError\s*\}/, "preflightError exported");
+    assert.match(src, /export\s*\{\s*name,\s*inject,\s*apply,\s*preflightError(?:\s*,\s*runLearningsOnShip)?\s*\}/, "preflightError exported");
   });
 
   test("completion state is propagated to the clean branch (option C, stale-progress fix)", async () => {

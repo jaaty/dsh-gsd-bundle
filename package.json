@@ -92,6 +92,9 @@
     "./milestone-audit": {
       "default": "./lib/milestone-audit.js"
     },
+    "./learnings": {
+      "default": "./lib/learnings.js"
+    },
     "./commands": {
       "default": "./lib/commands.js"
     },
