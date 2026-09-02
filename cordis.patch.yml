@@ -123,6 +123,14 @@
     - id: gsd-graphify
       name: '@dsh-gsd/bundle/graphify'
 
+    # The mempalace advisory step (after graphify): deliberate recall before
+    # discuss/plan (MEMORY-RECALL.md) and verbatim capture at phase boundaries,
+    # talking to the MemPalace CLI through an injectable exec seam. Opt-in via
+    # mempalace.enabled (default false). Soft gate; never blocks a loop step.
+    # Does not advance STATE.
+    - id: gsd-mempalace
+      name: '@dsh-gsd/bundle/mempalace'
+
     - id: gsd-ship
       name: '@dsh-gsd/bundle/ship'
 
