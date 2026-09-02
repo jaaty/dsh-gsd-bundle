@@ -423,6 +423,7 @@ describe("planning artefact round-trip", () => {
     assert.equal(cfg.context_window, 200000);
     assert.equal(cfg.workflow.use_worktrees, false);
     assert.equal(cfg.workflow.commit_docs, true);
+    assert.equal(cfg.workflow.assumption_delta, true, "default config must emit workflow.assumption_delta: true (D-04)");
     assert.deepEqual(cfg.jobs, { timeout: 60, concurrency: 2, max_retries: 3 });
   });
 
