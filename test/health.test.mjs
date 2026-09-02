@@ -52,7 +52,6 @@ function defaultConfig() {
       agent_hint_routing: true,
       text_mode: false,
       commit_docs: true,
-      clean_pr_branch: true,
       code_review: true,
       code_review_depth: "standard",
       ui_review: true,
@@ -181,9 +180,9 @@ describe("health: checkConfig (D-04 d, D-06, D-07, OQ-4/OQ-5, D-10)", () => {
   });
 
   test("valid JSON missing a required workflow key → repairable W-05", () => {
-    const cfg = JSON.stringify({ ...schema, workflow: { ...schema.workflow, clean_pr_branch: undefined } });
+    const cfg = JSON.stringify({ ...schema, workflow: { ...schema.workflow, ai_integration_phase: undefined } });
     const issues = checkConfig(cfg, schema);
-    assert.ok(issues.some((i) => i.code === "W-05"), "missing required workflow key must yield W-05");
+    assert.ok(issues.some((i) => i.code === "W-05" && /ai_integration_phase/.test(i.message)), "missing required workflow key must yield W-05");
     const w05 = issues.find((i) => i.code === "W-05");
     assert.equal(w05.severity, "warning");
     assert.equal(w05.repairable, true);
@@ -193,12 +192,6 @@ describe("health: checkConfig (D-04 d, D-06, D-07, OQ-4/OQ-5, D-10)", () => {
     const cfg = JSON.stringify({ ...schema, project_code: undefined });
     const issues = checkConfig(cfg, schema);
     assert.ok(issues.some((i) => i.code === "W-05"), "missing required top-level key must yield W-05");
-  });
-
-  test("ai_integration_phase is a required workflow key (OQ-4)", () => {
-    const cfg = JSON.stringify({ ...schema, workflow: { ...schema.workflow, ai_integration_phase: undefined } });
-    const issues = checkConfig(cfg, schema);
-    assert.ok(issues.some((i) => i.code === "W-05" && /ai_integration_phase/.test(i.message)));
   });
 
   test("jobs block is optional (OQ-5): a config without jobs yields no issue", () => {
@@ -373,8 +366,8 @@ describe("health: end-to-end gsd_health tool (D-02, D-05, D-10)", () => {
     await bootstrap(ctx);
     const gsdState = ctx.get("gsdState");
 
-    // Overwrite config.json missing a required workflow key (clean_pr_branch)
-    // and the required ai_integration_phase key → repairable W-05 warnings.
+    // Overwrite config.json missing the required ai_integration_phase key →
+    // repairable W-05 warnings.
     const cfg = {
       gsd_state_version: "1.0",
       workflow: {
@@ -457,17 +450,10 @@ describe("health: repairConfig pure helper (D-07, D-08, D-10)", () => {
   });
 
   test("config missing a workflow key → adds it with value true + R-02 repair", () => {
-    const cfg = JSON.stringify({ ...schema, workflow: { ...schema.workflow, clean_pr_branch: undefined } });
-    const { config, repairs } = repairConfig(cfg, schema);
-    assert.equal(config.workflow.clean_pr_branch, true, "repair must add clean_pr_branch: true");
-    assert.ok(repairs.some((r) => r.code === "R-02" && /clean_pr_branch/.test(r.message)));
-  });
-
-  test("config missing ai_integration_phase → adds it with value true (OQ-4)", () => {
     const cfg = JSON.stringify({ ...schema, workflow: { ...schema.workflow, ai_integration_phase: undefined } });
     const { config, repairs } = repairConfig(cfg, schema);
-    assert.equal(config.workflow.ai_integration_phase, true);
-    assert.ok(repairs.some((r) => /ai_integration_phase/.test(r.message)));
+    assert.equal(config.workflow.ai_integration_phase, true, "repair must add ai_integration_phase: true");
+    assert.ok(repairs.some((r) => r.code === "R-02" && /ai_integration_phase/.test(r.message)));
   });
 
   test("complete config → unchanged, repairs: [] (never overwrites existing config)", () => {
@@ -484,8 +470,8 @@ describe("health: repairConfig pure helper (D-07, D-08, D-10)", () => {
   });
 });
 
-// Write a config.json missing the required workflow keys clean_pr_branch and
-// ai_integration_phase (both repairable W-05 warnings). Returns the raw text.
+// Write a config.json missing the required workflow key ai_integration_phase
+// (a repairable W-05 warning). Returns the raw text.
 async function writeConfigMissingWorkflowKeys(ctx) {
   const cfg = {
     gsd_state_version: "1.0",
@@ -546,7 +532,6 @@ describe("health: repair dispatch (D-07, D-08, D-10)", () => {
 
     const after = await gsdState.readConfigRaw(CWD);
     const parsed = JSON.parse(after);
-    assert.equal(parsed.workflow.clean_pr_branch, true, "repair must add clean_pr_branch");
     assert.equal(parsed.workflow.ai_integration_phase, true, "repair must add ai_integration_phase");
 
     const health = await gsdState.readArtifact(CWD, 1, "HEALTH");

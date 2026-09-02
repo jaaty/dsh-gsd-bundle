@@ -108,7 +108,6 @@ const EXPECTED_TOOL_NAMES = [
   "gsd_execute", "gsd_code_review", "gsd_ui_review", "gsd_verify", "gsd_validate_phase", "gsd_undo", "gsd_ship", "gsd_ui_phase",
   "gsd_quick", "gsd_map_codebase", "gsd_job", "gsd_intel_updater",
   "gsd_health", "gsd_milestone_audit", "gsd_extract_learnings",
-  "gsd_graphify",
 ];
 
 // Expected registered command names (20) — from lib/commands.js (D-03).
@@ -118,10 +117,9 @@ const EXPECTED_COMMAND_NAMES = [
   "gsd-execute-phase", "gsd-code-review", "gsd-ui-review", "gsd-verify-work", "gsd-validate-phase", "gsd-undo", "gsd-ship",
   "gsd-quick", "gsd-map-codebase", "gsd-new-milestone",
   "gsd-health", "gsd-extract-learnings",
-  "gsd-graphify",
 ];
 
-describe("mount: all 22 plugins activate", () => {
+describe("mount: all 21 plugins activate", () => {
   let fs, ctx;
   beforeEach(() => {
     fs = new FakeFs();
@@ -130,12 +128,12 @@ describe("mount: all 22 plugins activate", () => {
     ctx = makeMountCtx(fs, { subagents: makeSubagents() });
   });
 
-  test("applies all 22 plugins in patch order without throwing", async () => {
+  test("applies all 21 plugins in patch order without throwing", async () => {
     await applyAll(ctx);
     assert.ok(ctx.provided.has("gsdState"), "gsdState service was not provided");
     assert.ok(ctx.provided.get("gsdState") instanceof GsdState, "gsdState is not a GsdState instance");
-    assert.ok(ctx.tools.length === 24, `expected 24 tools, got ${ctx.tools.length}`);
-    assert.ok(ctx.commands.length === 21, `expected 21 commands, got ${ctx.commands.length}`);
+    assert.ok(ctx.tools.length === 23, `expected 23 tools, got ${ctx.tools.length}`);
+    assert.ok(ctx.commands.length === 20, `expected 20 commands, got ${ctx.commands.length}`);
     assert.ok(ctx.sections.length === 1, `expected 1 section, got ${ctx.sections.length}`);
     assert.ok(ctx.contexts.length === 1, `expected 1 context, got ${ctx.contexts.length}`);
     assert.ok(ctx.provided.has("gsdJobsRuntime"), "gsdJobsRuntime service was not provided");
@@ -146,7 +144,7 @@ describe("mount: all 22 plugins activate", () => {
     // DEGR-01: all 16 capability services are provided with the documented
     // descriptor shape (D-03: key/step/role/tools/commands/order). Built from
     // CAPABILITY_KEYS so test and source never drift (D-02 camelCase keys).
-    assert.ok(CAPABILITY_KEYS.length === 20, `expected 20 capability keys, got ${CAPABILITY_KEYS.length}`);
+    assert.ok(CAPABILITY_KEYS.length === 19, `expected 19 capability keys, got ${CAPABILITY_KEYS.length}`);
     for (const key of CAPABILITY_KEYS) {
       const cap = ctx.provided.get(key);
       assert.ok(cap, `capability ${key} was not provided`);
@@ -177,7 +175,7 @@ describe("mount: all 22 plugins activate", () => {
     const commandsMod = await import(`@dsh-gsd/bundle/commands`);
     commandsMod.apply(ctx2, {});
 
-    assert.ok(ctx2.commands.length === 20, `expected 20 commands, got ${ctx2.commands.length}`);
+    assert.ok(ctx2.commands.length === 19, `expected 19 commands, got ${ctx2.commands.length}`);
     assert.ok(!ctx2.commands.some((c) => c.name === "gsd-quick"), "gsd-quick was registered despite gsdQuick being absent");
     for (const expected of EXPECTED_COMMAND_NAMES) {
       if (expected === "gsd-quick") continue;
@@ -190,7 +188,7 @@ describe("mount: all 22 plugins activate", () => {
 });
 
 describe("mount: cordis.patch.yml rows resolve", () => {
-  test("override row present, 22 insert rows resolve via exports + import()", async () => {
+  test("override row present, 21 insert rows resolve via exports + import()", async () => {
     const { overridePresent, agentLoopConfigRaw, insertRows } = await readPatchRows();
 
     // D-03: the agent-loop override row is asserted only for presence + that it
@@ -202,8 +200,8 @@ describe("mount: cordis.patch.yml rows resolve", () => {
     );
 
     // Exactly the 20 insert rows (D-03).
-    assert.ok(insertRows.length === 22, `expected 22 insert rows, got ${insertRows.length}`);
-    assert.deepEqual(insertRows, EXPECTED_INSERT_ROWS, "parsed insert rows differ from the expected 22");
+    assert.ok(insertRows.length === 21, `expected 21 insert rows, got ${insertRows.length}`);
+    assert.deepEqual(insertRows, EXPECTED_INSERT_ROWS, "parsed insert rows differ from the expected 21");
 
     // Each row's name resolves through package.json exports and import().
     const pkgPath = path.resolve(import.meta.dirname, "../package.json");
@@ -315,7 +313,7 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
   test("all 23 registered tools have a valid compiled schema", () => {
     // apply() not throwing already proves defineTool compiled the schema (D-04);
     // assert the shape explicitly for every tool.
-    assert.equal(ctx.tools.length, 24);
+    assert.equal(ctx.tools.length, 23);
     for (const t of ctx.tools) {
       assert.equal(typeof t.name, "string", `${t.name}: name is not a string`);
       assert.equal(typeof t.description, "string", `${t.name}: description is not a string`);
@@ -441,7 +439,7 @@ describe("mount: reactive loop rendering (DEGR-02/DEGR-04)", () => {
   });
 
   test("full-set mount still renders present steps + tools (regression, D-11)", async () => {
-    const { ctx } = await mountSubset(["persona", "state", "core-tools", "discuss", "spec", "plan", "gap-analysis", "execute", "code-review", "ui-review", "verify", "validate", "undo", "ship", "milestone-audit", "learnings", "graphify", "ui", "quick", "map-codebase", "health"], { subagents: makeSubagents() });
+    const { ctx } = await mountSubset(["persona", "state", "core-tools", "discuss", "spec", "plan", "gap-analysis", "execute", "code-review", "ui-review", "verify", "validate", "undo", "ship", "milestone-audit", "learnings", "ui", "quick", "map-codebase", "health"], { subagents: makeSubagents() });
     for (const key of CAPABILITY_KEYS) assert.ok(ctx.provided.has(key), `${key} not provided`);
     await initProject(ctx);
 
@@ -457,7 +455,7 @@ describe("mount: reactive loop rendering (DEGR-02/DEGR-04)", () => {
     // discuss at order 5; gap-analysis order 22 slots between plan and quick;
     // validate order 45 slots between verify and ship).
     const snap = snapshot(ctx);
-    assert.match(snap, /Available steps: spec, discuss, ui, plan, gap-analysis, quick, execute, code-review, ui-review, verify, validate, ship, milestone-audit, learnings, graphify\./);
+    assert.match(snap, /Available steps: spec, discuss, ui, plan, gap-analysis, quick, execute, code-review, ui-review, verify, validate, ship, milestone-audit, learnings\./);
 
     // gsd_status still advertises the stored next_action when its capability is
     // present (after init, the first routable loop step is spec at order 5, so

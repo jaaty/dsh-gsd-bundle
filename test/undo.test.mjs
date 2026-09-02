@@ -22,7 +22,7 @@ import {
   renderDryRunReport,
   renderUndoBody,
 } from "../lib/undo.js";
-import { parseNameStatusZ } from "../lib/_clean-branch.js";
+import { parseNameStatusZ } from "../lib/_shared.js";
 
 // ── pure domain tests (no ctx, no I/O) ─────────────────────────────────────────
 
