@@ -223,7 +223,7 @@ This is a faithful reimplementation of opengsd-core's **phase loop and artefact 
 
 ### Clean-PR branch
 
-At ship time `gsd_ship` derives a `phase-<N>-clean` review branch that excludes the per-phase planning subtree `.planning/phases/` (D-01/D-02) while keeping the durable cross-phase files (`STATE.md`, `ROADMAP.md`, `REQUIREMENTS.md`, `PROJECT.md`, `config.json`, `.planning/codebase/`), applies the phase's real-code changes as one squash commit, and creates the phase PR from it. A doc-only phase that changes no code falls back to shipping the phase-`<N>` branch as-is (D-07). Disable via `workflow.clean_pr_branch: false` in `.planning/config.json` or the `gsd_ship` `no_clean_pr` parameter (D-09).
+`gsd_ship` pushes and PRs the phase-`<N>` branch directly — one branch per phase. The PR head is the current phase-`<N>` branch (no separate clean review branch is built or pushed), and the completion-state commit lands on phase-`<N>` and is pushed there only. The user squash-merges PRs, which already produces one clean commit on `main`.
 
 
 - **`gsd_run` is not wrapped.** The opengsd CLI query/check/state commands are reimplemented as in-process `gsdState` service methods (no separate `gsd_run` process).

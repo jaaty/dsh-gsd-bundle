@@ -25,6 +25,7 @@ import {
   awaitingDecision,
   awaitingMarker,
   parseDecisionEntries,
+  parseNameStatusZ,
 } from "../lib/_shared.js";
 
 describe("frontmatter parse/stringify", () => {
@@ -390,5 +391,38 @@ describe("parseDecisionEntries (CONTEXT decision parsing, single source of truth
     assert.deepEqual(parseDecisionEntries("- **D-01:**   padded text   \n"), [
       { id: "D-01", text: "padded text" },
     ]);
+  });
+});
+
+describe("parseNameStatusZ (relocated from _clean-branch.js, phase 51 D-03)", () => {
+  test("normal status entry `M\\0path` yields { status, path }", () => {
+    assert.deepEqual(parseNameStatusZ("M\0src/a.js"), [{ status: "M", path: "src/a.js" }]);
+  });
+
+  test("rename `R100\\0old\\0new` yields { status: 'R', oldPath, newPath }", () => {
+    assert.deepEqual(parseNameStatusZ("R100\0old.js\0new.js"), [
+      { status: "R", oldPath: "old.js", newPath: "new.js" },
+    ]);
+  });
+
+  test("trailing NUL drops the final empty token and still parses the preceding entries", () => {
+    assert.deepEqual(parseNameStatusZ("M\0a.js\0A\0b.js\0"), [
+      { status: "M", path: "a.js" },
+      { status: "A", path: "b.js" },
+    ]);
+  });
+
+  test("truncated rename (R with a missing newPath token) stops defensively", () => {
+    assert.deepEqual(parseNameStatusZ("M\0a.js\0R100\0old.js"), [
+      { status: "M", path: "a.js" },
+    ]);
+  });
+
+  test("empty / malformed input returns []", () => {
+    assert.deepEqual(parseNameStatusZ(""), []);
+    assert.deepEqual(parseNameStatusZ(null), []);
+    assert.deepEqual(parseNameStatusZ(undefined), []);
+    // a leading empty status token stops the parse
+    assert.deepEqual(parseNameStatusZ("\0M\0a.js"), []);
   });
 });

@@ -1,6 +1,6 @@
 # Roadmap — upstream-parity (v3.0.0)
 
-50 phase(s) | requirements mapped per phase
+51 phase(s) | requirements mapped per phase
 
 | # | Phase | Goal | Requirements |
 |---|-------|------|--------------|
@@ -54,6 +54,7 @@
 | 48 | pause-resume-work | Add pause-work and resume-work commands that write a structured context handoff (HANDOFF.json) and restore full context to continue work mid-phase. | GAP-14 |
 | 49 | autonomous | Add an autonomous path that drives all remaining phases of a milestone end-to-end without per-phase manual prompting. | GAP-15 |
 | 50 | add-tests | Add an add-tests generator that creates unit and E2E tests for a completed phase from its UAT criteria and implementation. | GAP-16 |
+| 51 | drop-clean-branch | Remove the clean-PR branch feature so gsd_ship pushes and PRs the phase-NN branch directly, leaving one branch per phase. | SHIP-CLEAN-01 … SHIP-CLEAN-04 |
 
 ## Progress
 
