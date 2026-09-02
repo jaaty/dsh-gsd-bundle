@@ -49,7 +49,7 @@
 | 43 | [x] milestone-audit | Add milestone close-gate and cross-phase UAT audits that confirm a milestone met its definition of done before close. | GAP-09 |
 | 44 | [x] learnings | Add an extract-learnings path that accumulates decisions, lessons, patterns, and surprises into a carrying-forward LEARNINGS.md. | GAP-10 |
 | 45 | [x] graphify | Add a project knowledge graph built in .planning/graphs/ with a tool to build, query, and inspect it. | GAP-11 |
-| 46 | mempalace | Add a cross-session memory integration that performs deliberate recall before discuss/plan and verbatim capture at phase boundaries. | GAP-12 |
+| 46 | [x] mempalace | Add a cross-session memory integration that performs deliberate recall before discuss/plan and verbatim capture at phase boundaries. | GAP-12 |
 | 47 | assumption-delta | Add an advisory assumption-delta checkpoint that surfaces one identity-model question when a phase makes something plural/optional/chosen that used to be singular/required/derived. | GAP-13 |
 | 48 | pause-resume-work | Add pause-work and resume-work commands that write a structured context handoff (HANDOFF.json) and restore full context to continue work mid-phase. | GAP-14 |
 | 49 | autonomous | Add an autonomous path that drives all remaining phases of a milestone end-to-end without per-phase manual prompting. | GAP-15 |
@@ -105,7 +105,7 @@
 | 43 | milestone-audit | [x] Complete | 2026-09-02 |
 | 44 | learnings | [x] Complete | 2026-09-02 |
 | 45 | graphify | [x] Complete | 2026-09-02 |
-| 46 | mempalace | pending |  |
+| 46 | mempalace | [x] Complete | 2026-09-02 |
 | 47 | assumption-delta | pending |  |
 | 48 | pause-resume-work | pending |  |
 | 49 | autonomous | pending |  |
