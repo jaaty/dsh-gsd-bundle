@@ -5,20 +5,20 @@ milestone_name: upstream-parity
 status: idle
 active_phase: null
 next_action: null
-next_phases: [46]
+next_phases: [47]
 progress:
   total_phases: 51
-  completed_phases: 47
-  total_plans: 4
-  completed_plans: 124
-  percent: 92
-current_phase: 46
-current_phase_name: mempalace
-current_plan: 4
-last_updated: "2026-09-02T22:08:10.208Z"
+  completed_phases: 48
+  total_plans: 2
+  completed_plans: 126
+  percent: 94
+current_phase: 47
+current_phase_name: assumption-delta
+current_plan: 2
+last_updated: "2026-09-02T23:02:30.860Z"
 state_head: null
 last_activity: 2026-09-02
-stopped_at: "Phase 46 shipped — PR #55"
+stopped_at: "Phase 47 shipped — PR #56"
 paused_at: null
 ---
 # GSD STATE
@@ -233,6 +233,9 @@ _No active phase._
 - Phase 46: CONTEXT.md sealed — 12 decisions
 - Phase 46: planned — 4 plan(s) across 2 wave(s).
 - Phase 46 shipped — PR #55 (https://github.com/jaaty/dsh-gsd-bundle/pull/55)
+- Phase 47: CONTEXT.md sealed — 9 decisions
+- Phase 47: planned — 2 plan(s) across 2 wave(s).
+- Phase 47 shipped — PR #56 (https://github.com/jaaty/dsh-gsd-bundle/pull/56)
 
 ### Blockers / Concerns
 _none_
