@@ -116,6 +116,8 @@ All tools are registered by the bundle's plugins and available to the model in a
 | `gsd_ship` | `gsd-ship` | Preflight + capability gates + pre-ship-verify (npm ci + npm test in a temp copy), push the branch, create the PR, mark the phase shipped. |
 | `gsd_quick` | `gsd-quick` | Sub-threshold lightweight path for work too small to warrant the full loop. |
 | `gsd_map_codebase` | `gsd-map-codebase` | Map an existing codebase with parallel fresh-context mappers → `.planning/codebase/`. |
+| `gsd_mempalace_recall` | `gsd-mempalace` | Deliberate recall before discuss/plan — produces `MEMORY-RECALL.md` from the MemPalace CLI. |
+| `gsd_mempalace_capture` | `gsd-mempalace` | Files CONTEXT/PLAN/SUMMARY verbatim into the palace at phase boundaries. |
 
 ## Slash-commands
 
@@ -137,6 +139,31 @@ The `gsd-commands` plugin registers the `/gsd-*` commands as thin routers — ea
 | `/gsd-new-milestone <name> <version>` | `gsd_new_milestone` | name + version |
 
 e.g. `/gsd-plan-phase 1` routes to `gsd_plan`; `/gsd-ship 2 --draft` routes to `gsd_ship` as a draft PR.
+
+## Mempalace (cross-session memory)
+
+The `gsd-mempalace` plugin adds a cross-session memory integration that performs **deliberate recall** before discuss/plan and **verbatim capture** at phase boundaries, talking to the external [MemPalace](https://mempalaceofficial.com) service through an injectable CLI exec seam. It is an **advisory soft gate**: it never advances STATE and never blocks a loop step — every auto-hook is `onError: skip`, so an unreachable palace writes a stub and the loop continues.
+
+Two tools:
+
+- **`gsd_mempalace_recall({ phase })`** — performs deliberate recall (wake-up + search via the MemPalace CLI) and writes `MEMORY-RECALL.md` in the phase directory with Prior decisions / Patterns / Surprises sections, each item carrying provenance. When the CLI is unreachable, it writes an 'unavailable' stub naming the native fallback and continues.
+- **`gsd_mempalace_capture({ phase, artifact })`** — files the named artifact (CONTEXT/PLAN/SUMMARY) **verbatim** into the appropriate palace room (decisions/planning/milestones) via staging + `mempalace mine`. Capture is idempotent (content-hash dedup) and never writes lossy summaries.
+
+Auto-hooks are wired into the loop tools, gated by `mempalace.enabled` and the relevant sub-key: recall at `discuss:pre` / `plan:pre`, capture at `discuss:post` / `plan:post` / `verify:post` / `ship:post`. The standalone tools remain for manual invocation.
+
+### Config surface
+
+Opt-in via `mempalace.enabled` in `config.json` (default `false` — the loop is unchanged when unset):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `mempalace.enabled` | `false` | Master opt-in gate for the whole plugin. |
+| `mempalace.memory_mode` | `"augment"` | Recall mode. `augment` is fully implemented: the palace is an **additive** recall layer alongside native memory (`.planning/graphs/`, `LEARNINGS.md`, STATE), which stays authoritative. `kg_backend` and `replace` are accepted in config but treated as additive this phase. |
+| `mempalace.wing` | `""` | The MemPalace wing to recall from / mine into. Falls back to `project_code`, then the repo directory name. |
+| `mempalace.recall_on_discuss` | `true` | Fire recall at `discuss:pre`. |
+| `mempalace.recall_on_plan` | `true` | Fire recall at `plan:pre`. |
+| `mempalace.capture_artifacts` | `true` | Fire capture at phase boundaries. |
+| `mempalace.mirror_kg` | `true` | Whether to mirror knowledge-graph facts. **Note:** KG mirroring requires MCP (`mempalace_kg_add`) — unavailable in this CLI-only bundle; `mirror_kg` is config-accepted but the actual KG write is a documented no-op until a later MCP-capable phase. |
 
 ## How it works
 

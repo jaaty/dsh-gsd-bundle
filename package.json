@@ -98,6 +98,9 @@
     "./graphify": {
       "default": "./lib/graphify.js"
     },
+    "./mempalace": {
+      "default": "./lib/mempalace.js"
+    },
     "./commands": {
       "default": "./lib/commands.js"
     },

@@ -39,8 +39,9 @@ const NO_LOOP = FULL.filter((d) => !["step", "optional", "alternate"].includes(d
 
 // The pure loop-step order (by descriptor.order): spec 5, discuss 10, ui 15,
 // plan 20, gap-analysis 22, quick 25, execute 30, code-review 35, ui-review 36,
-// verify 40, validate 45, ship 50, milestone-audit 52, learnings 53.
-const LOOP_ORDER = ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdGapAnalysis", "gsdQuick", "gsdExecute", "gsdCodeReview", "gsdUiReview", "gsdVerify", "gsdValidatePhase", "gsdShip", "gsdMilestoneAudit", "gsdLearnings", "gsdGraphify"];
+// verify 40, validate 45, ship 50, milestone-audit 52, learnings 53, graphify 54,
+// mempalace 55.
+const LOOP_ORDER = ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdGapAnalysis", "gsdQuick", "gsdExecute", "gsdCodeReview", "gsdUiReview", "gsdVerify", "gsdValidatePhase", "gsdShip", "gsdMilestoneAudit", "gsdLearnings", "gsdGraphify", "gsdMempalace"];
 
 describe("availableCapabilities", () => {
   test("collects only truthy object descriptors from the getCap thunk, in CAPABILITY_KEYS order", () => {
@@ -108,7 +109,7 @@ describe("loopSteps / informationEntries ordering (D-08)", () => {
     const subset = without("gsdVerify");
     assert.deepEqual(
       loopSteps(subset).map((d) => d.key),
-      ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdGapAnalysis", "gsdQuick", "gsdExecute", "gsdCodeReview", "gsdUiReview", "gsdValidatePhase", "gsdShip", "gsdMilestoneAudit", "gsdLearnings", "gsdGraphify"],
+      ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdGapAnalysis", "gsdQuick", "gsdExecute", "gsdCodeReview", "gsdUiReview", "gsdValidatePhase", "gsdShip", "gsdMilestoneAudit", "gsdLearnings", "gsdGraphify", "gsdMempalace"],
     );
   });
 
@@ -134,8 +135,9 @@ describe("effectiveRoutableStep (D-04/D-06/D-10)", () => {
     // verify + validate + ship absent -> verify's next greater slot is
     // milestone-audit (order 52), the step after ship.
     assert.equal(effectiveRoutableStep("verify-phase", without("gsdVerify", "gsdValidatePhase", "gsdShip")).key, "gsdMilestoneAudit");
-    // verify + validate + ship + milestone-audit absent -> no greater slot -> null.
-    assert.equal(effectiveRoutableStep("verify-phase", without("gsdVerify", "gsdValidatePhase", "gsdShip", "gsdMilestoneAudit", "gsdLearnings", "gsdGraphify")), null);
+    // verify + validate + ship + milestone-audit + learnings + graphify +
+    // mempalace absent -> no greater slot -> null.
+    assert.equal(effectiveRoutableStep("verify-phase", without("gsdVerify", "gsdValidatePhase", "gsdShip", "gsdMilestoneAudit", "gsdLearnings", "gsdGraphify", "gsdMempalace")), null);
   });
 
   test("falls back to the first present loop step for a null/unknown next_action", () => {
