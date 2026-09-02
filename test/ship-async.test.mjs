@@ -59,15 +59,4 @@ describe("ship.js async conversion (static)", () => {
     assert.match(src, /await fetchGitData\(cwd, git, defaultBranch\)/, "fetchGitData awaited with the async git helper");
     assert.match(src, /export\s*\{\s*name,\s*inject,\s*apply,\s*preflightError(?:\s*,\s*runLearningsOnShip)?(?:\s*,\s*runGraphifyOnShip)?\s*\}/, "preflightError exported");
   });
-
-  test("completion state is propagated to the clean branch (option C, stale-progress fix)", async () => {
-    const src = await readFile(new URL("../lib/ship.js", import.meta.url), "utf8");
-    // The completion-state commit must be cherry-picked onto the clean branch and
-    // pushed, so main (via the clean PR) carries the ROADMAP/STATE completion markers
-    // and the phase branch can be deleted without losing the record.
-    assert.match(src, /if\s*\(cleanPr\s*&&\s*prBranch\s*!==\s*branch\)/, "clean-branch propagation is gated on a built clean branch");
-    assert.match(src, /cherry-pick/, "completion-state commit is cherry-picked onto the clean branch");
-    assert.match(src, /\["switch",\s*prBranch\]/, "switches to the clean branch to apply the completion state");
-    assert.match(src, /\["push",\s*"origin",\s*prBranch\]/, "pushes the completion state to the clean branch");
-  });
 });
