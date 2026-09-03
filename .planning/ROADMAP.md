@@ -52,7 +52,7 @@
 | 46 | [x] mempalace | Add a cross-session memory integration that performs deliberate recall before discuss/plan and verbatim capture at phase boundaries. | GAP-12 |
 | 47 | [x] assumption-delta | Add an advisory assumption-delta checkpoint that surfaces one identity-model question when a phase makes something plural/optional/chosen that used to be singular/required/derived. | GAP-13 |
 | 48 | [x] pause-resume-work | Add pause-work and resume-work commands that write a structured context handoff (HANDOFF.json) and restore full context to continue work mid-phase. | GAP-14 |
-| 49 | autonomous | Add an autonomous path that drives all remaining phases of a milestone end-to-end without per-phase manual prompting. | GAP-15 |
+| 49 | [x] autonomous | Add an autonomous path that drives all remaining phases of a milestone end-to-end without per-phase manual prompting. | GAP-15 |
 | 50 | add-tests | Add an add-tests generator that creates unit and E2E tests for a completed phase from its UAT criteria and implementation. | GAP-16 |
 | 51 | [x] drop-clean-branch | Remove the clean-PR branch feature so gsd_ship pushes and PRs the phase-NN branch directly, leaving one branch per phase. | SHIP-CLEAN-01 … SHIP-CLEAN-04 |
 
@@ -108,6 +108,6 @@
 | 46 | mempalace | [x] Complete | 2026-09-03 |
 | 47 | assumption-delta | [x] Complete | 2026-09-03 |
 | 48 | pause-resume-work | [x] Complete | 2026-09-03 |
-| 49 | autonomous | pending |  |
+| 49 | autonomous | [x] Complete | 2026-09-03 |
 | 50 | add-tests | pending |  |
 | 51 | drop-clean-branch | [x] Complete | 2026-09-03 |

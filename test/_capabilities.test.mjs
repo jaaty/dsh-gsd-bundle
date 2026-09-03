@@ -9,8 +9,8 @@ import assert from "node:assert/strict";
 import { ROLES, CAPABILITY_KEYS, buildCapability } from "../lib/_capabilities.js";
 
 describe("capability key surface (DEGR-01)", () => {
-  test("exposes exactly the 21 known keys", () => {
-    assert.equal(CAPABILITY_KEYS.length, 21);
+  test("exposes exactly the 22 known keys", () => {
+    assert.equal(CAPABILITY_KEYS.length, 22);
     for (const key of [
       "gsdOrient",
       "gsdJobs",
@@ -33,6 +33,7 @@ describe("capability key surface (DEGR-01)", () => {
       "gsdLearnings",
       "gsdGraphify",
       "gsdMempalace",
+      "gsdAutonomous",
     ]) {
       assert.ok(CAPABILITY_KEYS.includes(key), `missing capability key ${key}`);
     }

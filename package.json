@@ -101,6 +101,9 @@
     "./mempalace": {
       "default": "./lib/mempalace.js"
     },
+    "./autonomous": {
+      "default": "./lib/autonomous.js"
+    },
     "./commands": {
       "default": "./lib/commands.js"
     },
