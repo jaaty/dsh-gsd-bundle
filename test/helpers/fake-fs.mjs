@@ -44,6 +44,10 @@ export class FakeFs {
     this.register(target.targetKey);
   }
 
+  async unlink(target) {
+    this.files.delete(target.targetKey);
+  }
+
   async listDir(target) {
     const prefix = target.targetKey.endsWith("/") ? target.targetKey : `${target.targetKey}/`;
     const keys = new Set([...this.files.keys(), ...this.dirs]);
@@ -96,6 +100,9 @@ export function realFsAdapter() {
     },
     async writeText(t, content) {
       await fsPromises.writeFile(t.targetKey, content, "utf8");
+    },
+    async unlink(t) {
+      await fsPromises.unlink(t.targetKey);
     },
     async listDir(t) {
       const ents = await fsPromises.readdir(t.targetKey, { withFileTypes: true });

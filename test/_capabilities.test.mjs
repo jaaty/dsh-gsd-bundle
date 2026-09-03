@@ -63,8 +63,8 @@ describe("capability key surface (DEGR-01)", () => {
 describe("capability mapping (D-04)", () => {
   test("gsdOrient tools + commands are exact", () => {
     const d = buildCapability("gsdOrient");
-    assert.deepEqual(d.tools, ["gsd_init", "gsd_status", "gsd_progress", "gsd_new_milestone"]);
-    assert.deepEqual(d.commands, ["gsd-init", "gsd-status", "gsd-progress", "gsd-new-milestone"]);
+    assert.deepEqual(d.tools, ["gsd_init", "gsd_status", "gsd_progress", "gsd_new_milestone", "gsd_pause_work", "gsd_resume_work"]);
+    assert.deepEqual(d.commands, ["gsd-init", "gsd-status", "gsd-progress", "gsd-new-milestone", "gsd-pause-work", "gsd-resume-work"]);
   });
 
   test("gsdJobs has no slash command", () => {
