@@ -131,6 +131,14 @@
     - id: gsd-mempalace
       name: '@dsh-gsd/bundle/mempalace'
 
+    # The autonomous out-of-band orchestrator (/gsd-autonomous): drives every
+    # remaining incomplete phase of the active milestone end-to-end (discuss /
+    # plan / execute / verify per phase) without per-phase manual prompting.
+    # Stops on a hard failure; never ships and never runs milestone lifecycle.
+    # Not a loop step; it orchestrates the loop.
+    - id: gsd-autonomous
+      name: '@dsh-gsd/bundle/autonomous'
+
     - id: gsd-ship
       name: '@dsh-gsd/bundle/ship'
 
