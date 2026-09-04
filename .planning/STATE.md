@@ -15,7 +15,7 @@ progress:
 current_phase: 50
 current_phase_name: add-tests
 current_plan: 2
-last_updated: "2026-09-04T01:51:58.366Z"
+last_updated: "2026-09-04T05:58:15.158Z"
 state_head: null
 last_activity: 2026-09-04
 stopped_at: "Phase 50 shipped — PR #59"
@@ -248,6 +248,7 @@ _No active phase._
 - Phase 50: planned — 3 plan(s) across 2 wave(s).
 - Phase 50: COVERAGE.md written (coverage 100%, gaps: none)
 - Phase 50 shipped — PR #59 (https://github.com/jaaty/dsh-gsd-bundle/pull/59)
+- Milestone upstream-parity: AUDIT.md written (status not-ready)
 
 ### Blockers / Concerns
 _none_
