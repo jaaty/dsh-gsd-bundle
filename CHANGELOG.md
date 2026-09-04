@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-09-04
+
+### Added
+
+- **Milestone `upstream-parity`** — brings the bundle to full parity with upstream opengsd-core's phase loop and step surface. Version bumped to 3.0.0.
+  - **spec-phase** (PR #36): a spec step that produces a SPEC.md with falsifiable requirements gated by an ambiguity-scoring score.
+  - **gap-analysis** (PR #40): a post-planning coverage tool emitting a REQ-ID/D-ID vs plan-body coverage table.
+  - **code-review** (PR #41): a review pass producing REVIEW.md with severity-classified findings and a --fix companion.
+  - **ui-review** (PR #42): a retroactive 6-pillar UI audit producing UI-REVIEW.md.
+  - **validate-phase** (PR #43): a retro audit mapping executed work to tests and producing tests to close validation gaps.
+  - **undo** (PR #44): a safe rollback path with dependency checks and a confirmation gate.
+  - **health** (PR #45): a .planning/ integrity diagnostic with non-destructive repair.
+  - **milestone-audit** (PR #46): milestone close-gate and cross-phase UAT audits.
+  - **learnings** (PR #51): cross-phase learnings extraction.
+  - **graphify** (PR #52): a project knowledge graph.
+  - **mempalace** (PR #55): cross-session memory capture/recall.
+  - **assumption-delta** (PR #53): assumption-delta detection.
+  - **pause-resume-work** (PR #56): structured context handoff + resume.
+  - **autonomous** (PR #57): an autonomous path driving remaining phases end-to-end.
+  - **add-tests** (PR #59): a test generator creating unit and E2E tests for a completed phase.
+  - **drop-clean-branch** (PR #54): gsd_ship now pushes and PRs the phase-NN branch directly (one branch per phase).
+
 ## [2.2.0] - 2026-08-29
 
 ### Added
