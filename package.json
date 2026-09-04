@@ -104,6 +104,9 @@
     "./autonomous": {
       "default": "./lib/autonomous.js"
     },
+    "./add-tests": {
+      "default": "./lib/add-tests.js"
+    },
     "./commands": {
       "default": "./lib/commands.js"
     },

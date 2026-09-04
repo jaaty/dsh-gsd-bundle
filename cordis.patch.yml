@@ -139,6 +139,12 @@
     - id: gsd-autonomous
       name: '@dsh-gsd/bundle/autonomous'
 
+    # The add-tests generator (/gsd-add-tests): creates unit and Integration
+    # tests for a completed phase from its UAT criteria and implementation.
+    # Out-of-band; never advances STATE, never ships.
+    - id: gsd-add-tests
+      name: '@dsh-gsd/bundle/add-tests'
+
     - id: gsd-ship
       name: '@dsh-gsd/bundle/ship'
 

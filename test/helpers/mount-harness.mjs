@@ -40,6 +40,7 @@ export const PATCH_ROWS = [
   { id: "gsd-graphify", sub: "graphify" },
   { id: "gsd-mempalace", sub: "mempalace" },
   { id: "gsd-autonomous", sub: "autonomous" },
+  { id: "gsd-add-tests", sub: "add-tests" },
   { id: "gsd-ship", sub: "ship" },
   { id: "gsd-ui", sub: "ui" },
   { id: "gsd-quick", sub: "quick" },
