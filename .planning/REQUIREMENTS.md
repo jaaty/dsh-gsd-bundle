@@ -115,4 +115,4 @@
 - [x] GAP-13: An advisory assumption-delta checkpoint detects when a phase makes something plural, optional, or chosen that used to be singular, required, or derived, and surfaces one identity-model question.
 - [x] GAP-14: A pause-work command writes a structured context handoff (HANDOFF.json + a continue-here pointer) and a resume-work command restores full context from earlier artifacts to continue mid-phase.
 - [x] GAP-15: An autonomous path can drive all remaining phases of a milestone end-to-end (discuss → plan → execute per phase) without per-phase manual prompting.
-- [ ] GAP-16: An add-tests generator creates unit and E2E tests for a completed phase based on its UAT criteria and implementation.
+- [x] GAP-16: An add-tests generator creates unit and E2E tests for a completed phase based on its UAT criteria and implementation.
