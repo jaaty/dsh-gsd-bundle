@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v3.0.0
 milestone_name: upstream-parity
-status: ship
-active_phase: 50
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [50]
 progress:
   total_phases: 51
-  completed_phases: 50
+  completed_phases: 51
   total_plans: 3
   completed_plans: 134
-  percent: 98
+  percent: 100
 current_phase: 50
 current_phase_name: add-tests
 current_plan: 2
-last_updated: "2026-09-04T01:45:19.530Z"
+last_updated: "2026-09-04T01:51:58.366Z"
 state_head: null
 last_activity: 2026-09-04
-stopped_at: "Phase 49 shipped — PR #58"
+stopped_at: "Phase 50 shipped — PR #59"
 paused_at: null
 ---
 # GSD STATE
@@ -247,6 +247,7 @@ _No active phase._
 - Phase 50: CONTEXT.md sealed — 13 decisions
 - Phase 50: planned — 3 plan(s) across 2 wave(s).
 - Phase 50: COVERAGE.md written (coverage 100%, gaps: none)
+- Phase 50 shipped — PR #59 (https://github.com/jaaty/dsh-gsd-bundle/pull/59)
 
 ### Blockers / Concerns
 _none_
