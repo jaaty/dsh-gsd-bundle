@@ -1,35 +1,31 @@
 ---
 milestone: upstream-parity
-status: not-ready
-generated: "2026-09-04T05:58:15.152Z"
+status: ready-to-close
+generated: "2026-09-04T06:07:33.839Z"
 phases_total: 51
 phases_shipped: 51
 requirements_total: 72
 requirements_complete: 72
-verifications_passed: 44
-reasons: ["Phases without passed verification: 37 (missing), 38 (missing), 39 (missing), 40 (missing), 41 (missing), 42 (missing), 43 (missing)"]
-uat: skipped
+verifications_passed: 51
+reasons: []
+uat: unavailable
 ---
 # Milestone upstream-parity - Audit Report
 
-**Audited:** 2026-09-04T05:58:15.152Z
-**Status:** not-ready
+**Audited:** 2026-09-04T06:07:33.839Z
+**Status:** ready-to-close
 
 ## Close-Gate (deterministic)
 
 - Phases shipped: 51/51
 - Requirements complete: 72/72
-- Verifications passed: 44/51
-
-## Reasons
-
-- Phases without passed verification: 37 (missing), 38 (missing), 39 (missing), 40 (missing), 41 (missing), 42 (missing), 43 (missing)
+- Verifications passed: 51/51
 
 ## Cross-Phase UAT Outstanding Items
 
-**Status:** SKIPPED
+**Status:** UNAVAILABLE
 
-_The cross-phase UAT audit was skipped because the close-gate did not pass. Use --force to run the UAT audit anyway._
+_The gsd-milestone-auditor subagent could not complete. Cause: auditor returned malformed structured output (outstanding_items missing or invalid)._
 
 ---
 
