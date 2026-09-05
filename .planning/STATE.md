@@ -15,9 +15,9 @@ progress:
 current_phase: 37
 current_phase_name: gap-analysis
 current_plan: 2
-last_updated: "2026-09-04T06:07:33.873Z"
+last_updated: "2026-09-05T07:16:21.122Z"
 state_head: null
-last_activity: 2026-09-04
+last_activity: 2026-09-05
 stopped_at: "Phase 50 shipped — PR #59"
 paused_at: null
 ---
@@ -251,6 +251,13 @@ _No active phase._
 - Milestone upstream-parity: AUDIT.md written (status not-ready)
 - Phase 37: CONTEXT.md sealed — 15 decisions
 - Milestone upstream-parity: AUDIT.md written (status ready-to-close)
+- quick 2026-09-05-fix-readme-badges: Fix the two broken README badges on line 2 of README.md (repo root). Exactly two edits, nothing else:
+
+1. CI badge is 404 because the GitHub Actions badge URL is missing the `.svg` extension. Change `https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml/badge?branch=main` to `https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml/badge.svg?branch=main` (verified: the .svg URL returns 200 and renders "CI - passing"; the bare /badge URL returns 404).
+
+2. npm badge renders "npm: invalid" because shields.io interprets the `@3.0.0` suffix as an npm dist-tag that does not exist. Change `https://img.shields.io/npm/v/@dsh-gsd/bundle@3.0.0?style=flat-square` to `https://img.shields.io/npm/v/@dsh-gsd/bundle?style=flat-square` (verified: renders "npm: v3.0.0", matching the published version; it shows the latest published version and stays correct on future releases).
+
+Do NOT touch lines 14 or 20 (historical v2.2 release-note prose). Do not modify the badge link targets, the License badge, or anything else. Commit atomically with a message describing the badge fix.
 
 ### Blockers / Concerns
 _none_
