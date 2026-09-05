@@ -5,8 +5,11 @@
 //   - D-02: the CI badge targets the WHOLE CI workflow on branch `main`.
 //   - D-04: each badge is clickable and links to the correct destination
 //     (npm page / LICENSE file / CI workflow).
-//   - D-03: the npm-version badge is a STATIC mirror of v2.2.0, not a dynamic
-//     `latest` badge.
+//   - D-03: the npm-version badge is a STATIC mirror of the released version,
+//     not a dynamic `latest` badge — implemented as a static shields badge
+//     (npm-vX.Y.Z-blue) because the shields.io npm/v endpoint cannot pin an
+//     arbitrary version (a @x.y.z suffix is treated as a dist-tag and renders
+//     "npm: invalid").
 //   - D-06: a small structural test asserts the badge image URLs are present
 //     in README.md and well-formed.
 //
@@ -24,6 +27,11 @@ import path from "node:path";
 // The test lives at <root>/test/readme-badges.test.mjs, so the root is one level up.
 const ROOT = new URL("../", import.meta.url).pathname;
 
+// The npm-version badge is a static pinned shields badge (npm-vX.Y.Z-blue),
+// per D-03 — shared by the npm-badge test and the badge-row test.
+const NPM_STATIC_BADGE_RE =
+  /https:\/\/img\.shields\.io\/badge\/npm-v\d+\.\d+\.\d+-blue\?style=flat-square/;
+
 test("README is readable from the repo root (D-06)", async () => {
   const readme = await fsPromises.readFile(path.join(ROOT, "README.md"), "utf8");
   assert.ok(readme.includes("# dsh-gsd-bundle"), "README.md missing its H1");
@@ -32,12 +40,13 @@ test("README is readable from the repo root (D-06)", async () => {
 test("CI badge is present and links to the CI workflow (D-02, D-04)", async () => {
   const readme = await fsPromises.readFile(path.join(ROOT, "README.md"), "utf8");
   // The badge image URL targets the whole CI workflow (github/workflows/ci.yml)
-  // on branch `main` (D-02).
+  // on branch `main` (D-02). The .svg extension is required: the bare /badge
+  // path returns 404.
   assert.ok(
     readme.includes(
-      "https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml/badge?branch=main",
+      "https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml/badge.svg?branch=main",
     ),
-    "CI badge image URL missing or not pinned to branch=main (D-02)",
+    "CI badge image URL missing, missing .svg, or not pinned to branch=main (D-02)",
   );
   // The badge is clickable and links to the CI workflow (D-04).
   assert.ok(
@@ -62,20 +71,25 @@ test("license badge is present and links to the LICENSE file (D-03, D-04)", asyn
   );
 });
 
-test("npm-version badge is statically pinned to v3.0.0 and links to the npm page (D-03, D-04)", async () => {
+test("npm-version badge is a static pinned badge and links to the npm page (D-03, D-04)", async () => {
   const readme = await fsPromises.readFile(path.join(ROOT, "README.md"), "utf8");
-  // The npm badge is a STATIC mirror pinned to @3.0.0 (D-03), not a dynamic
-  // `latest` badge — the pinned substring @3.0.0?style must appear.
-  assert.ok(
-    readme.includes(
-      "https://img.shields.io/npm/v/@dsh-gsd/bundle@3.0.0?style=flat-square",
-    ),
-    "npm-version badge image URL missing or not pinned to @3.0.0 (D-03)",
+  // The npm badge is a STATIC mirror of the released version (D-03), rendered
+  // as a static pinned shields badge (npm-vX.Y.Z-blue), not a dynamic badge.
+  assert.match(
+    readme,
+    NPM_STATIC_BADGE_RE,
+    "static pinned npm badge image URL missing (D-03)",
   );
   // Lock out the dynamic unpinned form (shields.io latest badge).
   assert.ok(
     !readme.includes("https://img.shields.io/npm/v/@dsh-gsd/bundle?style"),
-    "dynamic unpinned npm badge present; D-03 requires the static @3.0.0 pin",
+    "dynamic unpinned npm badge present; D-03 requires the static pinned badge",
+  );
+  // Lock out the @x.y.z-suffixed npm/v form: shields.io treats the suffix as a
+  // dist-tag and renders "npm: invalid".
+  assert.ok(
+    !readme.includes("https://img.shields.io/npm/v/@dsh-gsd/bundle@"),
+    "@x.y.z-suffixed npm/v badge present; shields renders that form as \"npm: invalid\" (D-03)",
   );
   // The badge is clickable and links to the npm package page (D-04).
   assert.ok(
@@ -100,9 +114,14 @@ test("badge row is a single contiguous line immediately below the H1 (D-05)", as
   const badgeLine = readme.split("# dsh-gsd-bundle\n")[1].split("\n")[0];
   assert.ok(
     badgeLine.includes(
-      "https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml/badge?branch=main",
+      "https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml/badge.svg?branch=main",
     ),
     "CI badge image URL not on the badge row (D-05)",
+  );
+  assert.match(
+    badgeLine,
+    NPM_STATIC_BADGE_RE,
+    "npm badge image URL not on the badge row (D-05)",
   );
   assert.ok(
     badgeLine.includes("https://github.com/jaaty/dsh-gsd-bundle/blob/main/LICENSE"),
@@ -138,9 +157,9 @@ test("npm-version badge pin tracks the currently-released package.json version (
   );
   assert.ok(
     readme.includes(
-      `https://img.shields.io/npm/v/@dsh-gsd/bundle@${pkg.version}?style=flat-square`,
+      `https://img.shields.io/badge/npm-v${pkg.version}-blue?style=flat-square`,
     ),
-    `npm badge not pinned to the released version @${pkg.version} (D-03 currency gate)`,
+    `npm badge not pinned to the released version v${pkg.version} (D-03 currency gate)`,
   );
 });
 

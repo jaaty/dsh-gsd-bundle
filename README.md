@@ -1,5 +1,5 @@
 # dsh-gsd-bundle
-[![CI](https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/jaaty/dsh-gsd-bundle?style=flat-square)](https://github.com/jaaty/dsh-gsd-bundle/blob/main/LICENSE) [![npm version](https://img.shields.io/npm/v/@dsh-gsd/bundle?style=flat-square)](https://www.npmjs.com/package/@dsh-gsd/bundle)
+[![CI](https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/jaaty/dsh-gsd-bundle?style=flat-square)](https://github.com/jaaty/dsh-gsd-bundle/blob/main/LICENSE) [![npm version](https://img.shields.io/badge/npm-v3.0.0-blue?style=flat-square)](https://www.npmjs.com/package/@dsh-gsd/bundle)
 
 A **plugin bundle for [DeepSeek Harness](https://github.com/deepseek-ai/dsh)** (dsh) that reimplements [opengsd-core](https://github.com/open-gsd/gsd-core) — **Git Ship Done (GSD)** — as a set of host-plane Cordis plugins. It replaces the default agent-loop behaviour with the GSD phase loop, so every session becomes a disciplined, artefact-driven engineering loop.
 
