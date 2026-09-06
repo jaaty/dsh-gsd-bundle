@@ -21,6 +21,7 @@ import {
   CWD,
   PATCH_ROWS,
   makeExec,
+  makeSubagents,
   mountSubset,
   personaBody,
   snapshot,
@@ -182,4 +183,39 @@ describe("removal: per-plugin retirement reverts effects and keeps the loop func
       }
     });
   }
+});
+
+// ── out-of-band retirement (DEGR-05) ─────────────────────────────────────────
+// gsdPhaseManagement is role:"out-of-band" (like undo/health), so it is NOT
+// covered by the role:"step" retirement matrix above. This dedicated case proves
+// retiring the gsd-phase-management plugin reverts its three surfaces — the
+// gsdPhaseManagement capability, the gsd_phase tool, and the /gsd-phase-manage
+// command — while the rest of the loop stays mounted and functional.
+describe("removal: gsd-phase-management (out-of-band)", () => {
+  const allSubs = PATCH_ROWS.map((r) => r.sub);
+
+  test("retiring gsd-phase-management unregisters gsd_phase + /gsd-phase-manage + gsdPhaseManagement", async () => {
+    const subs = allSubs.filter((s) => s !== "phase-management");
+    const { ctx } = await mountSubset(subs, { subagents: makeSubagents() });
+
+    // Surface 1 — capability absent.
+    assert.ok(!ctx.provided.has("gsdPhaseManagement"), "gsdPhaseManagement capability still provided");
+    // Surface 2 — tool absent.
+    assert.ok(!ctx.tools.some((t) => t.name === "gsd_phase"), "gsd_phase still registered");
+    // Surface 3 — command unregistered.
+    assert.ok(!ctx.commands.some((c) => c.name === "gsd-phase-manage"), "gsd-phase-manage still registered");
+
+    // The rest of the loop stays functional: the step capabilities remain.
+    for (const key of ["gsdOrient", "gsdDiscuss", "gsdPlan", "gsdExecute", "gsdVerify", "gsdShip"]) {
+      assert.ok(ctx.provided.has(key), `${key} should remain provided after retiring gsd-phase-management`);
+    }
+  });
+
+  test("mounting gsd-phase-management registers gsd_phase + /gsd-phase-manage + gsdPhaseManagement", async () => {
+    const { ctx } = await mountSubset(allSubs, { subagents: makeSubagents() });
+
+    assert.ok(ctx.provided.has("gsdPhaseManagement"), "gsdPhaseManagement capability not provided");
+    assert.ok(ctx.tools.some((t) => t.name === "gsd_phase"), "gsd_phase not registered");
+    assert.ok(ctx.commands.some((c) => c.name === "gsd-phase-manage"), "gsd-phase-manage not registered");
+  });
 });
