@@ -119,7 +119,7 @@
 
 ## CLH
 
-- [ ] CLH-01: Phase CRUD: add, insert, remove, reorder, and edit phases directly in ROADMAP.md with validation and integrity checks.
+- [x] CLH-01: Phase CRUD: add, insert, remove, reorder, and edit phases directly in ROADMAP.md with validation and integrity checks.
 - [ ] CLH-02: Smart entry: detect the current project state and route the user to the best next action.
 - [ ] CLH-03: Auto-advance: a progress --next option that automatically advances to the next logical workflow step.
 - [ ] CLH-04: Freeform routing: parse a plain-English intent and dispatch it to the most appropriate GSD command.
