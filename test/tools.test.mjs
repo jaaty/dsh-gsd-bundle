@@ -1250,3 +1250,39 @@ describe("gsd_map_codebase", () => {
     assert.equal(res.kind, "success");
   });
 });
+
+describe("gsd_phase", () => {
+  beforeEach(async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    ctx = makeCtx();
+  });
+
+  test("registers with the action enum and per-action flag fields in the compiled schema", async () => {
+    const { t } = await registerTool("phase-management-plugin", "gsd_phase");
+    assert.equal(t.name, "gsd_phase");
+    assert.equal(typeof t.description, "string");
+    assert.ok(t.description.length > 0, "gsd_phase description is empty");
+    assert.deepEqual(t.parameters.properties.action.enum, ["add", "insert", "remove", "reorder", "edit"]);
+    assert.deepEqual(t.parameters.required, ["action"], "action should be the only required field");
+    for (const p of ["name", "goal"]) {
+      assert.equal(t.parameters.properties[p].type, "string", `${p} should be a string flag`);
+    }
+    assert.equal(t.parameters.properties.requirements.type, "array", "requirements should be an array flag");
+    assert.equal(t.parameters.properties.requirements.items.type, "string");
+    for (const p of ["at", "n", "to"]) {
+      assert.equal(t.parameters.properties[p].type, "number", `${p} should be a number flag`);
+    }
+    assert.deepEqual(t.parameters.properties.status.enum, ["Complete", "pending"]);
+    assert.equal(t.parameters.properties.yes.type, "boolean", "yes should be a boolean flag");
+    assert.ok(t.output && t.output.schema, "gsd_phase missing output.schema");
+  });
+
+  test("an invalid action value is rejected by the schema before execute runs", async () => {
+    const { t } = await registerTool("phase-management-plugin", "gsd_phase");
+    await assert.rejects(
+      () => t.execute({ action: "bogus" }, exec),
+      /must be one of \[.*"add".*"insert".*"remove".*"reorder".*"edit"\]/,
+    );
+  });
+});
