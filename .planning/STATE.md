@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: plan
+status: execute
 active_phase: 52
-next_action: plan-phase
+next_action: execute-phase
 next_phases: [52]
 progress:
   total_phases: 58
@@ -15,7 +15,7 @@ progress:
 current_phase: 52
 current_phase_name: phase-management
 current_plan: null
-last_updated: "2026-09-06T20:50:13.568Z"
+last_updated: "2026-09-06T20:56:42.402Z"
 state_head: null
 last_activity: 2026-09-06
 stopped_at: "Milestone upstream-parity ready-to-close (51/51 phases shipped)"
@@ -259,6 +259,7 @@ _No active phase._
 - "@deepseek-ai/schemastery": "3.18.1"     ->  ">=3.18.1"
 - state-repair 2026-09-05: Reset the stale loop cursor. The frontmatter had been left at `active_phase: 37 / status: verify` by PR #60's milestone-audit pass (which re-sealed phase 37 CONTEXT and re-ran its verify, then closed the audit without advancing the cursor). All 51 phases are shipped and the milestone audit is `ready-to-close`; the cursor was a bookkeeping artifact, not pending work. Reset to `status: idle / active_phase: null / next_action: null / next_phases: []` and set `stopped_at` to the ready-to-close state.
 - Phase 52: CONTEXT.md sealed — 8 decisions
+- Phase 52: planned — 3 plan(s) across 3 wave(s).
 
 ### Blockers / Concerns
 _none_
