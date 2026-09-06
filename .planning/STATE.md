@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v3.0.0
 milestone_name: upstream-parity
-status: verify
-active_phase: 37
-next_action: verify-phase
-next_phases: [37]
+status: idle
+active_phase: null
+next_action: null
+next_phases: []
 progress:
   total_phases: 51
   completed_phases: 51
   total_plans: 3
   completed_plans: 134
   percent: 100
-current_phase: 37
-current_phase_name: gap-analysis
-current_plan: 2
+current_phase: null
+current_phase_name: null
+current_plan: null
 last_updated: "2026-09-05T16:28:15.487Z"
 state_head: null
 last_activity: 2026-09-05
-stopped_at: "Phase 50 shipped — PR #59"
+stopped_at: "Milestone upstream-parity ready-to-close (51/51 phases shipped)"
 paused_at: null
 ---
 # GSD STATE
@@ -252,6 +252,12 @@ _No active phase._
 - Phase 37: CONTEXT.md sealed — 15 decisions
 - Milestone upstream-parity: AUDIT.md written (status ready-to-close)
 - quick 2026-09-05-fix-readme-badges: Fix the two broken README badges on line 2 of README.md (repo root). Exactly two edits, nothing else:
+
+1. CI badge is 404 because the GitHub Actions badge URL is missing the `.svg` extension. Change `https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml/badge?branch=main` to `https://github.com/jaaty/dsh-gsd-bundle/actions/workflows/ci.yml/badge.svg?branch=main` (verified: the .svg URL returns 200 and renders "CI - passing"; the bare /badge URL returns 404).
+
+2. npm badge renders "npm: invalid" because shields.io interprets the `@3.0.0` suffix as an npm dist-tag that does not exist. Change `https://img.shields.io/npm/v/@dsh-gsd/bundle@3.0.0?style=flat-square` to `https://img.shields.io/npm/v/@dsh-gsd/bundle?style=flat-square` (verified: renders "npm: v3.0.0", matching the published version; it shows the latest published version and stays correct on future releases).
+
+Do NOT touch lines 14 or 20 (historical v2.2 release-note prose). Do not modify the badge link targets, the License badge, or anything else. Commit atomically with a message describing the badge fix.
 - quick 2026-09-05-widen-peer-ranges-regen-lockfile: In the repo at the current working directory: replace the exact-version pins in the peerDependencies of package.json with ranges, then regenerate the lockfile and verify.
 
 NEW peerDependencies ranges (exact replacements):
@@ -272,6 +278,7 @@ STEPS:
 5. Check git status is clean after the commit.
 
 If the workspace node_modules lacks any of the four @deepseek-ai packages or a step cannot complete, report exactly what is blocked instead of silently skipping it.
+- state-repair 2026-09-05: Reset the stale loop cursor. The frontmatter had been left at `active_phase: 37 / status: verify` by PR #60's milestone-audit pass (which re-sealed phase 37 CONTEXT and re-ran its verify, then closed the audit without advancing the cursor). All 51 phases are shipped and the milestone audit is `ready-to-close`; the cursor was a bookkeeping artifact, not pending work. Reset to `status: idle / active_phase: null / next_action: null / next_phases: []` and set `stopped_at` to the ready-to-close state.
 
 ### Blockers / Concerns
 _none_

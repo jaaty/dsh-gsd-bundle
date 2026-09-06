@@ -211,6 +211,52 @@ describe("milestone-audit: gsd_milestone_audit tool (Plan 02)", () => {
     assert.equal(after.frontmatter.next_action, before.frontmatter.next_action, "STATE next_action must not change");
   });
 
+  test("ready-to-close: reconciles a stale loop cursor to idle (state-repair guard)", async () => {
+    const { ctx } = await mountAudit({ subagents: makeAuditorSubagents({ structured: VALID_UAT }) });
+    const phases = [
+      { name: "p1", goal: "g1", requirements: ["GAP-09"] },
+      { name: "p2", goal: "g2", requirements: ["M-02"] },
+    ];
+    await bootstrap(ctx, phases, [{ id: "GAP-09", text: "x" }, { id: "M-02", text: "y" }]);
+    await seedReady(ctx, phases, ["GAP-09", "M-02"]);
+    const gsdState = ctx.get("gsdState");
+    const git = makeFakeGit();
+    ctx.gitFn = git.fakeGit;
+
+    // Simulate the stale cursor: a phase that was re-verified during the audit
+    // pass left active_phase pointing at a now-Complete phase.
+    await gsdState.setActivePhase(CWD, 1, "verify");
+
+    const res = await runAudit(ctx, {});
+    assert.match(res, /ready-to-close/);
+
+    const after = await gsdState.readState(CWD);
+    assert.equal(after.frontmatter.status, "idle", "cursor must reconcile to idle");
+    assert.equal(after.frontmatter.active_phase, null, "active_phase must clear");
+    assert.equal(after.frontmatter.next_action, null, "next_action must clear");
+    assert.deepEqual(after.frontmatter.next_phases, [], "next_phases must clear");
+  });
+
+  test("not-ready: leaves the loop cursor untouched (no reconcile)", async () => {
+    const { ctx } = await mountAudit();
+    const phases = [{ name: "p1", goal: "g1", requirements: ["GAP-09"] }];
+    await bootstrap(ctx, phases, [{ id: "GAP-09", text: "x" }]);
+    const gsdState = ctx.get("gsdState");
+    const git = makeFakeGit();
+    ctx.gitFn = git.fakeGit;
+
+    // Phase 1 has NO VERIFICATION.md → not passed → not-ready.
+    await gsdState.setActivePhase(CWD, 1, "verify");
+    const before = await gsdState.readState(CWD);
+
+    const res = await runAudit(ctx, {});
+    assert.match(res, /not-ready/);
+
+    const after = await gsdState.readState(CWD);
+    assert.equal(after.frontmatter.status, before.frontmatter.status, "not-ready must not reconcile the cursor");
+    assert.equal(after.frontmatter.active_phase, before.frontmatter.active_phase, "active_phase must be preserved");
+  });
+
   test("not-ready: writes a not-ready report with a Reasons section", async () => {
     const { ctx } = await mountAudit();
     const phases = [{ name: "p1", goal: "g1", requirements: ["GAP-09"] }];
