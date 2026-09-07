@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: ship
-active_phase: 55
-next_action: ship-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [55]
 progress:
   total_phases: 58
-  completed_phases: 54
+  completed_phases: 55
   total_plans: 3
   completed_plans: 145
-  percent: 93
+  percent: 95
 current_phase: 55
 current_phase_name: quick-batch
 current_plan: 3
-last_updated: "2026-09-07T06:57:26.595Z"
+last_updated: "2026-09-07T07:05:04.362Z"
 state_head: null
 last_activity: 2026-09-07
-stopped_at: "Phase 54 shipped — PR #68"
+stopped_at: "Phase 55 shipped — PR #69"
 paused_at: null
 ---
 # GSD STATE
@@ -284,6 +284,7 @@ _No active phase._
 - Phase 55: CONTEXT.md sealed — 9 decisions
 - Phase 55: planned — 3 plan(s) across 3 wave(s).
 - Phase 55: COVERAGE.md written (coverage 100%, gaps: none)
+- Phase 55 shipped — PR #69 (https://github.com/jaaty/dsh-gsd-bundle/pull/69)
 
 ### Blockers / Concerns
 _none_
