@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: ship
+status: review
 active_phase: 53
-next_action: ship-phase
+next_action: verify-phase
 next_phases: [53]
 progress:
   total_phases: 58
@@ -15,7 +15,7 @@ progress:
 current_phase: 53
 current_phase_name: smart-entry
 current_plan: 2
-last_updated: "2026-09-07T03:35:23.753Z"
+last_updated: "2026-09-07T03:39:17.327Z"
 state_head: null
 last_activity: 2026-09-07
 stopped_at: "Phase 52 shipped — PR #65"
@@ -264,6 +264,7 @@ _No active phase._
 - quick 2026-09-07-fix-code-review-fs-inject: Fix the gsd_code_review tool's live-host failure: `cannot get property "fs" without inject`.
 - Phase 53: CONTEXT.md sealed — 9 decisions
 - Phase 53: planned — 2 plan(s) across 2 wave(s); checker issues remain after 3 iterations (manual review).
+- Phase 53: REVIEW.md written (status issues_found, findings 6 (0B/2W/4I))
 
 ### Blockers / Concerns
 _none_
