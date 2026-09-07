@@ -21,6 +21,15 @@ function without(descriptors, key) {
   return descriptors.filter((d) => d.key !== key);
 }
 
+// Collect every tool name owned by the present descriptors (D-07 invariant).
+function presentTools(descriptors) {
+  const set = new Set();
+  for (const d of descriptors) {
+    for (const t of buildCapability(d.key).tools) set.add(t);
+  }
+  return set;
+}
+
 describe("route classifier: tracer", () => {
   test("discuss phase 3 → gsd_discuss, phase 3, matched", () => {
     const r = classifyIntent("discuss phase 3", fullDescriptors());
@@ -98,5 +107,53 @@ describe("route classifier: full synonym matrix (D-03/D-04/D-05/D-08/D-09)", () 
     const r = classifyIntent("discuss 3", fullDescriptors());
     assert.equal(r.command, "gsd_discuss");
     assert.equal(r.phase, 3);
+  });
+});
+
+describe("route classifier: capability-aware degradation (D-06/D-07/D-10)", () => {
+  test("(a) D-10 loop-step degradation — retire gsdDiscuss → nearest present step, never gsd_discuss", () => {
+    const descriptors = without(fullDescriptors(), "gsdDiscuss");
+    const r = classifyIntent("discuss phase 3", descriptors);
+    assert.equal(r.degraded, true);
+    assert.equal(r.absentCapability, "gsdDiscuss");
+    assert.notEqual(r.command, "gsd_discuss");
+    assert.ok(presentTools(descriptors).has(r.command), `routed to absent ${r.command}`);
+    assert.match(r.note, /unavailable/);
+  });
+
+  test("(b) D-10 orient degradation — retire gsdOrient → present tool, never gsd_status", () => {
+    const descriptors = without(fullDescriptors(), "gsdOrient");
+    const r = classifyIntent("status", descriptors);
+    assert.equal(r.degraded, true);
+    assert.notEqual(r.command, "gsd_status");
+    assert.ok(presentTools(descriptors).has(r.command), `routed to absent ${r.command}`);
+  });
+
+  test("(c) D-07 never-instruct-a-missing-tool invariant sweep — never instruct a missing tool across the retired-capability matrix", () => {
+    const intents = ["discuss phase 3", "plan", "execute phase 2", "ship", "status", "quick"];
+    for (const intent of intents) {
+      for (const key of fullDescriptors().map((d) => d.key)) {
+        const descriptors = without(fullDescriptors(), key);
+        const r = classifyIntent(intent, descriptors);
+        if (r.command === FALLBACK_RECOMMENDATION) continue;
+        assert.ok(
+          presentTools(descriptors).has(r.command),
+          `intent "${intent}" with ${key} retired routed to absent ${r.command}`,
+        );
+      }
+    }
+  });
+
+  test("(d) renderRouteRecommendation includes the note for a degraded result, never auto-run", () => {
+    const r = classifyIntent("discuss phase 3", without(fullDescriptors(), "gsdDiscuss"));
+    const text = renderRouteRecommendation(r);
+    assert.match(text, /unavailable/);
+    assert.doesNotMatch(text, /auto-run/);
+  });
+
+  test("(e) classifyIntent never throws on a fully-empty descriptors array", () => {
+    const r = classifyIntent("discuss phase 3", []);
+    assert.ok(r);
+    assert.ok(r.command === FALLBACK_RECOMMENDATION || presentTools([]).has(r.command));
   });
 });
