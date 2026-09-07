@@ -57,7 +57,7 @@
 | 51 | [x] drop-clean-branch | Remove the clean-PR branch feature so gsd_ship pushes and PRs the phase-NN branch directly, leaving one branch per phase. | SHIP-CLEAN-01 … SHIP-CLEAN-04 |
 | 52 | [x] phase-management | Add, insert, remove, reorder, and edit phases directly in ROADMAP.md with validation and integrity checks. | CLH-01 |
 | 53 | [x] smart-entry | Detect the current project state and route the user to the best next action, with an auto-advance option. | CLH-02 … CLH-03 |
-| 54 | freeform-routing | Parse a plain-English intent and dispatch it to the most appropriate GSD command. | CLH-04 |
+| 54 | [x] freeform-routing | Parse a plain-English intent and dispatch it to the most appropriate GSD command. | CLH-04 |
 | 55 | quick-batch | Run multiple quick tasks in a single batch with per-task results. | CLH-05 |
 | 56 | fast-mode | Provide a lightweight single-pass fast path for simple phase work. | CLH-06 |
 | 57 | mvp-phase | Guide a minimal-viable-phase planning and execution flow. | CLH-07 |
@@ -120,7 +120,7 @@
 | 51 | drop-clean-branch | [x] Complete | 2026-09-07 |
 | 52 | phase-management | [x] Complete | 2026-09-07 |
 | 53 | smart-entry | [x] Complete | 2026-09-07 |
-| 54 | freeform-routing | pending |  |
+| 54 | freeform-routing | [x] Complete | 2026-09-07 |
 | 55 | quick-batch | pending |  |
 | 56 | fast-mode | pending |  |
 | 57 | mvp-phase | pending |  |
