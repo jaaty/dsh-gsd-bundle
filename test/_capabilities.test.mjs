@@ -9,8 +9,8 @@ import assert from "node:assert/strict";
 import { ROLES, CAPABILITY_KEYS, buildCapability } from "../lib/_capabilities.js";
 
 describe("capability key surface (DEGR-01)", () => {
-  test("exposes exactly the 25 known keys", () => {
-    assert.equal(CAPABILITY_KEYS.length, 25);
+  test("exposes exactly the 26 known keys", () => {
+    assert.equal(CAPABILITY_KEYS.length, 26);
     for (const key of [
       "gsdOrient",
       "gsdJobs",
@@ -29,6 +29,7 @@ describe("capability key surface (DEGR-01)", () => {
       "gsdHealth",
       "gsdQuick",
       "gsdQuickBatch",
+      "gsdFastMode",
       "gsdMapCodebase",
       "gsdMilestoneAudit",
       "gsdLearnings",

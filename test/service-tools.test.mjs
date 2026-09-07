@@ -67,6 +67,12 @@ function makeSubagents() {
       } else if (label.startsWith("ui-checker")) {
         // contains "VERIFICATION PASSED" so the passed branch is taken (lib/ui.js:61-62).
         text = "## VERIFICATION PASSED\nThe UI-SPEC is complete and unambiguous.";
+      } else if (label.startsWith("fast")) {
+        // Happy-path branch for gsd_fast_mode (D-04/D-08): the single fresh-context
+        // executor writes the phase SUMMARY to the artefact base path on FakeFs,
+        // which gsd_fast_mode reads back via readArtifact (D-05).
+        await fs.writeText({ targetKey: `${CWD}/.planning/phases/01-auth/01-auth-SUMMARY.md` }, FENCED_SUMMARY);
+        text = "fast executor done";
       } else if (label.startsWith("quick boom")) {
         // Failure-isolation branch for gsd_quick_batch: a task whose slug is
         // "boom" fails at spawn so the batch records it and continues (D-04/D-09).
@@ -111,6 +117,20 @@ async function registerTool(pluginFile, toolName) {
   mod.apply(c, {});
   const t = tools.find((x) => x.name === toolName);
   assert.ok(t, `${toolName} not registered by ${pluginFile}`);
+  return { t, c };
+}
+
+// Register the gsd_fast_mode tool from lib/quick.js, keeping the ctx (c) so the
+// test can reassign c.tools to a gsd_ship spy (array or service shape) for the
+// ship-delegation assertion (D-06). Mirrors registerTool but returns the ctx.
+async function registerFastTool() {
+  const mod = await import("../lib/quick.js");
+  const tools = [];
+  const c = makeCtx();
+  c.tools = { register: (t) => tools.push(t) };
+  mod.apply(c, {});
+  const t = tools.find((x) => x.name === "gsd_fast_mode");
+  assert.ok(t, "gsd_fast_mode not registered by quick");
   return { t, c };
 }
 
@@ -303,6 +323,96 @@ describe("gsd_quick_batch", () => {
     assert.equal(typeof res, "object");
     assert.ok(Array.isArray(res.results));
     assert.equal(typeof res.summary, "object");
+  });
+});
+
+// gsd_fast_mode (phase 56, D-01..D-08): lightweight single-pass fast path for a
+// SIMPLE phase — auto-CONTEXT (fast marker) -> one fresh-context executor ->
+// SUMMARY -> lightweight verify (minimal VERIFICATION, status: passed) -> full
+// ship via gsd_ship. Proves the happy path, the refuse-already-Complete guard,
+// and fail-fast on executor failure — all offline on FakeFs. The ship path
+// itself is not driven (per the removal-test convention); the tests assert
+// gsd_fast_mode INVOKES gsd_ship via a stubbed ctx.tools spy (array + service
+// get() shapes).
+describe("gsd_fast_mode", () => {
+  beforeEach(async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    ctx = makeCtx();
+  });
+
+  test("single-pass: auto-CONTEXT, SUMMARY, VERIFICATION, and ship delegation", async () => {
+    const { t, c } = await registerFastTool();
+    const shipCalls = [];
+    c.tools = [
+      { name: "gsd_ship", execute: async (args) => { shipCalls.push(args); return "PR created: http://x/pull/1"; } },
+    ];
+    const res = await t.execute({ phase: 1 }, exec);
+
+    assert.match(res, /gsd_fast_mode complete/);
+    assert.equal(shipCalls.length, 1, "gsd_ship should be invoked exactly once");
+    assert.equal(shipCalls[0].phase, 1);
+
+    // D-03: auto-CONTEXT written with the fast-path marker.
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-CONTEXT.md`));
+    const ctxText = fs.files.get(`${CWD}/.planning/phases/01-auth/01-auth-CONTEXT.md`);
+    assert.ok(ctxText.includes("Auto-generated (discuss skipped — fast path)"), "CONTEXT missing fast-path marker");
+
+    // D-04/D-08: executor wrote the SUMMARY to the artefact base path.
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-SUMMARY.md`));
+    assert.match(fs.files.get(`${CWD}/.planning/phases/01-auth/01-auth-SUMMARY.md`), /status: complete/);
+
+    // D-05: lightweight verify wrote a minimal VERIFICATION (status: passed).
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-VERIFICATION.md`));
+    assert.match(fs.files.get(`${CWD}/.planning/phases/01-auth/01-auth-VERIFICATION.md`), /status: passed/);
+  });
+
+  test("ship delegation works via the service ctx.tools.get branch (production shape)", async () => {
+    const { t, c } = await registerFastTool();
+    const shipCalls = [];
+    c.tools = {
+      get: (name) =>
+        name === "gsd_ship"
+          ? { execute: async (args) => { shipCalls.push(args); return "PR created: http://x/pull/1"; } }
+          : undefined,
+    };
+    const res = await t.execute({ phase: 1 }, exec);
+
+    assert.match(res, /gsd_fast_mode complete/);
+    assert.equal(shipCalls.length, 1, "gsd_ship should be invoked exactly once");
+    assert.equal(shipCalls[0].phase, 1);
+  });
+
+  test("refuses an already-Complete phase", async () => {
+    const { t } = await registerFastTool();
+    await svc.completePhase(CWD, 1); // marks phase 1 Complete in ROADMAP
+    await assert.rejects(() => t.execute({ phase: 1 }, exec), /already Complete/);
+    // No partial state change: the phase stays Complete.
+    const rm = await svc.readRoadmap(CWD);
+    assert.equal(rm.phases.find((p) => p.n === 1).status, "Complete");
+  });
+
+  test("fail-fast: a failing executor stops and leaves the phase uncompleted", async () => {
+    const boomSubagents = {
+      getProvider: (n) => (n === "spawn" ? { spawn: true } : undefined),
+      async start() {
+        throw new Error("fast subagent failed");
+      },
+    };
+    const c = makeCtx();
+    const tools = [];
+    c.tools = { register: (t) => tools.push(t) };
+    c.get = (n) =>
+      n === "gsdState" ? svc : n === "subagents" ? boomSubagents : n === "tools" ? c.tools : undefined;
+    const mod = await import("../lib/quick.js");
+    mod.apply(c, {});
+    const t = tools.find((x) => x.name === "gsd_fast_mode");
+    assert.ok(t, "gsd_fast_mode not registered");
+
+    await assert.rejects(() => t.execute({ phase: 1 }, exec), /fast subagent failed/);
+    // D-07: the phase is NOT marked Complete.
+    const rm = await svc.readRoadmap(CWD);
+    assert.notEqual(rm.phases.find((p) => p.n === 1).status, "Complete");
   });
 });
 

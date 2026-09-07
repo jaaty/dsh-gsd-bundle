@@ -15,7 +15,7 @@ import { readFile } from "node:fs/promises";
 
 const readLib = (file) => readFile(new URL(`../lib/${file}`, import.meta.url), "utf8");
 
-const IMPORT_RE = /import\s*\{\s*commitArtifacts\s*\}\s*from\s*["']\.\/_git-artifacts\.js["']/;
+const IMPORT_RE = /import\s*\{\s*commitArtifacts[^}]*\}\s*from\s*["']\.\/_git-artifacts\.js["']/;
 
 describe("out-of-flow auto-commit: ui.js routes UI-SPEC through commitArtifacts (D-10/D-12)", () => {
   test("ui.js imports commitArtifacts from ./_git-artifacts.js", async () => {
@@ -71,13 +71,13 @@ describe("out-of-flow auto-commit: quick.js routes the record through commitArti
     assert.match(src, IMPORT_RE, "quick.js must import commitArtifacts from ./_git-artifacts.js");
   });
 
-  test("quick.js calls commitArtifacts with the quick scope and null phaseNum exactly twice", async () => {
+  test("quick.js calls commitArtifacts with the quick scope and null phaseNum exactly three times", async () => {
     const src = await readLib("quick.js");
     const callRe = /commitArtifacts\s*\(\s*cwd,\s*null,\s*\{\s*scope:\s*"quick"/g;
     assert.equal(
       (src.match(callRe) || []).length,
-      2,
-      'quick.js must call commitArtifacts(cwd, null, { scope: "quick" exactly twice (gsd_quick and gsd_quick_batch)',
+      3,
+      'quick.js must call commitArtifacts(cwd, null, { scope: "quick" exactly three times (gsd_quick, gsd_quick_batch success, gsd_quick_batch failure record)',
     );
   });
 
