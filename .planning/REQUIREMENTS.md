@@ -116,3 +116,14 @@
 - [x] GAP-14: A pause-work command writes a structured context handoff (HANDOFF.json + a continue-here pointer) and a resume-work command restores full context from earlier artifacts to continue mid-phase.
 - [x] GAP-15: An autonomous path can drive all remaining phases of a milestone end-to-end (discuss → plan → execute per phase) without per-phase manual prompting.
 - [x] GAP-16: An add-tests generator creates unit and E2E tests for a completed phase based on its UAT criteria and implementation.
+
+## CLH
+
+- [x] CLH-01: Phase CRUD: add, insert, remove, reorder, and edit phases directly in ROADMAP.md with validation and integrity checks.
+- [ ] CLH-02: Smart entry: detect the current project state and route the user to the best next action.
+- [ ] CLH-03: Auto-advance: a progress --next option that automatically advances to the next logical workflow step.
+- [ ] CLH-04: Freeform routing: parse a plain-English intent and dispatch it to the most appropriate GSD command.
+- [ ] CLH-05: Quick batch: run multiple quick tasks in a single batch with per-task results.
+- [ ] CLH-06: Fast mode: provide a lightweight single-pass fast path for simple phase work.
+- [ ] CLH-07: MVP phase: guide a minimal-viable-phase planning and execution flow.
+- [ ] CLH-08: Node repair: automatically recover a plan whose verification failed instead of stopping.

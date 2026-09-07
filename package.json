@@ -107,6 +107,9 @@
     "./add-tests": {
       "default": "./lib/add-tests.js"
     },
+    "./phase-management": {
+      "default": "./lib/phase-management-plugin.js"
+    },
     "./commands": {
       "default": "./lib/commands.js"
     },
