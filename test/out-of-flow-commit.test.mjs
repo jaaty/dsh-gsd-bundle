@@ -15,7 +15,7 @@ import { readFile } from "node:fs/promises";
 
 const readLib = (file) => readFile(new URL(`../lib/${file}`, import.meta.url), "utf8");
 
-const IMPORT_RE = /import\s*\{\s*commitArtifacts\s*\}\s*from\s*["']\.\/_git-artifacts\.js["']/;
+const IMPORT_RE = /import\s*\{\s*commitArtifacts[^}]*\}\s*from\s*["']\.\/_git-artifacts\.js["']/;
 
 describe("out-of-flow auto-commit: ui.js routes UI-SPEC through commitArtifacts (D-10/D-12)", () => {
   test("ui.js imports commitArtifacts from ./_git-artifacts.js", async () => {
