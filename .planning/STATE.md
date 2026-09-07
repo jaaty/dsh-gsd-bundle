@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: verify
+status: ship
 active_phase: 53
-next_action: verify-phase
+next_action: ship-phase
 next_phases: [53]
 progress:
   total_phases: 58
@@ -15,7 +15,7 @@ progress:
 current_phase: 53
 current_phase_name: smart-entry
 current_plan: 2
-last_updated: "2026-09-07T03:23:16.090Z"
+last_updated: "2026-09-07T03:35:23.753Z"
 state_head: null
 last_activity: 2026-09-07
 stopped_at: "Phase 52 shipped — PR #65"
