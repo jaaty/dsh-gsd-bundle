@@ -75,4 +75,48 @@ describe("gsd_route: recommend-only freeform routing", () => {
     assert.doesNotMatch(res, /auto-run/, "recommendation must never claim to auto-run (D-02)");
     assert.deepEqual(after, before, "gsd_route must never mutate STATE (out-of-scope)");
   });
+
+  // ── (2) fallback to gsd_status (D-06/D-08) ──────────────────────────────────
+  test("(2) garbage intent → gsd_status fallback; STATE byte-identical; never throws", async () => {
+    const { ctx } = await mountRoute([applyDiscuss, applyPlan]);
+    await bootstrap(ctx, [{ name: "p1", goal: "g1", requirements: ["CLH-04"] }]);
+
+    const before = await readFm(ctx);
+    const res = await findRoute(ctx).execute({ intent: "gibberish qwerty" }, exec());
+    const after = await readFm(ctx);
+
+    assert.match(res, /run the gsd_status tool/i);
+    assert.doesNotMatch(res, /auto-run/, "recommendation must never claim to auto-run (D-02)");
+    assert.deepEqual(after, before, "gsd_route must never mutate STATE (out-of-scope)");
+  });
+
+  // ── (3) ambiguity fallback (D-05) ────────────────────────────────────────────
+  test("(3) tied intent 'review' → gsd_status fallback with a note; STATE byte-identical", async () => {
+    const { ctx } = await mountRoute([applyDiscuss, applyPlan]);
+    await bootstrap(ctx, [{ name: "p1", goal: "g1", requirements: ["CLH-04"] }]);
+
+    const before = await readFm(ctx);
+    const res = await findRoute(ctx).execute({ intent: "review" }, exec());
+    const after = await readFm(ctx);
+
+    assert.match(res, /run the gsd_status tool/i);
+    assert.match(res, /clarify/i, "ambiguity fallback must carry an explanatory note");
+    assert.deepEqual(after, before, "gsd_route must never mutate STATE (out-of-scope)");
+  });
+
+  // ── (4) capability-aware degradation (D-10/D-07) ────────────────────────────
+  test("(4) gsdDiscuss absent → degrades to nearest present step, never names gsd_discuss", async () => {
+    // Mount with gsdPlan only (gsdDiscuss absent) so 'discuss phase 3' must
+    // degrade to the nearest present loop step (gsd_plan) — never gsd_discuss.
+    const { ctx } = await mountRoute([applyPlan]);
+    await bootstrap(ctx, [{ name: "p1", goal: "g1", requirements: ["CLH-04"] }]);
+
+    const before = await readFm(ctx);
+    const res = await findRoute(ctx).execute({ intent: "discuss phase 3" }, exec());
+    const after = await readFm(ctx);
+
+    assert.doesNotMatch(res, /run the gsd_discuss tool/i, "must never recommend an absent command (D-07)");
+    assert.match(res, /run the gsd_plan tool/i, "must degrade to the nearest present step (D-10)");
+    assert.deepEqual(after, before, "gsd_route must never mutate STATE (out-of-scope)");
+  });
 });

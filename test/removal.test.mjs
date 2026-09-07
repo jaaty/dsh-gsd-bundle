@@ -228,12 +228,14 @@ describe("removal: gsd-phase-management (out-of-band)", () => {
 describe("removal: gsd-core-tools (out-of-band, DEGR-05)", () => {
   const allSubs = PATCH_ROWS.map((r) => r.sub);
 
-  test("retiring gsd-core-tools unregisters gsd_next + /gsd-next + gsdOrient", async () => {
+  test("retiring gsd-core-tools unregisters gsd_next + /gsd-next + gsd_route + /gsd-route + gsdOrient", async () => {
     const subs = allSubs.filter((s) => s !== "core-tools");
     const { ctx } = await mountSubset(subs, { subagents: makeSubagents() });
 
     assert.ok(!ctx.provided.has("gsdOrient"), "gsdOrient capability still provided");
     assert.ok(!ctx.tools.some((t) => t.name === "gsd_next"), "gsd_next still registered");
     assert.ok(!ctx.commands.some((c) => c.name === "gsd-next"), "gsd-next still registered");
+    assert.ok(!ctx.tools.some((t) => t.name === "gsd_route"), "gsd_route still registered");
+    assert.ok(!ctx.commands.some((c) => c.name === "gsd-route"), "gsd-route still registered");
   });
 });
