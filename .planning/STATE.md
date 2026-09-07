@@ -2,23 +2,23 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: review
-active_phase: 53
-next_action: verify-phase
+status: idle
+active_phase: null
+next_action: null
 next_phases: [53]
 progress:
   total_phases: 58
-  completed_phases: 52
+  completed_phases: 53
   total_plans: 2
   completed_plans: 139
-  percent: 90
+  percent: 91
 current_phase: 53
 current_phase_name: smart-entry
 current_plan: 2
-last_updated: "2026-09-07T03:51:09.990Z"
+last_updated: "2026-09-07T03:56:40.674Z"
 state_head: null
 last_activity: 2026-09-07
-stopped_at: "Phase 52 shipped — PR #65"
+stopped_at: "Phase 53 shipped — PR #67"
 paused_at: null
 ---
 # GSD STATE
@@ -267,6 +267,7 @@ _No active phase._
 - Phase 53: REVIEW.md written (status issues_found, findings 6 (0B/2W/4I))
 - Phase 53: REVIEW.md written (status issues_found, findings 5 (0B/2W/3I))
 - Phase 53: REVIEW.md written (status issues_found, findings 5 (0B/2W/3I))
+- Phase 53 shipped — PR #67 (https://github.com/jaaty/dsh-gsd-bundle/pull/67)
 
 ### Blockers / Concerns
 _none_
