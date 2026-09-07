@@ -59,7 +59,7 @@
 | 53 | [x] smart-entry | Detect the current project state and route the user to the best next action, with an auto-advance option. | CLH-02 … CLH-03 |
 | 54 | [x] freeform-routing | Parse a plain-English intent and dispatch it to the most appropriate GSD command. | CLH-04 |
 | 55 | [x] quick-batch | Run multiple quick tasks in a single batch with per-task results. | CLH-05 |
-| 56 | fast-mode | Provide a lightweight single-pass fast path for simple phase work. | CLH-06 |
+| 56 | [x] fast-mode | Provide a lightweight single-pass fast path for simple phase work. | CLH-06 |
 | 57 | mvp-phase | Guide a minimal-viable-phase planning and execution flow. | CLH-07 |
 | 58 | node-repair | Automatically recover a plan whose verification failed instead of stopping. | CLH-08 |
 
@@ -122,6 +122,6 @@
 | 53 | smart-entry | [x] Complete | 2026-09-07 |
 | 54 | freeform-routing | [x] Complete | 2026-09-07 |
 | 55 | quick-batch | [x] Complete | 2026-09-07 |
-| 56 | fast-mode | pending |  |
+| 56 | fast-mode | [x] Complete | 2026-09-07 |
 | 57 | mvp-phase | pending |  |
 | 58 | node-repair | pending |  |
