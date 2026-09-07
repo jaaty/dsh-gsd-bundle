@@ -13,21 +13,21 @@ overrides_applied: 0
 
 **Goal:** Parse a plain-English intent and dispatch it to the most appropriate GSD command (CLH-04).
 
-**Achieved.** The codebase ships a `gsd_route` tool and a `/gsd-route` slash command backed by a pure, side-effect-free, deterministic intent classifier (`lib/_route.js`). The classifier maps natural-language utterances to one target GSD command plus extracted phase/options, evaluated capability-aware so absent steps/withdrawn tools are never recommended (D-07). The execute path is recommend-only (D-02): it returns the recommended command text and never auto-runs the routed tool or mutates STATE/ROADMAP. Unmatched/ambiguous intents fall back to `gsd_status` with an explanatory note (D-06/D-08). Verified by direct inspection of the implementation and wiring, direct behavioral spot-checks of the classifier, and the full suite passing 1030/1030 (including 17 offline unit tests and 4 offline integration tests for routing).
+**Achieved.** The codebase ships a `gsd_route` tool and a `/gsd-route` slash command backed by a pure, side-effect-free, deterministic intent classifier (`lib/_route.js`, 551 lines). The classifier maps natural-language utterances to one target GSD command plus extracted phase/options, evaluated capability-aware so absent steps/withdrawn tools are never recommended (D-07). The execute path is recommend-only (D-02): it returns the recommended command text and never auto-runs the routed tool or mutates STATE/ROADMAP. Unmatched/ambiguous intents fall back to `gsd_status` with an explanatory note (D-06/D-08). Verified by direct inspection of the implementation and wiring, direct behavioral spot-checks of the classifier, and the full suite passing 1030/1030 (including 17 offline unit tests and 4 offline integration tests for routing).
 
 ## Observable Truths
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | `classifyIntent('discuss phase 3', descriptors)` → command `gsd_discuss`, phase 3 | ✓ VERIFIED | `test/_route.test.mjs` (a); direct spot-check returned `gsd_discuss`/3; integration test (1) asserts `/run the gsd_discuss tool on phase 3/i` |
-| 2 | `classifyIntent('', descriptors)` → gsd_status fallback with a note, never throws | ✓ VERIFIED | `test/_route.test.mjs` (b); direct spot-check returned `gsd_status`; integration test (2) |
-| 3 | `classifyIntent('gibberish qwerty', descriptors)` → gsd_status fallback | ✓ VERIFIED | `test/_route.test.mjs` (c); direct spot-check returned `gsd_status`; integration test (2) |
-| 4 | `classifyIntent('plan', descriptors)` with gsdPlan absent → degrades to present step or gsd_status, never gsd_plan | ✓ VERIFIED | `test/_route.test.mjs` Task-3 (a); direct spot-check `discuss phase 3` without gsdDiscuss → `gsd_plan`, degraded=true, absent=gsdDiscuss; integration test (4) asserts never names gsd_discuss |
-| 5 | `renderRouteRecommendation` output never contains 'auto-run' | ✓ VERIFIED | `test/_route.test.mjs` (d); integration tests assert `doesNotMatch(/auto-run/)`; direct spot-checks confirm |
+| 1 | `classifyIntent('discuss phase 3', descriptors)` → command `gsd_discuss`, phase 3 | ✓ VERIFIED | `test/_route.test.mjs` (a); direct spot-check returned `cmd=gsd_discuss phase=3`; integration test (1) asserts `/run the gsd_discuss tool on phase 3/i` |
+| 2 | `classifyIntent('', descriptors)` → gsd_status fallback with a note, never throws | ✓ VERIFIED | `test/_route.test.mjs` (b); direct spot-check returned `cmd=gsd_status`; integration test (2) |
+| 3 | `classifyIntent('gibberish qwerty', descriptors)` → gsd_status fallback | ✓ VERIFIED | `test/_route.test.mjs` (c); direct spot-check returned `cmd=gsd_status`; integration test (2) |
+| 4 | `classifyIntent('plan', descriptors)` with gsdPlan absent → degrades to present step or gsd_status, never gsd_plan | ✓ VERIFIED | `test/_route.test.mjs` Task-3 (a); direct spot-check `discuss phase 3` without gsdDiscuss → `cmd=gsd_plan degraded=true absent=gsdDiscuss`; integration test (4) asserts never names gsd_discuss |
+| 5 | `renderRouteRecommendation` output never contains 'auto-run' | ✓ VERIFIED | `test/_route.test.mjs` (d); direct spot-check `/auto-run/` → false; integration tests assert `doesNotMatch(/auto-run/)` |
 | 6 | gsd_route tool registered (mount tool count 33) | ✓ VERIFIED | `test/mount.test.mjs:147` `ctx.tools.length === 33` passes; `lib/core-tools.js:681` registers `gsd_route` |
 | 7 | gsd_route execute returns recommendation text, no subagent, no STATE mutation | ✓ VERIFIED | integration tests (1)-(4) assert string return and `deepEqual(after, before)` STATE byte-identical |
 | 8 | /gsd-route command registered (mount command count 30) | ✓ VERIFIED | `test/mount.test.mjs:148` `ctx.commands.length === 30` passes; `lib/commands.js:359` `name: "gsd-route"` |
-| 9 | retiring gsd-core-tools unregisters gsd_route and /gsd-route | ✓ VERIFIED | `test/removal.test.mjs` "retiring gsd-core-tools unregisters gsd_next + /gsd-next + gsd_route + /gsd-route + gsdOrient" passes |
+| 9 | retiring gsd-core-tools unregisters gsd_route and /gsd-route | ✓ VERIFIED | `test/removal.test.mjs:231` "retiring gsd-core-tools unregisters gsd_next + /gsd-next + gsd_route + /gsd-route + gsdOrient" passes |
 
 ## Score
 
@@ -55,7 +55,7 @@ None of these block phase 54's definition of done.
 | `test/route-integration.test.mjs` | ✓ (122 lines ≥ 80) | ✓ 4 recommend-only integration tests | ✓ run by `node --test` |
 | `test/mount.test.mjs` | ✓ | ✓ tool 33 / command 30 reconciled (lines 147-148) | ✓ passes |
 | `test/_capabilities.test.mjs` | ✓ | ✓ gsdOrient exact list includes both (lines 69-70) | ✓ passes |
-| `test/removal.test.mjs` | ✓ | ✓ core-tools retirement unregisters both | ✓ passes |
+| `test/removal.test.mjs` | ✓ | ✓ core-tools retirement unregisters both (lines 238-239) | ✓ passes |
 
 ## Key Link Verification
 
@@ -73,7 +73,7 @@ None of these block phase 54's definition of done.
 
 ## Behavioral Spot-Checks
 
-- **D-10 loop-step degradation:** `classifyIntent("discuss phase 3", without(full, "gsdDiscuss"))` → `{command:"gsd_plan", degraded:true, absentCapability:"gsdDiscuss"}` — routes to the nearest present step, never the absent command, never a different phase. ✓
+- **D-10 loop-step degradation:** `classifyIntent("discuss phase 3", without(full, "gsdDiscuss"))` → `{command:"gsd_plan", degraded:true, absentCapability:"gsdDiscuss"}` — routes to a present step, never the absent command, never a different phase. ✓
 - **D-07 invariant sweep:** for intents `["discuss phase 3","plan","execute phase 2","ship","status","quick"]` with each capability retired one at a time, 0 violations — no absent tool is ever instructed. ✓
 - **Empty descriptors:** `classifyIntent("discuss phase 3", [])` → `{command:"gsd_status", degraded:true, note:"No GSD commands are available; orient manually."}` — never throws. ✓
 - **Ambiguity (D-05):** `classifyIntent("review", full)` → `{command:"gsd_status", ambiguity:true}` — a genuine deterministic tie between gsd_code_review and gsd_ui_review. ✓
@@ -98,4 +98,10 @@ None. The phase is a pure classifier plus tool/command registration, fully verif
 
 No gaps found. All 23 must-haves verified, all key links wired, full suite green (1030/1030), no blockers, no human-verification items.
 
-**Minor INFO observation (non-blocking):** `extractOptions` computes `wave: Number((s.match(/\bwave\s*(\d+)\b/) || [])[1] || null)`, which yields `0` (not `null`) when no wave is present (`Number(null) === 0`). Consequently `renderRouteRecommendation` emits a spurious `wave 0` in the recommendation text (e.g. `Run the gsd_discuss tool on phase 3, wave 0.`). This is cosmetic — it does not affect routing correctness, does not violate any must-have, and all tests pass. A future cleanup could default `wave` to `null` when absent.
+**Non-blocking code-review observations (advisory, soft gate — none violate a must-have):**
+- **CR-01 (WARNING):** `extractOptions` yields `wave: 0` (not `null`) when no wave is present, so `renderRouteRecommendation` emits a spurious `wave 0` (e.g. `Run the gsd_discuss tool on phase 3, wave 0.`). Cosmetic; does not affect routing correctness or any must-have.
+- **CR-02 (WARNING):** `degrade()` routes to the first present loop step, not strictly the nearest, for step tokens absent from `NEXT_ACTION_TO_STEP`. The never-instruct-a-missing-tool invariant still holds; the "nearest" wording in the note is slightly imprecise for a few out-of-band steps.
+- **CR-03 (WARNING):** the bare-number phase fallback can misread `wave N`/`depth N` numbers as a phase (e.g. `execute wave 2` → phase 2). Edge case not covered by any must-have; the invariant (never a missing tool) still holds.
+- **CR-04/05/06/07 (INFO):** stale comment counts, latent `buildCapability` throw on unknown key, unguarded `args.intent`, stale header comments — all cosmetic/latent, none blocking.
+
+These are advisory quality findings from the code-review pass; they do not fail any phase must-have and do not change the `passed` status.

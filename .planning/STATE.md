@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: review
+status: ship
 active_phase: 54
-next_action: verify-phase
+next_action: ship-phase
 next_phases: [54]
 progress:
   total_phases: 58
@@ -15,7 +15,7 @@ progress:
 current_phase: 54
 current_phase_name: freeform-routing
 current_plan: 2
-last_updated: "2026-09-07T05:27:22.070Z"
+last_updated: "2026-09-07T06:29:06.640Z"
 state_head: null
 last_activity: 2026-09-07
 stopped_at: "Phase 53 shipped — PR #67"
@@ -278,6 +278,8 @@ _No active phase._
 - Phase 54: REVIEW.md written (status UNAVAILABLE, findings UNAVAILABLE)
 - Phase 54: REVIEW.md written (status UNAVAILABLE, findings UNAVAILABLE)
 - Phase 54: REVIEW.md written (status issues_found, findings 3 (0B/1W/2I))
+- Phase 54: REVIEW.md written (status issues_found, findings 4 (1B/2W/1I))
+- Phase 54: REVIEW.md written (status issues_found, findings 7 (0B/3W/4I))
 
 ### Blockers / Concerns
 _none_
