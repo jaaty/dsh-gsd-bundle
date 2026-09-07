@@ -67,6 +67,10 @@ function makeSubagents() {
       } else if (label.startsWith("ui-checker")) {
         // contains "VERIFICATION PASSED" so the passed branch is taken (lib/ui.js:61-62).
         text = "## VERIFICATION PASSED\nThe UI-SPEC is complete and unambiguous.";
+      } else if (label.startsWith("quick boom")) {
+        // Failure-isolation branch for gsd_quick_batch: a task whose slug is
+        // "boom" fails at spawn so the batch records it and continues (D-04/D-09).
+        throw new Error("boom subagent failed");
       } else if (label.startsWith("quick")) {
         // gsd_quick records r.output (lib/quick.js:53).
         text = "quick subagent finished the task";
@@ -220,6 +224,85 @@ describe("gsd_quick", () => {
     const entry = fs.files.get(key);
     assert.match(entry, /# Quick task/);
     assert.match(entry, /fix the typo in README/);
+  });
+});
+
+// gsd_quick_batch (phase 55, D-01..D-09): runs multiple quick tasks in one
+// batch, sequentially, each with its own subagent, TASK.md record, and atomic
+// commit. Proves the happy path, failure isolation, slug-collision dedup, and
+// the structured { results, summary } return — all offline on FakeFs.
+describe("gsd_quick_batch", () => {
+  beforeEach(async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    ctx = makeCtx();
+  });
+
+  const quickTaskFiles = () =>
+    [...fs.files.keys()].filter((k) => k.includes("/.planning/quick/") && k.endsWith("/TASK.md"));
+
+  test("runs multiple tasks sequentially with per-task records and a structured result", async () => {
+    const { t } = await registerTool("quick", "gsd_quick_batch");
+    const res = await t.execute(
+      { tasks: [{ task: "fix typo A", slug: "fix-a" }, { task: "fix typo B", slug: "fix-b" }] },
+      exec,
+    );
+
+    assert.equal(res.summary.total, 2);
+    assert.equal(res.summary.done, 2);
+    assert.equal(res.summary.failed, 0);
+    assert.equal(res.results.length, 2);
+    assert.equal(res.results[0].status, "done");
+    assert.equal(res.results[0].slug, "fix-a");
+    assert.equal(res.results[1].slug, "fix-b");
+
+    const files = quickTaskFiles();
+    assert.equal(files.length, 2, "expected exactly two quick TASK.md records");
+    assert.ok(files.some((k) => k.endsWith("-fix-a/TASK.md")), "missing -fix-a/TASK.md");
+    assert.ok(files.some((k) => k.endsWith("-fix-b/TASK.md")), "missing -fix-b/TASK.md");
+    for (const k of files) assert.match(fs.files.get(k), /# Quick task/);
+  });
+
+  test("failure isolation: a failing task is recorded and the batch continues", async () => {
+    const { t } = await registerTool("quick", "gsd_quick_batch");
+    const res = await t.execute(
+      { tasks: [{ task: "good one", slug: "good" }, { task: "bad one", slug: "boom" }, { task: "good two", slug: "good2" }] },
+      exec,
+    );
+
+    assert.equal(res.summary.total, 3);
+    assert.equal(res.summary.done, 2);
+    assert.equal(res.summary.failed, 1);
+    assert.equal(res.results[1].status, "failed");
+    assert.match(res.results[1].error, /boom subagent failed/);
+
+    const boom = quickTaskFiles().find((k) => k.endsWith("-boom/TASK.md"));
+    assert.ok(boom, "missing -boom/TASK.md failure record");
+    assert.match(fs.files.get(boom), /## Error/);
+  });
+
+  test("slug collision dedup appends a numeric suffix", async () => {
+    const { t } = await registerTool("quick", "gsd_quick_batch");
+    const res = await t.execute(
+      { tasks: [{ task: "first", slug: "same" }, { task: "second", slug: "same" }] },
+      exec,
+    );
+
+    assert.equal(res.results[0].slug, "same");
+    assert.equal(res.results[1].slug, "same-2");
+
+    const files = quickTaskFiles();
+    assert.equal(files.length, 2, "expected two distinct records after slug dedup");
+    assert.ok(files.some((k) => k.endsWith("-same/TASK.md")), "missing -same/TASK.md");
+    assert.ok(files.some((k) => k.endsWith("-same-2/TASK.md")), "missing -same-2/TASK.md");
+  });
+
+  test("returns a structured object, not a string", async () => {
+    const { t } = await registerTool("quick", "gsd_quick_batch");
+    const res = await t.execute({ tasks: [{ task: "one", slug: "one" }] }, exec);
+    assert.equal(typeof res, "object");
+    assert.ok(Array.isArray(res.results));
+    assert.equal(typeof res.summary, "object");
   });
 });
 
