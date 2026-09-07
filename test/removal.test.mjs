@@ -219,3 +219,21 @@ describe("removal: gsd-phase-management (out-of-band)", () => {
     assert.ok(ctx.commands.some((c) => c.name === "gsd-phase-manage"), "gsd-phase-manage not registered");
   });
 });
+
+// ── gsd-core-tools retirement (DEGR-05, phase 53) ─────────────────────────────
+// gsd_next rides the gsdOrient capability published by gsd-core-tools, and the
+// /gsd-next command is paired to gsdOrient. Retiring gsd-core-tools withdraws
+// gsdOrient, so the gsd_next tool and the /gsd-next command must both be
+// unregistered (the never-instruct-a-missing-tool gate / DEGR-03).
+describe("removal: gsd-core-tools (out-of-band, DEGR-05)", () => {
+  const allSubs = PATCH_ROWS.map((r) => r.sub);
+
+  test("retiring gsd-core-tools unregisters gsd_next + /gsd-next + gsdOrient", async () => {
+    const subs = allSubs.filter((s) => s !== "core-tools");
+    const { ctx } = await mountSubset(subs, { subagents: makeSubagents() });
+
+    assert.ok(!ctx.provided.has("gsdOrient"), "gsdOrient capability still provided");
+    assert.ok(!ctx.tools.some((t) => t.name === "gsd_next"), "gsd_next still registered");
+    assert.ok(!ctx.commands.some((c) => c.name === "gsd-next"), "gsd-next still registered");
+  });
+});

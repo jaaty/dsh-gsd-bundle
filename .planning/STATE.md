@@ -5,20 +5,20 @@ milestone_name: core-loop-helpers
 status: idle
 active_phase: null
 next_action: null
-next_phases: [52]
+next_phases: [53]
 progress:
   total_phases: 58
-  completed_phases: 52
-  total_plans: 3
-  completed_plans: 137
-  percent: 90
-current_phase: 52
-current_phase_name: phase-management
-current_plan: 3
-last_updated: "2026-09-07T01:58:22.530Z"
+  completed_phases: 53
+  total_plans: 2
+  completed_plans: 139
+  percent: 91
+current_phase: 53
+current_phase_name: smart-entry
+current_plan: 2
+last_updated: "2026-09-07T03:56:40.674Z"
 state_head: null
 last_activity: 2026-09-07
-stopped_at: "Phase 52 shipped — PR #65"
+stopped_at: "Phase 53 shipped — PR #67"
 paused_at: null
 ---
 # GSD STATE
@@ -262,17 +262,12 @@ _No active phase._
 - Phase 52: planned — 3 plan(s) across 3 wave(s).
 - Phase 52 shipped — PR #65 (https://github.com/jaaty/dsh-gsd-bundle/pull/65)
 - quick 2026-09-07-fix-code-review-fs-inject: Fix the gsd_code_review tool's live-host failure: `cannot get property "fs" without inject`.
-
-ROOT CAUSE (already diagnosed): `lib/code-review.js` reads `ctx.fs` directly (at lines ~356, 416, 455, 472, 473 — e.g. `ctx.fs.resolve`, `ctx.fs.stat`, `ctx.fs.readText`, `ctx.fs.writeText`) but its `inject` array (line 43) is `const inject = ["gsdState", "tools", "subagents"]` — it never declares `"fs"`. The cordis host only exposes `ctx.fs` to a plugin that lists `"fs"` in its `inject` array; otherwise it throws `cannot get property "fs" without inject`. The offline mount harness (test/helpers/mount-harness.mjs) sets `ctx.fs = fs` unconditionally, so the test suite passes while the live tool fails.
-
-THE FIX: add `"fs"` to the `inject` array in `lib/code-review.js` so it becomes `const inject = ["fs", "gsdState", "tools", "subagents"];`. Do NOT change any other file. Do NOT refactor the `ctx.fs` call sites — they are correct once `fs` is injected.
-
-VERIFY:
-1. `node --test test/code-review.test.mjs` passes (or the code-review test file if named differently — check `test/` for the code-review suite).
-2. Run the full suite `npm test` and confirm it passes (baseline ~974 tests).
-3. Confirm the mount harness still mounts the code-review plugin (its inject array now includes "fs", which the fake ctx satisfies).
-
-Commit atomically with a clear message describing the fix (e.g. `fix(code-review): declare "fs" in inject so ctx.fs resolves on the live host`).
+- Phase 53: CONTEXT.md sealed — 9 decisions
+- Phase 53: planned — 2 plan(s) across 2 wave(s); checker issues remain after 3 iterations (manual review).
+- Phase 53: REVIEW.md written (status issues_found, findings 6 (0B/2W/4I))
+- Phase 53: REVIEW.md written (status issues_found, findings 5 (0B/2W/3I))
+- Phase 53: REVIEW.md written (status issues_found, findings 5 (0B/2W/3I))
+- Phase 53 shipped — PR #67 (https://github.com/jaaty/dsh-gsd-bundle/pull/67)
 
 ### Blockers / Concerns
 _none_
