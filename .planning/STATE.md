@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: plan
+status: execute
 active_phase: 53
-next_action: plan-phase
+next_action: execute-phase
 next_phases: [53]
 progress:
   total_phases: 58
@@ -15,7 +15,7 @@ progress:
 current_phase: 53
 current_phase_name: smart-entry
 current_plan: 3
-last_updated: "2026-09-07T02:13:59.058Z"
+last_updated: "2026-09-07T02:38:39.770Z"
 state_head: null
 last_activity: 2026-09-07
 stopped_at: "Phase 52 shipped — PR #65"
@@ -263,6 +263,7 @@ _No active phase._
 - Phase 52 shipped — PR #65 (https://github.com/jaaty/dsh-gsd-bundle/pull/65)
 - quick 2026-09-07-fix-code-review-fs-inject: Fix the gsd_code_review tool's live-host failure: `cannot get property "fs" without inject`.
 - Phase 53: CONTEXT.md sealed — 9 decisions
+- Phase 53: planned — 2 plan(s) across 2 wave(s); checker issues remain after 3 iterations (manual review).
 
 ### Blockers / Concerns
 _none_
