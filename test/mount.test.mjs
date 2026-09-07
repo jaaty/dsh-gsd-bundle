@@ -140,7 +140,7 @@ describe("mount: all 26 plugins activate", () => {
     ctx = makeMountCtx(fs, { subagents: makeSubagents() });
   });
 
-  test("applies all 25 plugins in patch order without throwing", async () => {
+  test("applies all 26 plugins in patch order without throwing", async () => {
     await applyAll(ctx);
     assert.ok(ctx.provided.has("gsdState"), "gsdState service was not provided");
     assert.ok(ctx.provided.get("gsdState") instanceof GsdState, "gsdState is not a GsdState instance");
