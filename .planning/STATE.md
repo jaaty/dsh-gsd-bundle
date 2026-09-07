@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: verify
+status: ship
 active_phase: 52
-next_action: verify-phase
+next_action: ship-phase
 next_phases: [52]
 progress:
   total_phases: 58
@@ -15,9 +15,9 @@ progress:
 current_phase: 52
 current_phase_name: phase-management
 current_plan: 3
-last_updated: "2026-09-06T21:22:55.431Z"
+last_updated: "2026-09-07T01:10:33.480Z"
 state_head: null
-last_activity: 2026-09-06
+last_activity: 2026-09-07
 stopped_at: "Milestone upstream-parity ready-to-close (51/51 phases shipped)"
 paused_at: null
 ---
