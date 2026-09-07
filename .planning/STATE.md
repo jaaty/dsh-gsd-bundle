@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: ship
+status: review
 active_phase: 56
-next_action: ship-phase
+next_action: verify-phase
 next_phases: [56]
 progress:
   total_phases: 58
@@ -15,7 +15,7 @@ progress:
 current_phase: 56
 current_phase_name: fast-mode
 current_plan: 2
-last_updated: "2026-09-07T18:24:27.556Z"
+last_updated: "2026-09-07T18:27:41.624Z"
 state_head: null
 last_activity: 2026-09-07
 stopped_at: "Phase 55 shipped — PR #69"
@@ -291,6 +291,7 @@ _No active phase._
 - Phase 56: planned — 2 plan(s) across 2 wave(s).
 - Phase 56: COVERAGE.md written (coverage 67%, gaps: D-01, D-02, D-08)
 - Phase 56: COVERAGE.md written (coverage 100%, gaps: none)
+- Phase 56: REVIEW.md written (status issues_found, findings 6 (0B/4W/2I))
 
 ### Blockers / Concerns
 _none_
