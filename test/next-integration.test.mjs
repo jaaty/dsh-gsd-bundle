@@ -146,7 +146,7 @@ describe("gsd_next: integration across the six branches", () => {
 
     assert.equal(String(fm.active_phase), "2");
     assert.equal(fm.status, "spec", "status must be spec when gsdSpec is present");
-    assert.equal(fm.next_action, "discuss-phase", "_nextActionFor maps spec→discuss-phase");
+    assert.equal(fm.next_action, "spec-phase", "_nextActionFor maps spec→spec-phase");
     assert.match(res, /run spec-phase/, "recommendation must name the spec-phase command");
   });
 

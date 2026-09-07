@@ -103,10 +103,10 @@ describe("spec-phase: gsd_spec_phase writes a falsifiable SPEC.md and advances S
     assert.match(spec, /\*\*Acceptance:\*\*/);
     assert.match(spec, /PASSING|PASSED/, "gate should report passing for a low-ambiguity clear spec");
 
-    // STATE advanced to the spec step with discuss as the next action (D-08).
+    // STATE advanced to the spec step with spec as the next action (D-08).
     const state = await gsdState.readState(CWD);
     assert.equal(state.frontmatter.status, "spec", "STATE status is not 'spec'");
-    assert.equal(state.frontmatter.next_action, "discuss-phase", "next_action is not 'discuss-phase'");
+    assert.equal(state.frontmatter.next_action, "spec-phase", "next_action is not 'spec-phase'");
   });
 
   test("overrun soft-gate: above-0.20 ambiguity still writes SPEC.md and flags below-min dimensions as assumptions (D-06)", async () => {
