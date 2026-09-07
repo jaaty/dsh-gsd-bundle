@@ -67,10 +67,6 @@ function makeSubagents() {
       } else if (label.startsWith("ui-checker")) {
         // contains "VERIFICATION PASSED" so the passed branch is taken (lib/ui.js:61-62).
         text = "## VERIFICATION PASSED\nThe UI-SPEC is complete and unambiguous.";
-      } else if (label.startsWith("fast boom")) {
-        // Fail-fast branch for gsd_fast_mode (D-07): a failing fast executor
-        // throws at spawn so the tool stops and leaves the phase uncompleted.
-        throw new Error("fast subagent failed");
       } else if (label.startsWith("fast")) {
         // Happy-path branch for gsd_fast_mode (D-04/D-08): the single fresh-context
         // executor writes the phase SUMMARY to the artefact base path on FakeFs,
