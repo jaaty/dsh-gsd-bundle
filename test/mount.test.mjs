@@ -107,7 +107,7 @@ const EXPECTED_TOOL_NAMES = [
   "gsd_pause_work", "gsd_resume_work", "gsd_next", "gsd_route",
   "gsd_discuss", "gsd_spec_phase", "gsd_plan", "gsd_gap_analysis",
   "gsd_execute", "gsd_code_review", "gsd_ui_review", "gsd_verify", "gsd_validate_phase", "gsd_undo", "gsd_ship", "gsd_ui_phase",
-  "gsd_quick", "gsd_quick_batch", "gsd_map_codebase", "gsd_job", "gsd_intel_updater",
+  "gsd_quick", "gsd_quick_batch", "gsd_fast_mode", "gsd_map_codebase", "gsd_job", "gsd_intel_updater",
   "gsd_health", "gsd_milestone_audit", "gsd_extract_learnings",
   "gsd_graphify",
   "gsd_mempalace_recall", "gsd_mempalace_capture",
@@ -121,7 +121,7 @@ const EXPECTED_COMMAND_NAMES = [
   "gsd-init", "gsd-status", "gsd-progress", "gsd-discuss-phase",
   "gsd-spec-phase", "gsd-ui-phase", "gsd-plan-phase", "gsd-gap-analysis",
   "gsd-execute-phase", "gsd-code-review", "gsd-ui-review", "gsd-verify-work", "gsd-validate-phase", "gsd-undo", "gsd-ship",
-  "gsd-quick", "gsd-quick-batch", "gsd-map-codebase", "gsd-new-milestone",
+  "gsd-quick", "gsd-quick-batch", "gsd-fast-mode", "gsd-map-codebase", "gsd-new-milestone",
   "gsd-health", "gsd-extract-learnings",
   "gsd-graphify",
   "gsd-mempalace-recall", "gsd-mempalace-capture",
@@ -144,8 +144,8 @@ describe("mount: all 26 plugins activate", () => {
     await applyAll(ctx);
     assert.ok(ctx.provided.has("gsdState"), "gsdState service was not provided");
     assert.ok(ctx.provided.get("gsdState") instanceof GsdState, "gsdState is not a GsdState instance");
-    assert.ok(ctx.tools.length === 34, `expected 34 tools, got ${ctx.tools.length}`);
-    assert.ok(ctx.commands.length === 31, `expected 31 commands, got ${ctx.commands.length}`);
+    assert.ok(ctx.tools.length === 35, `expected 35 tools, got ${ctx.tools.length}`);
+    assert.ok(ctx.commands.length === 32, `expected 32 commands, got ${ctx.commands.length}`);
     assert.ok(ctx.sections.length === 1, `expected 1 section, got ${ctx.sections.length}`);
     assert.ok(ctx.contexts.length === 1, `expected 1 context, got ${ctx.contexts.length}`);
     assert.ok(ctx.provided.has("gsdJobsRuntime"), "gsdJobsRuntime service was not provided");
@@ -156,7 +156,7 @@ describe("mount: all 26 plugins activate", () => {
     // DEGR-01: all 16 capability services are provided with the documented
     // descriptor shape (D-03: key/step/role/tools/commands/order). Built from
     // CAPABILITY_KEYS so test and source never drift (D-02 camelCase keys).
-    assert.ok(CAPABILITY_KEYS.length === 25, `expected 25 capability keys, got ${CAPABILITY_KEYS.length}`);
+    assert.ok(CAPABILITY_KEYS.length === 26, `expected 26 capability keys, got ${CAPABILITY_KEYS.length}`);
     for (const key of CAPABILITY_KEYS) {
       const cap = ctx.provided.get(key);
       assert.ok(cap, `capability ${key} was not provided`);
@@ -187,7 +187,7 @@ describe("mount: all 26 plugins activate", () => {
     const commandsMod = await import(`@dsh-gsd/bundle/commands`);
     commandsMod.apply(ctx2, {});
 
-    assert.ok(ctx2.commands.length === 30, `expected 30 commands, got ${ctx2.commands.length}`);
+    assert.ok(ctx2.commands.length === 31, `expected 31 commands, got ${ctx2.commands.length}`);
     assert.ok(!ctx2.commands.some((c) => c.name === "gsd-quick"), "gsd-quick was registered despite gsdQuick being absent");
     for (const expected of EXPECTED_COMMAND_NAMES) {
       if (expected === "gsd-quick") continue;
@@ -325,7 +325,7 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
   test("all 33 registered tools have a valid compiled schema", () => {
     // apply() not throwing already proves defineTool compiled the schema (D-04);
     // assert the shape explicitly for every tool.
-    assert.ok(ctx.tools.length === 34, "expected 34 registered tools");
+    assert.ok(ctx.tools.length === 35, "expected 35 registered tools");
     for (const t of ctx.tools) {
       assert.equal(typeof t.name, "string", `${t.name}: name is not a string`);
       assert.equal(typeof t.description, "string", `${t.name}: description is not a string`);
