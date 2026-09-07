@@ -9,13 +9,13 @@ next_phases: [53]
 progress:
   total_phases: 58
   completed_phases: 52
-  total_plans: 3
-  completed_plans: 137
+  total_plans: 2
+  completed_plans: 138
   percent: 90
 current_phase: 53
 current_phase_name: smart-entry
-current_plan: 3
-last_updated: "2026-09-07T02:38:39.770Z"
+current_plan: 1
+last_updated: "2026-09-07T02:45:58.719Z"
 state_head: null
 last_activity: 2026-09-07
 stopped_at: "Phase 52 shipped — PR #65"
