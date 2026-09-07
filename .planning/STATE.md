@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: ship
+status: review
 active_phase: 54
-next_action: ship-phase
+next_action: verify-phase
 next_phases: [54]
 progress:
   total_phases: 58
@@ -15,7 +15,7 @@ progress:
 current_phase: 54
 current_phase_name: freeform-routing
 current_plan: 2
-last_updated: "2026-09-07T04:54:01.780Z"
+last_updated: "2026-09-07T05:10:36.148Z"
 state_head: null
 last_activity: 2026-09-07
 stopped_at: "Phase 53 shipped — PR #67"
@@ -271,6 +271,7 @@ _No active phase._
 - Phase 54: CONTEXT.md sealed — 10 decisions
 - Phase 54: planned — 2 plan(s) across 2 wave(s).
 - Phase 54: plan 02 executed — wired gsd_route tool + /gsd-route command under gsdOrient (recommend-only, never auto-runs, never mutates STATE); reconciled mount/_capabilities/removal counts; 4 integration tests; 1030 tests green.
+- Phase 54: REVIEW.md written (status UNAVAILABLE, findings UNAVAILABLE)
 
 ### Blockers / Concerns
 _none_
