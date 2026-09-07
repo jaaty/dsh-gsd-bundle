@@ -71,13 +71,13 @@ describe("out-of-flow auto-commit: quick.js routes the record through commitArti
     assert.match(src, IMPORT_RE, "quick.js must import commitArtifacts from ./_git-artifacts.js");
   });
 
-  test("quick.js calls commitArtifacts with the quick scope and null phaseNum exactly twice", async () => {
+  test("quick.js calls commitArtifacts with the quick scope and null phaseNum exactly three times", async () => {
     const src = await readLib("quick.js");
     const callRe = /commitArtifacts\s*\(\s*cwd,\s*null,\s*\{\s*scope:\s*"quick"/g;
     assert.equal(
       (src.match(callRe) || []).length,
-      2,
-      'quick.js must call commitArtifacts(cwd, null, { scope: "quick" exactly twice (gsd_quick and gsd_quick_batch)',
+      3,
+      'quick.js must call commitArtifacts(cwd, null, { scope: "quick" exactly three times (gsd_quick, gsd_quick_batch success, gsd_quick_batch failure record)',
     );
   });
 
