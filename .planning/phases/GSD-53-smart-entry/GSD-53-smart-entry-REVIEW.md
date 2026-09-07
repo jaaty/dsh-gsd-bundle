@@ -1,80 +1,72 @@
 ---
 phase: 53
-reviewed: "2026-09-07T03:39:17.278Z"
+reviewed: "2026-09-07T03:51:09.916Z"
 depth: standard
 files_reviewed: 10
 status: issues_found
 findings:
   blocker: 0
   warning: 2
-  info: 4
-  total: 6
+  info: 3
+  total: 5
 ---
 # Phase 53: smart-entry - Code Review Report
 
-**Reviewed:** 2026-09-07T03:39:17.278Z
+**Reviewed:** 2026-09-07T03:51:09.916Z
 **Depth:** standard
 **Files reviewed:** 10
 **Status:** issues_found
 
 ## Summary
 
-- Total findings: 6
+- Total findings: 5
 - BLOCKER: 0
 - WARNING: 2
-- INFO: 4
+- INFO: 3
 
 ## Warnings
 
-### CR-01: gsd-spec-phase non-auto branch renders literal '${n}' instead of the phase number
-
-- **File:** lib/commands.js
-- **Lines:** 87
-- **Severity:** WARNING
-- **Evidence:** text: `Run the GSD Spec step on phase ${n}. ${auto ? "Derive recommended defaults..." : "Clarify WHAT phase ${n} delivers by holding a Socratic interview..."} until the requirements are falsifiable...` — the false-branch is a plain double-quoted string, so its `${n}` is NOT interpolated and the user sees the literal text "phase ${n}".
-- **Suggestion:** Use a nested template literal or concatenation for the false branch, e.g. `: \`Clarify WHAT phase ${n} delivers...\`` so the phase number is interpolated.
-
-### CR-02: Auto-advance to 'spec' writes next_action 'discuss-phase' while recommending 'spec-phase'
+### CR-01: gsd_next auto-advance to spec persists next_action=discuss-phase, so gsd_status misreports the immediate next action and spec would be skipped
 
 - **File:** lib/core-tools.js
-- **Lines:** 647-662
+- **Lines:** 655-656
 - **Severity:** WARNING
-- **Evidence:** gsd_next branch-5 advance calls `s.setActivePhase(cwd, phaseNum, step)` with step='spec' (chosen in lib/_next.js:129 when gsdSpec is present), and state.js `_nextActionFor('spec')` returns 'discuss-phase' (state.js:436). The tool then returns `renderNextRecommendation(result)` naming 'spec-phase'. A subsequent gsd_status/gsd_next therefore routes to 'discuss-phase', contradicting the just-issued 'spec-phase' recommendation and effectively skipping the spec step on the next orientation.
-- **Suggestion:** Make the recommendation and the persisted next_action agree: either map spec->'spec-phase' in `_nextActionFor`/`NEXT_ACTION_TO_STEP`, or have gsd_next recommend the step that `_nextActionFor` actually persists (discuss-phase) when advancing to spec.
+- **Evidence:** When gsdSpec is present, branch 5 sets step='spec' and calls `await s.setActivePhase(cwd, phaseNum, step)`. setActivePhase computes next_action via `_nextActionFor(step)` (lib/state.js:436) which maps `spec: "discuss-phase"`. So after auto-advance STATE has status='spec' but next_action='discuss-phase'. gsd_status (lib/core-tools.js:156-158) then reports `Next action: discuss-phase` because gsdDiscuss is present — while gsd_next just recommended `run spec-phase`. The two surfaces disagree about the immediate next action, so an agent orienting via gsd_status would skip the spec step. The integration test (test/next-integration.test.mjs:149) codifies this mismatch.
+- **Suggestion:** Make _nextActionFor('spec') return 'spec-phase' (self-referential like plan/execute/verify) so the persisted next_action matches the recommendation, or have gsd_next write the recommendation step directly into next_action instead of relying on _nextActionFor.
 
-## Info
-
-### CR-03: gsd-undo dry-run text has an unbalanced opening parenthesis
-
-- **File:** lib/commands.js
-- **Lines:** 213
-- **Severity:** INFO
-- **Evidence:** text: "Run the gsd_undo tool on phase " + n + ... + " (dry-run — no confirm, will show what would be reverted" + "." — the dry-run branch opens a '(' that is never closed, producing "...would be reverted."
-- **Suggestion:** Close the parenthesis: " (dry-run — no confirm, will show what would be reverted)".
-
-### CR-04: Math.min over pending phases can yield NaN when a phase lacks n
+### CR-02: Math.min over pending phase n can yield NaN and corrupt STATE via setActivePhase
 
 - **File:** lib/_next.js
 - **Lines:** 128
-- **Severity:** INFO
-- **Evidence:** const nextPhaseNum = Math.min(...pending.map((p) => p.n)); — if any pending phase has `n: undefined`, Math.min(...[undefined]) is NaN, and the returned mutation `{ setActivePhase: { phaseNum: NaN, step } }` would, on advance, call setActivePhase(cwd, NaN, step) and write active_phase 'NaN' into STATE.
-- **Suggestion:** Guard the phase numbers, e.g. `const nums = pending.map(p => p.n).filter(Number.isFinite); if (!nums.length) fall through; const nextPhaseNum = Math.min(...nums);`
+- **Severity:** WARNING
+- **Evidence:** `const nextPhaseNum = Math.min(...pending.map((p) => p.n));` — if any pending phase lacks a numeric `n` (undefined/NaN), Math.min returns NaN. The mutation `{ setActivePhase: { phaseNum: NaN, step } }` is then applied in core-tools.js:655 via `s.setActivePhase(cwd, NaN, step)`, which writes `active_phase: "NaN"` into STATE.md (data corruption). There is no guard on the computed phase number.
+- **Suggestion:** Filter/validate pending phases before the min, e.g. `const nums = pending.map(p=>p.n).filter(Number.isFinite); if (!nums.length) fall through to branch 6; const nextPhaseNum = Math.min(...nums);`
 
-### CR-05: Number(activePhase) is NaN for a non-numeric active_phase, silently degrading the branch
+## Info
+
+### CR-03: Auto-advance commit result is ignored; a failed commit is silently swallowed
+
+- **File:** lib/core-tools.js
+- **Lines:** 656
+- **Severity:** INFO
+- **Evidence:** `await commitArtifacts(cwd, phaseNum, { scope: "next", phaseName: String(phaseNum) }, ctx.gitFn || defaultGitFn);` — the return value `{ committed, warning }` is discarded. If git is unavailable or nothing is staged, commitArtifacts returns `{ committed:false, warning }` (lib/_git-artifacts.js:180/191/197) and the tool still returns `Next action: run ...` with no indication that the re-pointed STATE was not committed.
+- **Suggestion:** Capture the result and append a warning line when `!result.committed && result.warning`, e.g. `const c = await commitArtifacts(...); if (c.warning) return `${renderNextRecommendation(result)}\n(warning: ${c.warning})`;`
+
+### CR-04: Branch 4 misroutes to MID_PHASE when active_phase points to a phase absent from the roadmap
 
 - **File:** lib/_next.js
-- **Lines:** 107
+- **Lines:** 106-117
 - **Severity:** INFO
-- **Evidence:** const activeNum = Number(activePhase); const phase = s.roadmap.phases.find((p) => p.n === activeNum); — a non-numeric active_phase (e.g. 'abc') yields NaN, find() returns undefined, phaseComplete is forced false, and the classifier returns MID_PHASE based only on status rather than the actual phase.
-- **Suggestion:** Validate the parsed number: `const activeNum = Number(activePhase); if (Number.isFinite(activeNum)) { ... }` so a malformed active_phase is handled explicitly (e.g. routed to gsd_health) instead of silently misclassifying.
+- **Evidence:** `const phase = s.roadmap.phases.find((p) => p.n === activeNum); const phaseComplete = phase ? phase.status === "Complete" : false;` — when active_phase references a phase number not present in the roadmap (stale pointer), `phase` is undefined, `phaseComplete` is false, and with a non-'done' status the classifier returns MID_PHASE recommending continuation of a phase that does not exist, instead of falling through to branch 5/6.
+- **Suggestion:** Treat a missing phase as a fall-through: `if (phase && !statusDone && !phaseComplete)` so a stale active_phase routes to the next pending phase or milestone-complete rather than recommending a phantom phase.
 
-### CR-06: Test name says 'all 25 plugins' but the suite asserts 26
+### CR-05: Test name says 'applies all 25 plugins' but there are 26 patch rows
 
 - **File:** test/mount.test.mjs
 - **Lines:** 143
 - **Severity:** INFO
-- **Evidence:** test("applies all 25 plugins in patch order without throwing", ...) — the surrounding comments and assertions (line 215 `insertRows.length === 26`, EXPECTED_INSERT_ROWS) consistently describe 26 plugin rows, so the test name is stale.
-- **Suggestion:** Rename the test to 'applies all 26 plugins in patch order without throwing'.
+- **Evidence:** `test("applies all 25 plugins in patch order without throwing", async () => {` — PATCH_ROWS has 26 entries (mount-harness.mjs:23-50) and the test asserts `ctx.tools.length === 32` / `ctx.commands.length === 29` for the full 26-row set. The name is stale/misleading.
+- **Suggestion:** Rename to 'applies all 26 plugins in patch order without throwing' (or derive the count from PATCH_ROWS.length).
 
 ---
 
