@@ -3,7 +3,7 @@
 // Proves the 26 cordis.patch.yml plugin rows activate inside a fake DSH host:
 // each subpath export resolves, apply() runs against one shared fake ctx, and
 // the full registration surface is captured (1 persona section, 1 runtime-
-// context provider, gsdState service, 32 gsd_* tools, 29 /gsd-* commands).
+// context provider, gsdState service, 35 gsd_* tools, 32 /gsd-* commands).
 // Offline only (D-01/D-02): FakeFs + fake-ctx, no live DSH boot, no LLM/git/gh.
 
 import { test, describe, beforeEach } from "node:test";
@@ -101,7 +101,7 @@ const EXPECTED_INSERT_ROWS = PATCH_ROWS.map(({ id, sub }) => ({
   spec: `@dsh-gsd/bundle/${sub}`,
 }));
 
-// Expected registered tool names (33) — verified against the real modules.
+// Expected registered tool names (35) — verified against the real modules.
 const EXPECTED_TOOL_NAMES = [
   "gsd_init", "gsd_status", "gsd_progress", "gsd_new_milestone",
   "gsd_pause_work", "gsd_resume_work", "gsd_next", "gsd_route",
@@ -116,7 +116,7 @@ const EXPECTED_TOOL_NAMES = [
   "gsd_phase",
 ];
 
-// Expected registered command names (30) — from lib/commands.js (D-03).
+// Expected registered command names (32) — from lib/commands.js (D-03).
 const EXPECTED_COMMAND_NAMES = [
   "gsd-init", "gsd-status", "gsd-progress", "gsd-discuss-phase",
   "gsd-spec-phase", "gsd-ui-phase", "gsd-plan-phase", "gsd-gap-analysis",
