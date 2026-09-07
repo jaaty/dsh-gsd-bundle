@@ -63,6 +63,14 @@ Prove the fast-mode behaviour offline on FakeFs, mirroring the existing gsd_quic
          - assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-CONTEXT.md`)); const ctxText = fs.files.get(`${CWD}/.planning/phases/01-auth/01-auth-CONTEXT.md`); assert.match(ctxText, /Auto-generated \(discuss skipped — fast path\)/);
          - assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-SUMMARY.md`)); assert.match(fs.files.get(`${CWD}/.planning/phases/01-auth/01-auth-SUMMARY.md`), /status: complete/);
          - assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-VERIFICATION.md`)); assert.match(fs.files.get(`${CWD}/.planning/phases/01-auth/01-auth-VERIFICATION.md`), /status: passed/);
+
+      5. Add a second test "ship delegation works via the service ctx.tools.get branch (production shape)":
+         - const { t, c } = await registerFastTool();
+         - const shipCalls = []; c.tools = { get: (name) => (name === "gsd_ship" ? { execute: async (args) => { shipCalls.push(args); return "PR created: http://x/pull/1"; } } : undefined) };
+         - const res = await t.execute({ phase: 1 }, exec);
+         - assert.match(res, /gsd_fast_mode complete/);
+         - assert.equal(shipCalls.length, 1); assert.equal(shipCalls[0].phase, 1);
+         - This proves the findTool helper's non-array branch (the real DSH runtime where ctx.tools is a service object exposing get(name, scope)) actually invokes gsd_ship, not just the array branch the happy-path test covers.
     </action>
     <verify>node --test test/service-tools.test.mjs</verify>
     <acceptance_criteria>
@@ -71,6 +79,7 @@ Prove the fast-mode behaviour offline on FakeFs, mirroring the existing gsd_quic
       - grep -q "describe(\"gsd_fast_mode\"" test/service-tools.test.mjs
       - grep -q "Auto-generated (discuss skipped — fast path)" test/service-tools.test.mjs
       - grep -q "status: passed" test/service-tools.test.mjs
+      - grep -q "service ctx.tools.get branch" test/service-tools.test.mjs
       - node --test test/service-tools.test.mjs exits 0
     </acceptance_criteria>
     <done>The happy-path test passes: auto-CONTEXT (fast marker), SUMMARY, VERIFICATION (status: passed), and gsd_ship delegation all verified on FakeFs.</done>
@@ -90,7 +99,7 @@ Prove the fast-mode behaviour offline on FakeFs, mirroring the existing gsd_quic
          - Assert the phase is still Complete (no partial state change): const rm = await svc.readRoadmap(CWD); assert.equal(rm.phases.find((p) => p.n === 1).status, "Complete");
 
       2. Test "fail-fast: a failing executor stops and leaves the phase uncompleted":
-         - Build a ctx whose subagents service throws for any fast label. Create a local `boomSubagents` object mirroring makeSubagents but whose start() throws new Error("fast subagent failed") for any label. Build the ctx manually: const c = makeCtx(); c.get = (n) => n === "gsdState" ? svc : n === "subagents" ? boomSubagents : n === "tools" ? { register() {} } : undefined; then apply ../lib/quick.js to c and find the gsd_fast_mode tool.
+         - Build a ctx whose subagents service throws for any fast label. Create a local `boomSubagents` object mirroring makeSubagents but whose start() throws new Error("fast subagent failed") for any label. Build the ctx with a COLLECTING ctx.tools (so the tool can be found) and a get() that returns boomSubagents for "subagents": const c = makeCtx(); const tools = []; c.tools = { register: (t) => tools.push(t) }; c.get = (n) => n === "gsdState" ? svc : n === "subagents" ? boomSubagents : n === "tools" ? c.tools : undefined; const mod = await import("../lib/quick.js"); mod.apply(c, {}); const t = tools.find((x) => x.name === "gsd_fast_mode"); assert.ok(t, "gsd_fast_mode not registered").
          - await assert.rejects(() => t.execute({ phase: 1 }, exec), /fast subagent failed/);
          - Assert the phase is NOT marked Complete: const rm = await svc.readRoadmap(CWD); assert.notEqual(rm.phases.find((p) => p.n === 1).status, "Complete");
     </action>

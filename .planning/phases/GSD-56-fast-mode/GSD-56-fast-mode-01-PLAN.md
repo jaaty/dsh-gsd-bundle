@@ -41,7 +41,7 @@ must_haves:
       pattern: "buildAutoContext"
     - from: "lib/quick.js"
       to: "lib/ship.js"
-      via: "gsd_fast_mode finds gsd_ship via ctx.tools.find and invokes its execute for the full ship"
+      via: "gsd_fast_mode resolves gsd_ship via the findTool helper (array ctx.tools in tests, ctx.tools.get in the real runtime) and invokes its execute for the full ship"
       pattern: "gsd_ship"
     - from: "lib/quick.js"
       to: "lib/_git-artifacts.js"
@@ -64,7 +64,7 @@ Land the core fast-mode implementation: a new gsd_fast_mode tool (plus the gsdFa
 @lib/autonomous.js — buildAutoContext (lines 56-107); add an optional mode param so fast-mode can mark its CONTEXT 'Auto-generated (discuss skipped — fast path)'.
 @lib/_git-artifacts.js — ensurePhaseBranch(cwd, phaseNum) and commitArtifacts(cwd, phaseNum, opts); both no-throw in project-less/non-repo workspaces.
 @lib/_runner.js — spawnSubagent(ctx, exec, { label, promptText }) and cwdOf(exec).
-@lib/ship.js — the gsd_ship execute (gate 1 requires a VERIFICATION.md with status: passed; gate 2 clean tree; gate 3 feature branch). Fast-mode writes a minimal VERIFICATION.md then invokes gsd_ship.execute via ctx.tools.find.
+@lib/ship.js — the gsd_ship execute (gate 1 requires a VERIFICATION.md with status: passed; gate 2 clean tree; gate 3 feature branch). Fast-mode writes a minimal VERIFICATION.md then invokes gsd_ship.execute. NOTE: in the real DSH runtime ctx.tools is a SERVICE object (exposes get(name, scope)), not an array — the findTool helper must handle both shapes (see lib/ship.js:68 for the existing Array.isArray pattern used only for optional hooks).
 @lib/state.js — writeArtifact/readArtifact/hasArtifact/phaseDirAndBase accessors (lines 708-755).
 @test/mount.test.mjs — exact-count assertions (34 tools, 31 commands, 25 caps) + EXPECTED_TOOL_NAMES / EXPECTED_COMMAND_NAMES arrays; update in the SAME commit as the tool (R3).
 </context>
@@ -87,6 +87,7 @@ Land the core fast-mode implementation: a new gsd_fast_mode tool (plus the gsdFa
          - Extend the import from "./_shared.js" to also bring in today (currently imports slugify, today, nowIso — today is already imported, so no change needed; verify). Add imports: `import { buildAutoContext } from "./autonomous.js";` and `import { ensurePhaseBranch } from "./_git-artifacts.js";` (commitArtifacts is already imported).
          - After the gsdQuickBatch provide (line 33), add `ctx.provide("gsdFastMode", buildCapability("gsdFastMode"));`.
          - Add a FAST_PROMPT constant (mirroring QUICK_PROMPT at line 17) that instructs the fast executor to: orient by reading .planning/STATE.md if it exists; do the phase goal in one pass using existing functions/patterns; commit source changes atomically with a conventional-commit message (never blanket "git add -A"); write the phase SUMMARY to the artefact base path `<base>-SUMMARY.md` (under .planning/phases/<base>/) with frontmatter `phase: <base>` and `status: complete` followed by a `# Summary` body; and return a short summary of what was done plus the commit hash.
+         - Add a module-scope helper `function findTool(ctx, name)` (near FAST_PROMPT) that resolves a registered tool by name across BOTH ctx shapes: when `Array.isArray(ctx.tools)` (the offline mount/test harness) it returns `ctx.tools.find((t) => t && t.name === name)`; otherwise, when `ctx.tools && typeof ctx.tools.get === "function"` (the real DSH runtime, where `ctx.tools` is a service object exposing `get(name, scope)` — see lib/ship.js:68 and the dsh-tools service), it returns `ctx.tools.get(name)`. Return `undefined` when neither shape matches. This is REQUIRED because the real runtime's `ctx.tools` is a service, not an array — a bare `Array.isArray(ctx.tools) ? ctx.tools : []` would always throw "gsd_ship tool not registered" in production.
          - Register the gsd_fast_mode tool via ctx.tools.register(defineTool({ ... })) with:
            - name "gsd_fast_mode", description naming the single-pass fast path and that it refuses already-Complete phases.
            - parameters: { phase: { type: "number", required: true } }.
@@ -98,7 +99,7 @@ Land the core fast-mode implementation: a new gsd_fast_mode tool (plus the gsdFa
              d. const subagents = ctx.get("subagents"); if (!subagents) throw new Error("gsd_fast_mode: `subagents` service unavailable"); const r = await spawnSubagent(ctx, exec, { label: `fast phase ${phase.n}`, promptText: `${FAST_PROMPT}\n\nPHASE: ${phase.n} (${phase.name})\nARTEFACT BASE: ${base}\nGOAL: ${phase.goal}\nREQUIREMENTS: ${(phase.requirements || []).join(", ")}` }) (D-04). A spawn/run throw propagates (fail-fast, D-07).
              e. Lightweight verify read-back (D-05): const summary = await s.readArtifact(cwd, phase.n, "SUMMARY").catch(() => ""); if (!summary) throw new Error(`gsd_fast_mode: executor did not write a SUMMARY for phase ${phase.n}`); const context = await s.readArtifact(cwd, phase.n, "CONTEXT").catch(() => ""); if (!context) throw new Error(`gsd_fast_mode: CONTEXT missing for phase ${phase.n}`). Then write a minimal VERIFICATION.md via await s.writeArtifact(cwd, phase.n, "VERIFICATION", `---\nphase: ${base}\nverified: ${today()}\nstatus: passed\nmode: fast\n---\n# Verification\n\nFast-path lightweight verify (D-05): SUMMARY present, CONTEXT present, executor completed.`) so gsd_ship gate 1 passes.
              f. await commitArtifacts(cwd, phase.n, { scope: "fast-mode", phaseName: phase.name }) to commit .planning (D-06).
-             g. Ship the full way (D-06): const tools = Array.isArray(ctx.tools) ? ctx.tools : []; const shipTool = tools.find((t) => t && t.name === "gsd_ship"); if (!shipTool) throw new Error("gsd_fast_mode: gsd_ship tool not registered — cannot ship"); const shipOut = await shipTool.execute({ phase: phase.n }, exec). A throw here propagates (fail-fast, D-07).
+             g. Ship the full way (D-06): const shipTool = findTool(ctx, "gsd_ship"); if (!shipTool || typeof shipTool.execute !== "function") throw new Error("gsd_fast_mode: gsd_ship tool not registered — cannot ship"); const shipOut = await shipTool.execute({ phase: phase.n }, exec). A throw here propagates (fail-fast, D-07).
              h. return `gsd_fast_mode complete for phase ${phase.n} (${phase.name}).\n\n${shipOut}`.
            - presentCall: (a) => ({ card: "generic", title: `Fast mode phase ${a.phase}`, kind: "other", rawInput: { phase: a.phase } }).
     </action>
@@ -112,10 +113,12 @@ Land the core fast-mode implementation: a new gsd_fast_mode tool (plus the gsdFa
       - grep -q "buildAutoContext" lib/quick.js
       - grep -q "ensurePhaseBranch" lib/quick.js
       - grep -q "Auto-generated (discuss skipped — fast path)" lib/quick.js
+      - grep -q "function findTool" lib/quick.js
+      - grep -q "ctx.tools.get" lib/quick.js
       - grep -q "mode = \"Auto-generated (discuss skipped — autonomous path)\"" lib/autonomous.js
       - node --check passes (exit 0) for all four files
     </acceptance_criteria>
-    <done>gsd_fast_mode is registered with the full single-pass flow, gsdFastMode capability and /gsd-fast-mode command exist, and buildAutoContext accepts a mode param; all four files pass node --check.</done>
+    <done>gsd_fast_mode is registered with the full single-pass flow, gsdFastMode capability and /gsd-fast-mode command exist, buildAutoContext accepts a mode param, and the findTool helper resolves gsd_ship across both array and service ctx.tools shapes; all four files pass node --check.</done>
   </task>
 
   <task type="auto">
@@ -134,6 +137,7 @@ Land the core fast-mode implementation: a new gsd_fast_mode tool (plus the gsdFa
       - grep -q "gsd_fast_mode" test/mount.test.mjs
       - grep -q "gsd-fast-mode" test/mount.test.mjs
       - grep -q "expected 35 tools" test/mount.test.mjs
+      - grep -q "expected 35 registered tools" test/mount.test.mjs
       - grep -q "expected 32 commands" test/mount.test.mjs
       - grep -q "expected 26 capability keys" test/mount.test.mjs
       - node --test test/mount.test.mjs exits 0
