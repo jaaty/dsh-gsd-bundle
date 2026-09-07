@@ -55,7 +55,7 @@
 | 49 | [x] autonomous | Add an autonomous path that drives all remaining phases of a milestone end-to-end without per-phase manual prompting. | GAP-15 |
 | 50 | [x] add-tests | Add an add-tests generator that creates unit and E2E tests for a completed phase from its UAT criteria and implementation. | GAP-16 |
 | 51 | [x] drop-clean-branch | Remove the clean-PR branch feature so gsd_ship pushes and PRs the phase-NN branch directly, leaving one branch per phase. | SHIP-CLEAN-01 … SHIP-CLEAN-04 |
-| 52 | phase-management | Add, insert, remove, reorder, and edit phases directly in ROADMAP.md with validation and integrity checks. | CLH-01 |
+| 52 | [x] phase-management | Add, insert, remove, reorder, and edit phases directly in ROADMAP.md with validation and integrity checks. | CLH-01 |
 | 53 | smart-entry | Detect the current project state and route the user to the best next action, with an auto-advance option. | CLH-02 … CLH-03 |
 | 54 | freeform-routing | Parse a plain-English intent and dispatch it to the most appropriate GSD command. | CLH-04 |
 | 55 | quick-batch | Run multiple quick tasks in a single batch with per-task results. | CLH-05 |
@@ -67,58 +67,58 @@
 
 | # | Phase | Status | Date |
 |---|-------|--------|------|
-| 01 | live-mount | [x] Complete | 2026-09-06 |
-| 02 | service-tools | [x] Complete | 2026-09-06 |
-| 03 | loop-e2e | [x] Complete | 2026-09-06 |
-| 04 | checkpoint-resume | [x] Complete | 2026-09-06 |
-| 05 | window-ledger | [x] Complete | 2026-09-06 |
-| 06 | loop-robustness | [x] Complete | 2026-09-06 |
-| 07 | uat-conversation | [x] Complete | 2026-09-06 |
-| 08 | capability-gates | [x] Complete | 2026-09-06 |
-| 09 | job-runtime | [x] Complete | 2026-09-06 |
-| 10 | codebase-query | [x] Complete | 2026-09-06 |
-| 11 | phase-dir-resolution | [x] Complete | 2026-09-06 |
-| 12 | single-source-constants | [x] Complete | 2026-09-06 |
-| 13 | gate-dispatch | [x] Complete | 2026-09-06 |
-| 14 | execute-checkpoint | [x] Complete | 2026-09-06 |
-| 15 | ship-robustness | [x] Complete | 2026-09-06 |
-| 16 | context-budget | [x] Complete | 2026-09-06 |
-| 17 | phase-branch-isolation | [x] Complete | 2026-09-06 |
-| 18 | job-runtime-extensions | [x] Complete | 2026-09-06 |
-| 19 | codebase-intel-extensions | [x] Complete | 2026-09-06 |
-| 20 | multi-window-topology | [x] Complete | 2026-09-06 |
-| 21 | capability-services | [x] Complete | 2026-09-06 |
-| 22 | reactive-loop-rendering | [x] Complete | 2026-09-06 |
-| 23 | removal-verification | [x] Complete | 2026-09-06 |
-| 24 | composability-hardening | [x] Complete | 2026-09-06 |
-| 25 | license-and-attribution | [x] Complete | 2026-09-06 |
-| 26 | repo-hygiene | [x] Complete | 2026-09-06 |
-| 27 | ci-and-security | [x] Complete | 2026-09-06 |
-| 28 | publish-research | [x] Complete | 2026-09-06 |
-| 29 | pre-ship-verify | [x] Complete | 2026-09-06 |
-| 30 | publishable-package | [x] Complete | 2026-09-06 |
-| 31 | npm-publish | [x] Complete | 2026-09-06 |
-| 32 | security-policy-templates | [x] Complete | 2026-09-06 |
-| 33 | github-repo-config | [x] Complete | 2026-09-06 |
-| 34 | readme-badges | [x] Complete | 2026-09-06 |
-| 35 | pr-branch | [x] Complete | 2026-09-06 |
-| 36 | spec-phase | [x] Complete | 2026-09-06 |
-| 37 | gap-analysis | [x] Complete | 2026-09-06 |
-| 38 | code-review | [x] Complete | 2026-09-06 |
-| 39 | ui-review | [x] Complete | 2026-09-06 |
-| 40 | validate-phase | [x] Complete | 2026-09-06 |
-| 41 | undo | [x] Complete | 2026-09-06 |
-| 42 | health | [x] Complete | 2026-09-06 |
-| 43 | milestone-audit | [x] Complete | 2026-09-06 |
-| 44 | learnings | [x] Complete | 2026-09-06 |
-| 45 | graphify | [x] Complete | 2026-09-06 |
-| 46 | mempalace | [x] Complete | 2026-09-06 |
-| 47 | assumption-delta | [x] Complete | 2026-09-06 |
-| 48 | pause-resume-work | [x] Complete | 2026-09-06 |
-| 49 | autonomous | [x] Complete | 2026-09-06 |
-| 50 | add-tests | [x] Complete | 2026-09-06 |
-| 51 | drop-clean-branch | [x] Complete | 2026-09-06 |
-| 52 | phase-management | pending |  |
+| 01 | live-mount | [x] Complete | 2026-09-07 |
+| 02 | service-tools | [x] Complete | 2026-09-07 |
+| 03 | loop-e2e | [x] Complete | 2026-09-07 |
+| 04 | checkpoint-resume | [x] Complete | 2026-09-07 |
+| 05 | window-ledger | [x] Complete | 2026-09-07 |
+| 06 | loop-robustness | [x] Complete | 2026-09-07 |
+| 07 | uat-conversation | [x] Complete | 2026-09-07 |
+| 08 | capability-gates | [x] Complete | 2026-09-07 |
+| 09 | job-runtime | [x] Complete | 2026-09-07 |
+| 10 | codebase-query | [x] Complete | 2026-09-07 |
+| 11 | phase-dir-resolution | [x] Complete | 2026-09-07 |
+| 12 | single-source-constants | [x] Complete | 2026-09-07 |
+| 13 | gate-dispatch | [x] Complete | 2026-09-07 |
+| 14 | execute-checkpoint | [x] Complete | 2026-09-07 |
+| 15 | ship-robustness | [x] Complete | 2026-09-07 |
+| 16 | context-budget | [x] Complete | 2026-09-07 |
+| 17 | phase-branch-isolation | [x] Complete | 2026-09-07 |
+| 18 | job-runtime-extensions | [x] Complete | 2026-09-07 |
+| 19 | codebase-intel-extensions | [x] Complete | 2026-09-07 |
+| 20 | multi-window-topology | [x] Complete | 2026-09-07 |
+| 21 | capability-services | [x] Complete | 2026-09-07 |
+| 22 | reactive-loop-rendering | [x] Complete | 2026-09-07 |
+| 23 | removal-verification | [x] Complete | 2026-09-07 |
+| 24 | composability-hardening | [x] Complete | 2026-09-07 |
+| 25 | license-and-attribution | [x] Complete | 2026-09-07 |
+| 26 | repo-hygiene | [x] Complete | 2026-09-07 |
+| 27 | ci-and-security | [x] Complete | 2026-09-07 |
+| 28 | publish-research | [x] Complete | 2026-09-07 |
+| 29 | pre-ship-verify | [x] Complete | 2026-09-07 |
+| 30 | publishable-package | [x] Complete | 2026-09-07 |
+| 31 | npm-publish | [x] Complete | 2026-09-07 |
+| 32 | security-policy-templates | [x] Complete | 2026-09-07 |
+| 33 | github-repo-config | [x] Complete | 2026-09-07 |
+| 34 | readme-badges | [x] Complete | 2026-09-07 |
+| 35 | pr-branch | [x] Complete | 2026-09-07 |
+| 36 | spec-phase | [x] Complete | 2026-09-07 |
+| 37 | gap-analysis | [x] Complete | 2026-09-07 |
+| 38 | code-review | [x] Complete | 2026-09-07 |
+| 39 | ui-review | [x] Complete | 2026-09-07 |
+| 40 | validate-phase | [x] Complete | 2026-09-07 |
+| 41 | undo | [x] Complete | 2026-09-07 |
+| 42 | health | [x] Complete | 2026-09-07 |
+| 43 | milestone-audit | [x] Complete | 2026-09-07 |
+| 44 | learnings | [x] Complete | 2026-09-07 |
+| 45 | graphify | [x] Complete | 2026-09-07 |
+| 46 | mempalace | [x] Complete | 2026-09-07 |
+| 47 | assumption-delta | [x] Complete | 2026-09-07 |
+| 48 | pause-resume-work | [x] Complete | 2026-09-07 |
+| 49 | autonomous | [x] Complete | 2026-09-07 |
+| 50 | add-tests | [x] Complete | 2026-09-07 |
+| 51 | drop-clean-branch | [x] Complete | 2026-09-07 |
+| 52 | phase-management | [x] Complete | 2026-09-07 |
 | 53 | smart-entry | pending |  |
 | 54 | freeform-routing | pending |  |
 | 55 | quick-batch | pending |  |
