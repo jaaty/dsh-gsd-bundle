@@ -3,7 +3,7 @@
 // Proves the 26 cordis.patch.yml plugin rows activate inside a fake DSH host:
 // each subpath export resolves, apply() runs against one shared fake ctx, and
 // the full registration surface is captured (1 persona section, 1 runtime-
-// context provider, gsdState service, 31 gsd_* tools, 28 /gsd-* commands).
+// context provider, gsdState service, 32 gsd_* tools, 29 /gsd-* commands).
 // Offline only (D-01/D-02): FakeFs + fake-ctx, no live DSH boot, no LLM/git/gh.
 
 import { test, describe, beforeEach } from "node:test";
@@ -101,10 +101,10 @@ const EXPECTED_INSERT_ROWS = PATCH_ROWS.map(({ id, sub }) => ({
   spec: `@dsh-gsd/bundle/${sub}`,
 }));
 
-// Expected registered tool names (31) — verified against the real modules.
+// Expected registered tool names (32) — verified against the real modules.
 const EXPECTED_TOOL_NAMES = [
   "gsd_init", "gsd_status", "gsd_progress", "gsd_new_milestone",
-  "gsd_pause_work", "gsd_resume_work",
+  "gsd_pause_work", "gsd_resume_work", "gsd_next",
   "gsd_discuss", "gsd_spec_phase", "gsd_plan", "gsd_gap_analysis",
   "gsd_execute", "gsd_code_review", "gsd_ui_review", "gsd_verify", "gsd_validate_phase", "gsd_undo", "gsd_ship", "gsd_ui_phase",
   "gsd_quick", "gsd_map_codebase", "gsd_job", "gsd_intel_updater",
@@ -116,7 +116,7 @@ const EXPECTED_TOOL_NAMES = [
   "gsd_phase",
 ];
 
-// Expected registered command names (28) — from lib/commands.js (D-03).
+// Expected registered command names (29) — from lib/commands.js (D-03).
 const EXPECTED_COMMAND_NAMES = [
   "gsd-init", "gsd-status", "gsd-progress", "gsd-discuss-phase",
   "gsd-spec-phase", "gsd-ui-phase", "gsd-plan-phase", "gsd-gap-analysis",
@@ -125,7 +125,7 @@ const EXPECTED_COMMAND_NAMES = [
   "gsd-health", "gsd-extract-learnings",
   "gsd-graphify",
   "gsd-mempalace-recall", "gsd-mempalace-capture",
-  "gsd-pause-work", "gsd-resume-work",
+  "gsd-pause-work", "gsd-resume-work", "gsd-next",
   "gsd-autonomous",
   "gsd-add-tests",
   "gsd-phase-manage",
@@ -144,8 +144,8 @@ describe("mount: all 26 plugins activate", () => {
     await applyAll(ctx);
     assert.ok(ctx.provided.has("gsdState"), "gsdState service was not provided");
     assert.ok(ctx.provided.get("gsdState") instanceof GsdState, "gsdState is not a GsdState instance");
-    assert.ok(ctx.tools.length === 31, `expected 31 tools, got ${ctx.tools.length}`);
-    assert.ok(ctx.commands.length === 28, `expected 28 commands, got ${ctx.commands.length}`);
+    assert.ok(ctx.tools.length === 32, `expected 32 tools, got ${ctx.tools.length}`);
+    assert.ok(ctx.commands.length === 29, `expected 29 commands, got ${ctx.commands.length}`);
     assert.ok(ctx.sections.length === 1, `expected 1 section, got ${ctx.sections.length}`);
     assert.ok(ctx.contexts.length === 1, `expected 1 context, got ${ctx.contexts.length}`);
     assert.ok(ctx.provided.has("gsdJobsRuntime"), "gsdJobsRuntime service was not provided");
@@ -187,7 +187,7 @@ describe("mount: all 26 plugins activate", () => {
     const commandsMod = await import(`@dsh-gsd/bundle/commands`);
     commandsMod.apply(ctx2, {});
 
-    assert.ok(ctx2.commands.length === 27, `expected 27 commands, got ${ctx2.commands.length}`);
+    assert.ok(ctx2.commands.length === 28, `expected 28 commands, got ${ctx2.commands.length}`);
     assert.ok(!ctx2.commands.some((c) => c.name === "gsd-quick"), "gsd-quick was registered despite gsdQuick being absent");
     for (const expected of EXPECTED_COMMAND_NAMES) {
       if (expected === "gsd-quick") continue;
@@ -231,14 +231,14 @@ describe("mount: cordis.patch.yml rows resolve", () => {
       assert.equal(typeof mod.apply, "function", `${id}: apply is not a function`);
     }
 
-    // Cross-check captured tool names against the expected 31.
+    // Cross-check captured tool names against the expected 32.
     const fs = new FakeFs();
     const ctx = makeMountCtx(fs, { subagents: makeSubagents() });
     await applyAll(ctx);
     const toolNames = ctx.tools.map((t) => t.name).sort();
     assert.deepEqual(toolNames, [...EXPECTED_TOOL_NAMES].sort(), "registered tool names mismatch");
 
-    // Cross-check captured command names against the expected 28.
+    // Cross-check captured command names against the expected 29.
     const commandNames = ctx.commands.map((c) => c.name).sort();
     assert.deepEqual(commandNames, [...EXPECTED_COMMAND_NAMES].sort(), "registered command names mismatch");
   });
@@ -322,10 +322,10 @@ describe("mount: persona orients at STATE.md (MOUNT-02)", () => {
     assert.match(out, /no \.planning\/ project found/);
   });
 
-  test("all 31 registered tools have a valid compiled schema", () => {
+  test("all 32 registered tools have a valid compiled schema", () => {
     // apply() not throwing already proves defineTool compiled the schema (D-04);
     // assert the shape explicitly for every tool.
-    assert.equal(ctx.tools.length, 31);
+    assert.ok(ctx.tools.length === 32, "expected 32 registered tools");
     for (const t of ctx.tools) {
       assert.equal(typeof t.name, "string", `${t.name}: name is not a string`);
       assert.equal(typeof t.description, "string", `${t.name}: description is not a string`);
