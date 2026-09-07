@@ -55,6 +55,8 @@ must_haves:
 
 <objective>
 Land the core fast-mode implementation: a new gsd_fast_mode tool (plus the gsdFastMode capability and /gsd-fast-mode command) that drives a SIMPLE phase through a single-pass path — auto-CONTEXT -> one fresh-context executor -> SUMMARY -> lightweight verify -> full ship via gsd_ship — with fail-fast error handling. This is the tracer: the thinnest end-to-end slice touching every layer (capability, command, tool, artefact model, ship delegation). It is additive only: the full loop, gsd_quick, and gsd_quick_batch are untouched.
+
+Decision coverage: D-01 (new gsd_fast_mode tool + /gsd-fast-mode command + gsdFastMode capability, additive under the quick step), D-02 (caller invokes on a specific simple phase; optional fast: true ROADMAP flag is metadata not a hard gate; refuses an already-Complete phase), D-03 (auto-CONTEXT via buildAutoContext with the fast marker), D-04 (single executor, no PLAN.md), D-05 (lightweight verify read-back), D-06 (full ship: branch + commit + PR + Complete), D-07 (fail-fast, no retry/continue), D-08 (executor discretion on FAST_PROMPT wording, SUMMARY shape, verify heuristics).
 </objective>
 
 <context>

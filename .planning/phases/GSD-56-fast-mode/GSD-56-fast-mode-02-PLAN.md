@@ -30,6 +30,8 @@ must_haves:
 
 <objective>
 Prove the fast-mode behaviour offline on FakeFs, mirroring the existing gsd_quick / gsd_quick_batch describe blocks in test/service-tools.test.mjs. Covers the happy path (auto-CONTEXT with the fast marker, SUMMARY, minimal VERIFICATION, ship delegation), the refuse-already-Complete guard, and fail-fast on executor failure. The ship path itself is not driven (per the removal-test convention) — the test asserts gsd_fast_mode invokes gsd_ship via a stubbed ctx.tools spy.
+
+Decision coverage: D-01 (gsd_fast_mode tool surface exercised), D-02 (refuse-already-Complete guard proven offline), D-05 (lightweight verify read-back asserted), D-07 (fail-fast on executor failure proven), D-08 (executor-discretion SUMMARY shape asserted via FENCED_SUMMARY).
 </objective>
 
 <context>
