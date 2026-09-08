@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: idle
-active_phase: null
-next_action: null
-next_phases: [58]
+status: plan
+active_phase: 59
+next_action: plan-phase
+next_phases: [59]
 progress:
   total_phases: 59
   completed_phases: 58
   total_plans: 3
   completed_plans: 153
   percent: 98
-current_phase: 58
-current_phase_name: node-repair
+current_phase: 59
+current_phase_name: review-fix-companion
 current_plan: 3
-last_updated: "2026-09-08T04:53:46.219Z"
+last_updated: "2026-09-08T05:06:05.666Z"
 state_head: null
 last_activity: 2026-09-08
 stopped_at: "Phase 58 shipped — PR #72"
@@ -304,6 +304,7 @@ _No active phase._
 - Phase 58: REVIEW.md written (status issues_found, findings 12 (1B/6W/5I))
 - Phase management add: 59 phase(s) now
 - Phase 58 shipped — PR #72 (https://github.com/jaaty/dsh-gsd-bundle/pull/72)
+- Phase 59: CONTEXT.md sealed — 13 decisions
 
 ### Blockers / Concerns
 _none_
