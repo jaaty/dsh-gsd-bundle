@@ -1584,4 +1584,56 @@ describe("code-review: --auto iteration loop (D-06)", () => {
     assert.equal(fixerCallCount, 0, "fixer should NOT be spawned when clean on first review");
     assert.match(res, /clean|no findings/i);
   });
+
+  test("re-review fault: --auto stops cleanly, accumulated fixes stand, status is NOT 'unavailable' (OQ-4/D-05/D-06)", async () => {
+    let reviewerCallCount = 0;
+    let fixerCallCount = 0;
+    const reviewerCtrl = {
+      capture: () => reviewerCallCount++, // counts every reviewer start, faulted or not
+      failAt: 1, // call 0 (initial review) works; call 1 (re-review) faults
+      structured: () => ({
+        findings: [
+          { id: "CR-01", severity: "BLOCKER", file: "lib/foo.js", lines: "1", title: "b", evidence: "e", suggestion: "s" },
+        ],
+      }),
+    };
+    const fixerCtrl = {
+      structured: () => {
+        fixerCallCount++;
+        return { id: "CR-01", status: "fixed", file: "lib/foo.js", edits: [{ find: "export const x = 1;", replace: "export const x = 2; // fixed" }] };
+      },
+    };
+    const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+    const { ctx, fs } = await mountReview({ subagents: subs });
+    await bootstrapReview(ctx);
+    const gsdState = ctx.get("gsdState");
+    const { fakeGit } = makeFakeGit();
+    ctx.gitFn = fakeGit;
+    await seedSourceFile(fs, "lib/foo.js");
+
+    // Completing without throwing IS the "stops cleanly" assertion (OQ-4).
+    const res = await runReview(ctx, { phase: 1, auto: true, files: "lib/foo.js" });
+    assert.equal(reviewerCallCount, 2, "initial review + the faulted re-review");
+    assert.equal(fixerCallCount, 1, "only the round-1 fix ran — the loop stopped before round 2");
+    assert.match(res, /re-review faulted/, "the result carries the stopped-on-rereview note");
+
+    // The round-1 fix landed and the accumulated results stand.
+    const foo = await fs.readText(await fs.resolve(`${CWD}/lib/foo.js`));
+    assert.equal(foo, "export const x = 2; // fixed\n");
+
+    // REVIEW-FIX.md status derives from fix outcomes — NOT 'unavailable',
+    // which D-06 reserves for fixer-infrastructure faults.
+    const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+    assert.ok(fixReport);
+    const { frontmatter: fixFm, body: fixBody } = parseFrontmatter(fixReport);
+    assert.equal(fixFm.status, "applied");
+    assert.equal(fixFm.fixes_applied, 1);
+    assert.match(fixBody, /fixed \(commit/, "the round-1 fix row is fixed with a hash");
+
+    // REVIEW.md carries the UNAVAILABLE re-review (already overwritten).
+    const review = await gsdState.readArtifact(CWD, 1, "REVIEW");
+    assert.ok(review);
+    const { frontmatter: reviewFm } = parseFrontmatter(review);
+    assert.equal(reviewFm.status, "UNAVAILABLE");
+  });
 });
