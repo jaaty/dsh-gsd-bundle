@@ -41,7 +41,7 @@ const NO_LOOP = FULL.filter((d) => !["step", "optional", "alternate"].includes(d
 // plan 20, gap-analysis 22, quick 25, execute 30, code-review 35, ui-review 36,
 // verify 40, validate 45, ship 50, milestone-audit 52, learnings 53, graphify 54,
 // mempalace 55.
-const LOOP_ORDER = ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdGapAnalysis", "gsdQuick", "gsdQuickBatch", "gsdFastMode", "gsdExecute", "gsdCodeReview", "gsdUiReview", "gsdVerify", "gsdValidatePhase", "gsdShip", "gsdMilestoneAudit", "gsdLearnings", "gsdGraphify", "gsdMempalace"];
+const LOOP_ORDER = ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdGapAnalysis", "gsdQuick", "gsdQuickBatch", "gsdFastMode", "gsdMvpPhase", "gsdExecute", "gsdCodeReview", "gsdUiReview", "gsdVerify", "gsdValidatePhase", "gsdShip", "gsdMilestoneAudit", "gsdLearnings", "gsdGraphify", "gsdMempalace"];
 
 describe("availableCapabilities", () => {
   test("collects only truthy object descriptors from the getCap thunk, in CAPABILITY_KEYS order", () => {
@@ -110,7 +110,7 @@ describe("loopSteps / informationEntries ordering (D-08)", () => {
     const subset = without("gsdVerify");
     assert.deepEqual(
       loopSteps(subset).map((d) => d.key),
-      ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdGapAnalysis", "gsdQuick", "gsdQuickBatch", "gsdFastMode", "gsdExecute", "gsdCodeReview", "gsdUiReview", "gsdValidatePhase", "gsdShip", "gsdMilestoneAudit", "gsdLearnings", "gsdGraphify", "gsdMempalace"],
+      ["gsdSpec", "gsdDiscuss", "gsdUi", "gsdPlan", "gsdGapAnalysis", "gsdQuick", "gsdQuickBatch", "gsdFastMode", "gsdMvpPhase", "gsdExecute", "gsdCodeReview", "gsdUiReview", "gsdValidatePhase", "gsdShip", "gsdMilestoneAudit", "gsdLearnings", "gsdGraphify", "gsdMempalace"],
     );
   });
 

@@ -10,7 +10,7 @@ import { test, describe, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 
 import { FakeFs } from "./helpers/fake-fs.mjs";
-import { buildProject, FENCED_PLAN, FENCED_SUMMARY, VERIFICATION_PASSED } from "./helpers/project.mjs";
+import { buildProject, FENCED_PLAN, FENCED_SUMMARY, VERIFICATION_PASSED, VERIFICATION_GAPS } from "./helpers/project.mjs";
 
 const CWD = "/project";
 let fs;
@@ -132,6 +132,38 @@ async function registerFastTool() {
   const t = tools.find((x) => x.name === "gsd_fast_mode");
   assert.ok(t, "gsd_fast_mode not registered by quick");
   return { t, c };
+}
+
+// Register the gsd_mvp_phase tool from lib/quick.js, keeping the ctx (c) so the
+// test can reassign c.tools to a delegation spy (array or service shape) for the
+// propose-then-confirm + delegation-order assertions (D-03/D-05). Mirrors
+// registerFastTool but finds "gsd_mvp_phase".
+async function registerMvpTool() {
+  const mod = await import("../lib/quick.js");
+  const tools = [];
+  const c = makeCtx();
+  c.tools = { register: (t) => tools.push(t) };
+  mod.apply(c, {});
+  const t = tools.find((x) => x.name === "gsd_mvp_phase");
+  assert.ok(t, "gsd_mvp_phase not registered by quick");
+  return { t, c };
+}
+
+// Register the real quick, plan, execute, and verify plugins on one ctx so the
+// real-chain test drives gsd_mvp_phase -> gsd_plan -> gsd_execute -> gsd_verify
+// with the actual tools (D-04/D-05). Returns the ctx (c) and the collected tools
+// so the test can swap in a gsd_ship spy.
+async function registerMvpChain() {
+  const tools = [];
+  const c = makeCtx();
+  c.tools = { register: (t) => tools.push(t) };
+  for (const f of ["quick", "plan", "execute", "verify"]) {
+    const mod = await import(`../lib/${f}.js`);
+    mod.apply(c, {});
+  }
+  const t = tools.find((x) => x.name === "gsd_mvp_phase");
+  assert.ok(t, "gsd_mvp_phase not registered");
+  return { t, c, tools };
 }
 
 describe("gsd_new_milestone", () => {
@@ -411,6 +443,100 @@ describe("gsd_fast_mode", () => {
 
     await assert.rejects(() => t.execute({ phase: 1 }, exec), /fast subagent failed/);
     // D-07: the phase is NOT marked Complete.
+    const rm = await svc.readRoadmap(CWD);
+    assert.notEqual(rm.phases.find((p) => p.n === 1).status, "Complete");
+  });
+});
+
+// Phase 57 (D-01..D-07): the mvp-phase flow — interactive propose-then-confirm
+// scoping (first call returns a GSD_AWAITING_HUMAN marker with the proposed
+// slice; a confirm call drives the chain) -> a real PLAN.md via the normal
+// gsd_plan path (D-04) -> delegation to the normal loop gsd_execute/gsd_verify/
+// gsd_ship (D-05). Fail-fast (D-06): a throwing gsd_plan stops and leaves the
+// phase uncompleted. The ship path itself is not driven (per the removal-test
+// convention); the tests assert gsd_mvp_phase INVOKES gsd_ship via a stubbed
+// ctx.tools spy.
+describe("gsd_mvp_phase", () => {
+  beforeEach(async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    ctx = makeCtx();
+  });
+
+  test("propose-then-confirm: first call returns a GSD_AWAITING_HUMAN marker with the proposed slice", async () => {
+    const { t } = await registerMvpTool();
+    const res = await t.execute({ phase: 1 }, exec);
+
+    assert.match(res, /GSD_AWAITING_HUMAN/);
+    assert.match(res, /proposed minimal-viable slice/);
+    assert.match(res, /decision_id="mvp-1"/);
+    // D-03: the pending MVP-SCOPE proposal is written on the first call.
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-MVP-SCOPE.md`));
+    assert.match(fs.files.get(`${CWD}/.planning/phases/01-auth/01-auth-MVP-SCOPE.md`), /decision_id: mvp-1/);
+    // No CONTEXT.md yet — scoping is not confirmed.
+    assert.ok(!fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-CONTEXT.md`));
+  });
+
+  test("confirm drives the delegation chain in order (plan -> execute -> verify -> ship)", async () => {
+    const { t, c } = await registerMvpTool();
+    const calls = [];
+    c.tools = [
+      { name: "gsd_plan", execute: async () => { calls.push("plan"); return "plan done"; } },
+      { name: "gsd_execute", execute: async () => { calls.push("execute"); return "execute done"; } },
+      { name: "gsd_verify", execute: async () => { calls.push("verify"); await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_PASSED); return "verify done"; } },
+      { name: "gsd_ship", execute: async () => { calls.push("ship"); return "PR created: http://x/pull/1"; } },
+    ];
+    const res = await t.execute({ phase: 1, confirm: "yes", decision_id: "mvp-1" }, exec);
+
+    assert.match(res, /gsd_mvp_phase complete/);
+    assert.deepEqual(calls, ["plan", "execute", "verify", "ship"]);
+    // D-03: the confirmed CONTEXT is written before planning.
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-CONTEXT.md`));
+    assert.match(fs.files.get(`${CWD}/.planning/phases/01-auth/01-auth-CONTEXT.md`), /MVP scoping/);
+  });
+
+  test("a non-passed verification stops before ship (lightweight-verify heuristic)", async () => {
+    const { t, c } = await registerMvpTool();
+    const calls = [];
+    c.tools = [
+      { name: "gsd_plan", execute: async () => { calls.push("plan"); return "plan done"; } },
+      { name: "gsd_execute", execute: async () => { calls.push("execute"); return "execute done"; } },
+      // writes a NON-passed VERIFICATION (gaps_found) so the heuristic stops before ship.
+      { name: "gsd_verify", execute: async () => { calls.push("verify"); await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_GAPS); return "verify done"; } },
+      { name: "gsd_ship", execute: async () => { calls.push("ship"); return "PR created"; } },
+    ];
+    const res = await t.execute({ phase: 1, confirm: "yes", decision_id: "mvp-1" }, exec);
+
+    assert.match(res, /did not pass verification/);
+    assert.deepEqual(calls, ["plan", "execute", "verify"]); // ship NOT invoked
+  });
+
+  test("real chain: gsd_plan -> gsd_execute -> gsd_verify produce PLAN/SUMMARY/VERIFICATION and gsd_ship is invoked", async () => {
+    const { t, c, tools } = await registerMvpChain();
+    const shipCalls = [];
+    c.tools = [
+      ...tools.filter((x) => x.name !== "gsd_ship"),
+      { name: "gsd_ship", execute: async (a) => { shipCalls.push(a); return "PR created: http://x/pull/1"; } },
+    ];
+    const res = await t.execute({ phase: 1, confirm: "yes", decision_id: "mvp-1" }, exec);
+
+    assert.match(res, /gsd_mvp_phase complete/);
+    assert.equal(shipCalls.length, 1, "gsd_ship should be invoked exactly once");
+    assert.equal(shipCalls[0].phase, 1);
+    // D-04/D-05: the real chain produced the artefacts on FakeFs.
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-PLAN.md`), "PLAN.md not produced by gsd_plan");
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-01-SUMMARY.md`), "SUMMARY.md not produced by gsd_execute");
+    assert.ok(fs.files.has(`${CWD}/.planning/phases/01-auth/01-auth-VERIFICATION.md`), "VERIFICATION.md not produced by gsd_verify");
+    assert.match(fs.files.get(`${CWD}/.planning/phases/01-auth/01-auth-VERIFICATION.md`), /status: passed/);
+  });
+
+  test("fail-fast: a throwing gsd_plan stops and leaves the phase uncompleted", async () => {
+    const { t, c } = await registerMvpTool();
+    c.tools = [
+      { name: "gsd_plan", execute: async () => { throw new Error("planner failed"); } },
+    ];
+    await assert.rejects(() => t.execute({ phase: 1, confirm: "yes", decision_id: "mvp-1" }, exec), /planner failed/);
+    // D-06: the phase is NOT marked Complete.
     const rm = await svc.readRoadmap(CWD);
     assert.notEqual(rm.phases.find((p) => p.n === 1).status, "Complete");
   });
