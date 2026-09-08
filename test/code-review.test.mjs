@@ -15,7 +15,7 @@ import { apply as applyCoreTools } from "../lib/core-tools.js";
 import { buildCapability, CAPABILITY_KEYS } from "../lib/_capabilities.js";
 import { loopSteps, renderPersonaBody } from "../lib/_render.js";
 import { parseFrontmatter } from "../lib/_shared.js";
-import { resolveFindings, severityCounts, resolveFixFlags, computeScope, validateFiles, filterSourcePaths, filterBySeverity, hasBlockingFindings, applyAnchorEdits } from "../lib/code-review.js";
+import { resolveFindings, severityCounts, resolveFixFlags, computeScope, validateFiles, filterSourcePaths, filterBySeverity, hasBlockingFindings, applyAnchorEdits, excerpt, resolveFixStatus } from "../lib/code-review.js";
 import { commitSourceFiles } from "../lib/_git-artifacts.js";
 import { CODE_FIXER_PROMPT } from "../lib/_agents.js";
 
@@ -584,21 +584,43 @@ describe("code-review: applyAnchorEdits pure helper (D-01/D-02/D-03)", () => {
 // A controllable fake subagents factory that routes by label: reviewer vs fixer.
 // Mirrors makeReviewerSubagents but supports both subagent roles. Either
 // controller's `structured` may be a value or a function(req) → value.
+//
+// D-06 harness extensions: a controller may ALSO carry
+//   - failAt: a 0-based call index (number) or array of indices that throw
+//     instead of returning (per-call fault control — e.g. only the re-review
+//     faults, or only fixer call 0), and
+//   - result: an object or function(req, callIdx) → object merged OVER the
+//     default result so tests can override stopReason/diagnostic/structured
+//     (e.g. a non-completed max-tokens run with a diagnostic).
+// Plain `fail: true` still throws on every call (back-compat).
 function makeReviewFixSubagents(reviewerCtrl, fixerCtrl) {
+  let reviewerCalls = 0;
+  let fixerCalls = 0;
+  const shouldFail = (ctrl, idx) => {
+    if (typeof ctrl.failAt === "number") return idx === ctrl.failAt;
+    if (Array.isArray(ctrl.failAt)) return ctrl.failAt.includes(idx);
+    return !!ctrl.fail;
+  };
   return {
     getProvider: (n) => (n === "spawn" ? { spawn: true } : undefined),
     async start(_n, req) {
       if (req.label === "gsd-code-reviewer") {
+        const idx = reviewerCalls++;
         if (reviewerCtrl.capture) reviewerCtrl.capture(req);
-        if (reviewerCtrl.fail) throw new Error("reviewer exploded");
+        if (shouldFail(reviewerCtrl, idx)) throw new Error("reviewer exploded");
         const structured = typeof reviewerCtrl.structured === "function" ? reviewerCtrl.structured(req) : reviewerCtrl.structured;
-        return { result: { output: [{ type: "text", text: "reviewed" }], stopReason: "completed", structured }, dispose: () => {} };
+        const base = { output: [{ type: "text", text: "reviewed" }], stopReason: "completed", structured };
+        const override = typeof reviewerCtrl.result === "function" ? reviewerCtrl.result(req, idx) : reviewerCtrl.result;
+        return { result: { ...base, ...override }, dispose: () => {} };
       }
       if (req.label === "gsd-code-fixer") {
+        const idx = fixerCalls++;
         if (fixerCtrl.capture) fixerCtrl.capture(req);
-        if (fixerCtrl.fail) throw new Error("fixer exploded");
+        if (shouldFail(fixerCtrl, idx)) throw new Error("fixer exploded");
         const structured = typeof fixerCtrl.structured === "function" ? fixerCtrl.structured(req) : fixerCtrl.structured;
-        return { result: { output: [{ type: "text", text: "fixed" }], stopReason: "completed", structured }, dispose: () => {} };
+        const base = { output: [{ type: "text", text: "fixed" }], stopReason: "completed", structured };
+        const override = typeof fixerCtrl.result === "function" ? fixerCtrl.result(req, idx) : fixerCtrl.result;
+        return { result: { ...base, ...override }, dispose: () => {} };
       }
       return { result: { output: [], stopReason: "completed" }, dispose: () => {} };
     },
@@ -860,7 +882,7 @@ describe("code-review: --fix per-fix atomic commits + severity filtering (D-04/D
     assert.equal(frontmatter.fixes_applied, 2, "without --all, only BLOCKER+WARNING should be fixed");
   });
 
-  test("degrade-on-fixer-fault: REVIEW-FIX.md UNAVAILABLE, never throws (D-09)", async () => {
+  test("degrade-on-fixer-fault: per-finding skips with real causes, status 'skipped', never throws (D-06)", async () => {
     const reviewerCtrl = { structured: FINDINGS_MIXED };
     const fixerCtrl = { fail: true };
     const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
@@ -873,11 +895,197 @@ describe("code-review: --fix per-fix atomic commits + severity filtering (D-04/D
     await seedSourceFile(fs, "lib/bar.js");
     await seedSourceFile(fs, "lib/baz.js");
 
-    // Passing this line IS the "never throws on fixer fault" assertion (D-09).
+    // Passing this line IS the "never throws on fixer fault" assertion (D-06).
     const res = await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js,lib/bar.js,lib/baz.js" });
     const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
-    assert.ok(fixReport, "REVIEW-FIX.md must be written even on fixer fault");
-    assert.match(fixReport, /UNAVAILABLE/i);
+    assert.ok(fixReport, "REVIEW-FIX.md must be written even when every fix faults");
+    const { frontmatter, body } = parseFrontmatter(fixReport);
+    // A plain fixer fault is a per-finding skip (D-06), NOT 'unavailable' —
+    // that status is reserved for fixer-infrastructure absence.
+    assert.equal(frontmatter.status, "skipped");
+    assert.equal(frontmatter.fixes_applied, 0);
+    assert.equal(frontmatter.fixes_skipped, 2);
+    assert.match(body, /fixer exploded/, "each skip must carry its REAL cause");
+    assert.doesNotMatch(fixReport, /UNAVAILABLE/i);
+  });
+});
+
+// ── --fix skip-and-continue + real causes + resolveFixStatus (D-06/D-07) ─────
+
+describe("code-review: --fix skip-and-continue + real causes (D-06/D-07/OQ-1/OQ-3/OQ-12)", () => {
+  test("skip-and-continue: fixer call 0 faults, call 1 lands → overall 'applied', fault row carries the real cause (D-06)", async () => {
+    const reviewerCtrl = { structured: FINDINGS_MIXED };
+    const fixerCtrl = {
+      failAt: 0, // only the FIRST fixer call throws; the second completes
+      structured: () => ({
+        id: "WR-01", status: "fixed", file: "lib/bar.js",
+        edits: [{ find: "export const x = 1;", replace: "const x = 1; // const style" }],
+      }),
+    };
+    const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+    const { ctx, fs } = await mountReview({ subagents: subs });
+    await bootstrapReview(ctx);
+    const gsdState = ctx.get("gsdState");
+    const { fakeGit } = makeFakeGit();
+    ctx.gitFn = fakeGit;
+    await seedSourceFile(fs, "lib/foo.js");
+    await seedSourceFile(fs, "lib/bar.js");
+    await seedSourceFile(fs, "lib/baz.js");
+
+    const res = await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js,lib/bar.js,lib/baz.js" });
+    assert.match(res, /REVIEW-FIX/i);
+    const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+    const { frontmatter, body } = parseFrontmatter(fixReport);
+    assert.equal(frontmatter.status, "applied", "≥1 landed fix ⇒ 'applied' even with a faulted finding");
+    assert.equal(frontmatter.fixes_applied, 1);
+    assert.equal(frontmatter.fixes_skipped, 1);
+    assert.match(body, /CR-01/, "the faulted finding gets its own row");
+    assert.match(body, /fixer exploded/, "with its real cause, not a generic string");
+    // The faulted finding's file stays byte-identical; the second fix landed.
+    const foo = await fs.readText(await fs.resolve(`${CWD}/lib/foo.js`));
+    assert.equal(foo, "export const x = 1;\n");
+    const bar = await fs.readText(await fs.resolve(`${CWD}/lib/bar.js`));
+    assert.equal(bar, "const x = 1; // const style\n");
+  });
+
+  test("non-completed fixer stopReason: raw stopReason + diagnostic excerpt in the skip cause (D-06/OQ-1/OQ-12)", async () => {
+    const reviewerCtrl = { structured: FINDINGS_MIXED };
+    const fixerCtrl = {
+      result: { stopReason: "max-tokens", diagnostic: "hit the model token ceiling while emitting the edits array", structured: undefined },
+    };
+    const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+    const { ctx, fs } = await mountReview({ subagents: subs });
+    await bootstrapReview(ctx);
+    const gsdState = ctx.get("gsdState");
+    const { fakeGit } = makeFakeGit();
+    ctx.gitFn = fakeGit;
+    await seedSourceFile(fs, "lib/foo.js");
+    await seedSourceFile(fs, "lib/bar.js");
+    await seedSourceFile(fs, "lib/baz.js");
+
+    await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js,lib/bar.js,lib/baz.js" });
+    const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+    const { frontmatter, body } = parseFrontmatter(fixReport);
+    assert.equal(frontmatter.status, "skipped");
+    assert.equal(frontmatter.fixes_skipped, 2);
+    // The REAL cause contract: the raw stopReason AND the diagnostic excerpt.
+    assert.match(body, /fixer did not complete \(stopReason: max-tokens\)/);
+    assert.match(body, /hit the model token ceiling while emitting the edits array/);
+  });
+
+  test("malformed structured output ({} and null) → skipped with the real cause, not a generic string (D-06)", async () => {
+    // structured: {} → an object with no status → the actual value is named.
+    {
+      const reviewerCtrl = { structured: FINDINGS_MIXED };
+      const fixerCtrl = { result: { structured: {} } };
+      const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+      const { ctx, fs } = await mountReview({ subagents: subs });
+      await bootstrapReview(ctx);
+      const gsdState = ctx.get("gsdState");
+      const { fakeGit } = makeFakeGit();
+      ctx.gitFn = fakeGit;
+      await seedSourceFile(fs, "lib/foo.js");
+      await seedSourceFile(fs, "lib/bar.js");
+      await seedSourceFile(fs, "lib/baz.js");
+      await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js,lib/bar.js,lib/baz.js" });
+      const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+      assert.match(fixReport, /fixer returned malformed structured output \(status: undefined\)/);
+    }
+    // structured: null → the absent structured output + the stopReason.
+    {
+      const reviewerCtrl = { structured: FINDINGS_MIXED };
+      const fixerCtrl = { result: { structured: null } };
+      const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+      const { ctx, fs } = await mountReview({ subagents: subs });
+      await bootstrapReview(ctx);
+      const gsdState = ctx.get("gsdState");
+      const { fakeGit } = makeFakeGit();
+      ctx.gitFn = fakeGit;
+      await seedSourceFile(fs, "lib/foo.js");
+      await seedSourceFile(fs, "lib/bar.js");
+      await seedSourceFile(fs, "lib/baz.js");
+      await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js,lib/bar.js,lib/baz.js" });
+      const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+      assert.match(fixReport, /fixer returned no structured output \(stopReason: completed\)/);
+    }
+  });
+
+  test("exactly ONE fixer attempt per finding — no retry within a run (D-07)", async () => {
+    const reviewerCtrl = { structured: FINDINGS_MIXED };
+    let fixerSpawns = 0;
+    const fixerCtrl = { capture: () => fixerSpawns++, fail: true };
+    const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+    const { ctx, fs } = await mountReview({ subagents: subs });
+    await bootstrapReview(ctx);
+    const { fakeGit } = makeFakeGit();
+    ctx.gitFn = fakeGit;
+    await seedSourceFile(fs, "lib/foo.js");
+    await seedSourceFile(fs, "lib/bar.js");
+    await seedSourceFile(fs, "lib/baz.js");
+
+    await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js,lib/bar.js,lib/baz.js" });
+    // 2 fixable findings → exactly 2 fixer spawns; a retry would make 4.
+    assert.equal(fixerSpawns, 2);
+  });
+
+  test("fixer-infrastructure fault (spawn provider gone) → status 'unavailable', every row unavailable, never throws (D-06/OQ-3)", async () => {
+    // A subagents service whose spawn provider unregisters itself right after
+    // the reviewer's spawn completes — simulating mid-run infrastructure loss.
+    // (A fully-missing service makes the REVIEWER fault too, which hits the
+    // locked D-08 --fix fail-fast before the fix loop; the probe is proven via
+    // the provider-missing branch, the other half of spawnSubagent's checks.)
+    let reviewerStarted = false;
+    const subs = {
+      getProvider: (n) => (n === "spawn" && !reviewerStarted ? { spawn: true } : undefined),
+      async start(_n, req) {
+        if (req.label === "gsd-code-reviewer") {
+          reviewerStarted = true;
+          return { result: { output: [{ type: "text", text: "reviewed" }], stopReason: "completed", structured: FINDINGS_MIXED }, dispose: () => {} };
+        }
+        throw new Error("fixer must never spawn when the spawn provider is gone");
+      },
+    };
+    const { ctx, fs } = await mountReview({ subagents: subs });
+    await bootstrapReview(ctx);
+    const gsdState = ctx.get("gsdState");
+    const { fakeGit } = makeFakeGit();
+    ctx.gitFn = fakeGit;
+    await seedSourceFile(fs, "lib/foo.js");
+    await seedSourceFile(fs, "lib/bar.js");
+    await seedSourceFile(fs, "lib/baz.js");
+
+    // Must complete without throwing (the probe degrades, never hard-blocks).
+    const res = await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js,lib/bar.js,lib/baz.js" });
+    assert.match(res, /REVIEW-FIX/i);
+    const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+    assert.ok(fixReport, "REVIEW-FIX.md must be written on infrastructure fault");
+    const { frontmatter, body } = parseFrontmatter(fixReport);
+    assert.equal(frontmatter.status, "unavailable");
+    assert.equal(frontmatter.fixes_applied, 0);
+    assert.equal(frontmatter.fixes_skipped, 2, "every fixable finding is recorded");
+    assert.match(body, /`spawn` subagent provider is not registered/, "rows carry the verbatim infra cause");
+    assert.doesNotMatch(body, /fixed \(commit/, "nothing landed");
+  });
+
+  test("resolveFixStatus: the D-06 decision table as a pure function", () => {
+    assert.equal(resolveFixStatus([], [], true), "unavailable", "infrastructure fault ⇒ 'unavailable' even with nothing else");
+    assert.equal(resolveFixStatus([{ id: "x", status: "fixed" }], [{ id: "y", status: "skipped" }], false), "applied");
+    assert.equal(resolveFixStatus([{ id: "x", status: "fixed" }], [], false), "applied");
+    assert.equal(resolveFixStatus([], [{ id: "y", status: "skipped", reason: "cause" }], false), "skipped");
+    assert.equal(resolveFixStatus([], [], false), "skipped");
+  });
+
+  test("excerpt: truncates to the max bound with an ellipsis (OQ-12)", () => {
+    assert.equal(excerpt("short"), "short");
+    assert.equal(excerpt(""), "");
+    assert.equal(excerpt(null), "");
+    const long = "x".repeat(500);
+    const out = excerpt(long);
+    assert.equal(out.length, 401, "400 chars + ellipsis");
+    assert.ok(out.endsWith("…"));
+    assert.equal(excerpt(long, 10), "xxxxxxxxxx…");
+    // Surrounding whitespace is trimmed (repair.js precedent).
+    assert.equal(excerpt("  hi  "), "hi");
   });
 });
 
