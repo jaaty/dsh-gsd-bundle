@@ -36,6 +36,9 @@ let EXEC_CHECKPOINT_MODE = false;
 // When true, the fake verifier writes VERIFICATION_GAPS instead of
 // VERIFICATION_PASSED (gsd_verify gaps_found route-text test, D-02).
 let VERIFY_GAPS_MODE = false;
+// CR-07: when true the fake verifier writes NO VERIFICATION.md at all — drives
+// the missing-report readback branch.
+let VERIFY_SILENT_MODE = false;
 // When true, the fake codebase-query subagent returns empty output with a
 // "failed" stopReason (query-mode failure-path test).
 let QUERY_FAIL_MODE = false;
@@ -144,11 +147,16 @@ function makeSubagents() {
           text = "executor done";
         }
       } else if (label.startsWith("verify")) {
-        await fs.writeText(
-          { targetKey: `${CWD}/.planning/phases/01-auth/01-auth-VERIFICATION.md` },
-          VERIFY_GAPS_MODE ? VERIFICATION_GAPS : VERIFICATION_PASSED,
-        );
-        text = VERIFY_GAPS_MODE ? "status: gaps_found, score: 1/2" : "status: passed, score: 2/2";
+        if (VERIFY_SILENT_MODE) {
+          // CR-07: the verifier completed but wrote no report at all.
+          text = "verification attempted (no artefact written)";
+        } else {
+          await fs.writeText(
+            { targetKey: `${CWD}/.planning/phases/01-auth/01-auth-VERIFICATION.md` },
+            VERIFY_GAPS_MODE ? VERIFICATION_GAPS : VERIFICATION_PASSED,
+          );
+          text = VERIFY_GAPS_MODE ? "status: gaps_found, score: 1/2" : "status: passed, score: 2/2";
+        }
       } else if (label.startsWith("plan research")) {
         text = "# RESEARCH\n\n## Open Questions\n\n- none (RESOLVED)\n\nStandard.";
       } else if (label === "gsd-intel-updater") {
@@ -657,7 +665,23 @@ describe("gsd_verify", () => {
     await svc.writeArtifact(CWD, 1, "PLAN-01", FENCED_PLAN);
     await svc.writeArtifact(CWD, 1, "SUMMARY-01", FENCED_SUMMARY);
     VERIFY_GAPS_MODE = false;
+    VERIFY_SILENT_MODE = false;
     ctx = makeCtx();
+  });
+
+  test("verifier wrote no report routes as missing-report, not phantom gaps (CR-07)", async () => {
+    VERIFY_SILENT_MODE = true;
+    const { t } = await registerTool("verify", "gsd_verify");
+    const res = await t.execute({ phase: 1 }, exec);
+    // the distinct missing-report route fires — nothing was verified
+    assert.match(res, /no readable VERIFICATION\.md/);
+    assert.match(res, /Re-run gsd_verify/);
+    // and it must NOT masquerade as gaps_found with a repair recommendation
+    assert.doesNotMatch(res, /gaps found/);
+    assert.doesNotMatch(res, /gsd_repair/);
+    // STATE discipline: non-passed keeps the phase on verify
+    const st = await svc.readState(CWD);
+    assert.equal(st.frontmatter.status, "verify");
   });
 
   test("gaps_found route text recommends gsd_repair and does not claim repair ran (D-02)", async () => {
