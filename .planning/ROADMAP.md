@@ -62,7 +62,7 @@
 | 56 | [x] fast-mode | Provide a lightweight single-pass fast path for simple phase work. | CLH-06 |
 | 57 | [x] mvp-phase | Guide a minimal-viable-phase planning and execution flow. | CLH-07 |
 | 58 | [x] node-repair | Automatically recover a plan whose verification failed instead of stopping. | CLH-08 |
-| 59 | review-fix-companion | Fix the gsd_code_review --fix companion so applying REVIEW.md findings works in live sessions and lands per-fix atomic commits into REVIEW-FIX.md. | CLH-09 |
+| 59 | [x] review-fix-companion | Fix the gsd_code_review --fix companion so applying REVIEW.md findings works in live sessions and lands per-fix atomic commits into REVIEW-FIX.md. | CLH-09 |
 
 ## Progress
 
@@ -126,4 +126,4 @@
 | 56 | fast-mode | [x] Complete | 2026-09-08 |
 | 57 | mvp-phase | [x] Complete | 2026-09-08 |
 | 58 | node-repair | [x] Complete | 2026-09-08 |
-| 59 | review-fix-companion | pending |  |
+| 59 | review-fix-companion | [x] Complete | 2026-09-08 |
