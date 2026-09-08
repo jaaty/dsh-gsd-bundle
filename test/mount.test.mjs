@@ -479,4 +479,17 @@ describe("mount: reactive loop rendering (DEGR-02/DEGR-04)", () => {
     assert.match(out, /Next action: spec-phase/, "present spec-phase not advertised");
     assertNoAbsentToolToken(ctx, out, "full-set gsd_status");
   });
+
+  test("absent multi-word tool token is caught whole, not via its truncated prefix (CR-06)", () => {
+    // Minimal ctx: only gsdQuick is provided. The old /gsd_[a-z]+/ regex
+    // extracted "gsd_quick" from "gsd_quick_batch", so an absent gsdQuickBatch
+    // capability passed the guard whenever the prefix's capability was present.
+    const ctx = { provided: new Map([["gsdQuick", { tools: ["gsd_quick"] }]]) };
+    assertNoAbsentToolToken(ctx, "run gsd_quick to batch tasks", "present single-word tool passes");
+    assert.throws(
+      () => assertNoAbsentToolToken(ctx, "use gsd_quick_batch for batches", "absent multi-word tool"),
+      /gsd_quick_batch/,
+      "the underscore name must be matched whole and flagged as absent",
+    );
+  });
 });

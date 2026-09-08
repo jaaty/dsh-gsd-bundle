@@ -231,10 +231,14 @@ export const presentTools = (ctx) =>
   );
 
 // D-02 invariant: no `gsd_*` token appears unless its owning capability was
-// provided in this mount. Any absent-step tool mention is a violation.
+// provided in this mount. Any absent-step tool mention is a violation. The
+// character class INCLUDES `_` (CR-06): `/gsd_[a-z]+/` truncated underscore
+// names ("gsd_quick_batch" → "gsd_quick"), so an absent multi-word tool could
+// pass whenever its truncated prefix's capability was present — the same flaw
+// render.test.mjs fixed and documented in its assertNoAbsentTool.
 export const assertNoAbsentToolToken = (ctx, text, label) => {
   const present = presentTools(ctx);
-  const tokens = text.match(/gsd_[a-z]+/g) || [];
+  const tokens = text.match(/gsd_[a-z_]+/g) || [];
   for (const tok of tokens) {
     assert.ok(
       present.has(tok),
