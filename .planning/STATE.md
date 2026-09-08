@@ -295,6 +295,7 @@ _No active phase._
 - Phase 56 shipped — PR #70 (https://github.com/jaaty/dsh-gsd-bundle/pull/70)
 - Phase 57: CONTEXT.md sealed — 7 decisions
 - Phase 57: planned — 2 plan(s) across 2 wave(s).
+- Phase 57: plan 01 executed — gsd_mvp_phase tool + gsdMvpPhase capability + /gsd-mvp-phase command (propose-then-confirm scoping -> real PLAN.md via gsd_plan -> delegate to execute/verify/ship, fail-fast); mount/capabilities/render counts updated; 1041 tests green.
 
 ### Blockers / Concerns
 _none_
