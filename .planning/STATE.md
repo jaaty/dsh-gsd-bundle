@@ -5,17 +5,17 @@ milestone_name: core-loop-helpers
 status: idle
 active_phase: null
 next_action: null
-next_phases: [59]
+next_phases: []
 progress:
   total_phases: 59
   completed_phases: 59
   total_plans: 3
   completed_plans: 156
   percent: 100
-current_phase: 59
-current_phase_name: review-fix-companion
-current_plan: 2
-last_updated: "2026-09-08T06:34:49.615Z"
+current_phase: null
+current_phase_name: null
+current_plan: null
+last_updated: "2026-09-08T06:43:53.501Z"
 state_head: null
 last_activity: 2026-09-08
 stopped_at: "Phase 59 shipped — PR #73"
@@ -308,6 +308,7 @@ _No active phase._
 - Phase 59: planned — 3 plan(s) across 2 wave(s).
 - Phase 59: COVERAGE.md written (coverage 100%, gaps: none)
 - Phase 59 shipped — PR #73 (https://github.com/jaaty/dsh-gsd-bundle/pull/73)
+- Milestone core-loop-helpers: AUDIT.md written (status ready-to-close)
 
 ### Blockers / Concerns
 _none_
