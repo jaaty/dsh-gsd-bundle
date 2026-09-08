@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: plan
+status: execute
 active_phase: 57
-next_action: plan-phase
+next_action: execute-phase
 next_phases: [57]
 progress:
   total_phases: 58
@@ -15,7 +15,7 @@ progress:
 current_phase: 57
 current_phase_name: mvp-phase
 current_plan: 2
-last_updated: "2026-09-08T00:28:17.262Z"
+last_updated: "2026-09-08T00:43:05.718Z"
 state_head: null
 last_activity: 2026-09-08
 stopped_at: "Phase 56 shipped — PR #70"
@@ -294,6 +294,7 @@ _No active phase._
 - Phase 56: REVIEW.md written (status issues_found, findings 6 (0B/4W/2I))
 - Phase 56 shipped — PR #70 (https://github.com/jaaty/dsh-gsd-bundle/pull/70)
 - Phase 57: CONTEXT.md sealed — 7 decisions
+- Phase 57: planned — 2 plan(s) across 2 wave(s).
 
 ### Blockers / Concerns
 _none_
