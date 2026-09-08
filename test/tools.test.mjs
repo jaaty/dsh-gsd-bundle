@@ -5,7 +5,7 @@ import { test, describe, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import os from "node:os";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, readFile } from "node:fs/promises";
 
 import { GsdState } from "../lib/state.js";
 import { resolvePlanDep, parseFrontmatter } from "../lib/_shared.js";
@@ -33,6 +33,9 @@ const updaterCaptured = [];
 // checkpoint state, writes no SUMMARY). When false it completes normally.
 // On a resume run (a CHECKPOINT artefact already exists) it always completes.
 let EXEC_CHECKPOINT_MODE = false;
+// When true, the fake verifier writes VERIFICATION_GAPS instead of
+// VERIFICATION_PASSED (gsd_verify gaps_found route-text test, D-02).
+let VERIFY_GAPS_MODE = false;
 // When true, the fake codebase-query subagent returns empty output with a
 // "failed" stopReason (query-mode failure-path test).
 let QUERY_FAIL_MODE = false;
@@ -141,8 +144,11 @@ function makeSubagents() {
           text = "executor done";
         }
       } else if (label.startsWith("verify")) {
-        await fs.writeText({ targetKey: `${CWD}/.planning/phases/01-auth/01-auth-VERIFICATION.md` }, VERIFICATION_PASSED);
-        text = "status: passed, score: 2/2";
+        await fs.writeText(
+          { targetKey: `${CWD}/.planning/phases/01-auth/01-auth-VERIFICATION.md` },
+          VERIFY_GAPS_MODE ? VERIFICATION_GAPS : VERIFICATION_PASSED,
+        );
+        text = VERIFY_GAPS_MODE ? "status: gaps_found, score: 1/2" : "status: passed, score: 2/2";
       } else if (label.startsWith("plan research")) {
         text = "# RESEARCH\n\n## Open Questions\n\n- none (RESOLVED)\n\nStandard.";
       } else if (label === "gsd-intel-updater") {
@@ -640,6 +646,43 @@ describe("gsd_plan gap-closure fix-plan guard", () => {
     const { t } = await registerTool("plan", "gsd_plan");
     const res = await t.execute({ phase: 1, gaps: true, skipResearch: true }, exec);
     assert.match(res, /gsd_plan complete/);
+  });
+});
+
+describe("gsd_verify", () => {
+  beforeEach(async () => {
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    // verify early-returns unless every plan has a SUMMARY — seed both.
+    await svc.writeArtifact(CWD, 1, "PLAN-01", FENCED_PLAN);
+    await svc.writeArtifact(CWD, 1, "SUMMARY-01", FENCED_SUMMARY);
+    VERIFY_GAPS_MODE = false;
+    ctx = makeCtx();
+  });
+
+  test("gaps_found route text recommends gsd_repair and does not claim repair ran (D-02)", async () => {
+    await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_GAPS);
+    VERIFY_GAPS_MODE = true;
+    const { t } = await registerTool("verify", "gsd_verify");
+    const res = await t.execute({ phase: 1 }, exec);
+    // the route names the repair orchestrator as the recommended next action
+    assert.match(res, /gsd_repair/);
+    // recommend-only: the output must NOT report repair execution — it routes
+    assert.doesNotMatch(res, /repair (complete|rounds run|round\(s\) run)/);
+    assert.doesNotMatch(res, /repair succeeded|repair recovered/);
+    // status readback keeps the STATE discipline: gaps -> stay on verify
+    const st = await svc.readState(CWD);
+    assert.equal(st.frontmatter.status, "verify");
+  });
+
+  test("verify stays recommend-only: no repair-module import, no repair tool lookup (D-02)", async () => {
+    const src = await readFile(new URL("../lib/verify.js", import.meta.url), "utf8");
+    assert.doesNotMatch(src, /from ["']\.\/repair\.js["']/, "gsd_verify must not import the repair module");
+    assert.doesNotMatch(
+      src,
+      /(?:findTool|\.get|\.find)\s*\([^)]*["']gsd_repair["']/,
+      "gsd_verify must not look the repair tool up",
+    );
   });
 });
 
