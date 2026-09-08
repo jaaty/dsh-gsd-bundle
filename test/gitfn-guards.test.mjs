@@ -23,6 +23,9 @@ import { FakeFs } from "./helpers/fake-fs.mjs";
 import { makeMountCtx, makeExec, CWD } from "./helpers/mount-harness.mjs";
 import { apply as applyState } from "../lib/state.js";
 import { apply as applyAddTests } from "../lib/add-tests.js";
+import { apply as applyCoreTools } from "../lib/core-tools.js";
+import { apply as applyDiscuss } from "../lib/discuss.js";
+import { apply as applyCommands } from "../lib/commands.js";
 
 // Simulate the live cordis host throw on an uninjected property access: the
 // ctx that reaches the tool has NO gitFn key — accessing one throws (D-09's
@@ -144,5 +147,109 @@ describe("gitfn-guards: gsd_add_tests survives the live ctx.gitFn throw (D-09)",
 
     assert.match(res, /generated 1 test file\(s\)/, "the run must complete normally");
     assert.match(res, /WARNING: git add failed:/, "defaultGitFn ran and degraded with a warning");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// D-09 site 2: gsd_pause_work gather (lib/core-tools.js porcelain status feed)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("gitfn-guards: gsd_pause_work survives the live ctx.gitFn throw (D-09)", () => {
+  async function mount() {
+    const fs = new FakeFs();
+    const ctx = makeMountCtx(fs);
+    applyState(ctx, {});
+    applyCoreTools(ctx, {});
+    return { fs, ctx };
+  }
+
+  async function bootstrap(ctx, phases, requirements) {
+    const gsdInit = ctx.tools.find((t) => t.name === "gsd_init");
+    assert.ok(gsdInit, "gsd_init not registered");
+    await gsdInit.execute(
+      { name: "demo", milestoneName: "M1", version: "v1.0", requirements, phases },
+      makeExec(),
+    );
+  }
+
+  function runPause(ctx, args) {
+    const t = ctx.tools.find((x) => x.name === "gsd_pause_work");
+    assert.ok(t, "gsd_pause_work not registered");
+    return t.execute(args || {}, makeExec());
+  }
+
+  test("throwing-getter ctx: pause completes, uncommitted degrades to [], commit degrades to a warning (D-09)", async () => {
+    const { ctx } = await mount();
+    await bootstrap(ctx, [{ name: "p1", goal: "g1", requirements: ["GAP-14"] }], [{ id: "GAP-14", text: "x" }]);
+    const gsdState = ctx.get("gsdState");
+    await gsdState.writeArtifact(CWD, 1, "PLAN-01", "---\nwave: 1\ntype: execute\n---\n<objective>build it</objective>");
+    armThrowingGitFn(ctx);
+
+    // Without the guard this mount crashes at the porcelain status feed.
+    // With it: the status call runs on defaultGitFn, fails against the fake
+    // cwd, and the existing try/catch degrades uncommitted to [].
+    const res = await runPause(ctx);
+
+    assert.match(res, /HANDOFF\.json/, "the pause must complete normally (no crash)");
+    assert.match(res, /Committed as WIP: no/, "the defaultGitFn commit must degrade to a warning, not throw");
+
+    const handoff = await gsdState.readHandoff(CWD);
+    assert.ok(handoff, "HANDOFF.json must be written");
+    assert.deepEqual(handoff.uncommitted_files, [], "the porcelain catch path must degrade uncommitted to []");
+    assert.ok(await gsdState.readContinueHere(CWD, "01-p1"), "phase-dir .continue-here.md must be written");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// D-09 site 3: gsd_next advance branch (lib/core-tools.js commitArtifacts feed)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("gitfn-guards: gsd_next advance branch survives the live ctx.gitFn throw (D-09)", () => {
+  async function mountNext(loopPlugins = []) {
+    const fs = new FakeFs();
+    const ctx = makeMountCtx(fs);
+    applyState(ctx, {});
+    applyCoreTools(ctx, {});
+    for (const apply of loopPlugins) apply(ctx, {});
+    applyCommands(ctx, {});
+    return { fs, ctx };
+  }
+
+  async function bootstrap(ctx, phases, requirements = [{ id: "CLH-02", text: "x" }]) {
+    const gsdInit = ctx.tools.find((t) => t.name === "gsd_init");
+    assert.ok(gsdInit, "gsd_init not registered");
+    await gsdInit.execute(
+      { name: "demo", milestoneName: "M1", version: "v1.0", requirements, phases },
+      makeExec(),
+    );
+  }
+
+  test("throwing-getter ctx: advance:true completes, re-points STATE, commit degrades (D-09)", async () => {
+    const { ctx } = await mountNext([applyDiscuss]);
+    await bootstrap(ctx, [
+      { name: "p1", goal: "g1", requirements: ["CLH-02"] },
+      { name: "p2", goal: "g2", requirements: ["CLH-02"] },
+    ]);
+    const gsdState = ctx.get("gsdState");
+    await gsdState.writeRoadmap(CWD, {
+      milestoneName: "M1",
+      version: "v1.0",
+      phases: [
+        { n: 1, name: "p1", goal: "g1", requirements: ["CLH-02"], status: "Complete" },
+        { n: 2, name: "p2", goal: "g2", requirements: ["CLH-02"], status: "pending" },
+      ],
+    });
+    armThrowingGitFn(ctx);
+
+    // Without the guard this mount crashes at the inline ctx.gitFn access
+    // feeding commitArtifacts. With it: setActivePhase re-points STATE, the
+    // commit runs on defaultGitFn and degrades to a warning, the tool returns.
+    const res = await ctx.tools.find((x) => x.name === "gsd_next").execute({ advance: true }, makeExec());
+
+    assert.match(res, /run discuss-phase/, "the advance recommendation must render (no crash)");
+    const fm = (await gsdState.readState(CWD)).frontmatter;
+    assert.equal(String(fm.active_phase), "2", "STATE must be re-pointed to phase 2");
+    assert.equal(fm.status, "discuss", "status must be discuss");
+    assert.equal(fm.next_action, "discuss-phase", "next_action must be discuss-phase");
   });
 });
