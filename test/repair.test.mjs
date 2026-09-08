@@ -265,3 +265,157 @@ describe("gsd_repair trigger gate, rounds domain, and delegation contract (V1/V2
       "rounds:1 must run exactly one plan + one execute + one verify call");
   });
 });
+
+describe("gsd_repair per-step oracles, REPAIR.md accumulation, STATE immobility (V6–V10/V14 — D-07/D-10/D-11)", () => {
+  beforeEach(async () => {
+    await resetHarness();
+    ({ c: repairCtx, tool: repairTool } = await buildRepairHarness());
+  });
+
+  test("no runnable fix plan stops with the plan tool's real guard text; execute never called (D-11/V6)", async () => {
+    await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_GAPS);
+    planWritesNoFixPlan = true;
+    const res = await repairTool.execute({ phase: 1 }, exec);
+    // the stop text must INCLUDE the plan tool's returned guard text
+    assert.match(res, /no fix plan \(gap_closure: true\)/);
+    assert.match(res, /--gaps-only would run nothing/);
+    assert.equal(countDelegates("gsd_plan"), 1);
+    assert.equal(countDelegates("gsd_execute"), 0, "execute must never run without a runnable fix plan");
+    assert.equal(countDelegates("gsd_verify"), 0);
+    const repair = await svc.readArtifact(CWD, 1, "REPAIR");
+    assert.match(repair, /## Stop/, "the stop must be recorded in REPAIR.md");
+  });
+
+  test("checkpointed execute stops with the verbatim awaiting marker; verify uncalled; no blind re-run (D-11/V7/P5)", async () => {
+    await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_GAPS);
+    execCheckpointMode = true;
+    const res = await repairTool.execute({ phase: 1 }, exec);
+    // the marker from lib/_shared.js must be surfaced verbatim through the stop
+    assert.ok(res.includes(CK_MARKER), "the GSD_AWAITING_HUMAN marker must reach the report byte-identical");
+    assert.match(res, /01-auth-01/, "the cause must name the checkpointed plan");
+    assert.match(res, /answer\/decision_id/, "the cause must hand off to the gsd_execute resume channel");
+    assert.equal(countDelegates("gsd_plan"), 1);
+    assert.equal(countDelegates("gsd_execute"), 1, "no blind re-run of the checkpointed round");
+    assert.equal(countDelegates("gsd_verify"), 0, "verify must not run for a round stopped at execute");
+  });
+
+  test("budget exhaustion: exactly 2 rounds then stop with the exhausted-budget cause (D-07/V8)", async () => {
+    await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_GAPS);
+    verifyWrites = ["gaps_found", "gaps_found"];
+    const res = await repairTool.execute({ phase: 1 }, exec);
+    assert.match(res, /repair budget exhausted/);
+    assert.match(res, /Final verification status: gaps_found/);
+    assert.match(res, /VERIFICATION\.md/, "the stop must name where the remaining gaps are listed");
+    assert.equal(countDelegates("gsd_plan"), 2, "a third round must never start");
+    assert.equal(countDelegates("gsd_execute"), 2);
+    assert.equal(countDelegates("gsd_verify"), 2);
+  });
+
+  test("recovery on round 2 + REPAIR.md accumulation across rounds and invocations (D-10/V8/V9)", async () => {
+    // ── invocation 1: gaps → round 1 gaps_found → round 2 passed (recovered)
+    await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_GAPS);
+    verifyWrites = ["gaps_found", "passed"];
+    const res = await repairTool.execute({ phase: 1 }, exec);
+    assert.match(res, /RECOVERED/);
+    assert.match(res, /Rounds run: 2/);
+    const ver = await svc.readArtifact(CWD, 1, "VERIFICATION");
+    assert.match(ver, /status: passed/, "the final VERIFICATION artefact on FakeFs must be passed");
+
+    // REPAIR.md after the recovery run: frontmatter + one section per round
+    const repair1 = await svc.readArtifact(CWD, 1, "REPAIR");
+    const fm1 = parseFrontmatter(repair1).frontmatter;
+    assert.equal(fm1.rounds_run, 2);
+    assert.equal(fm1.final_status, "passed");
+    const body1 = parseFrontmatter(repair1).body;
+    assert.match(body1, /## Round 1/);
+    assert.match(body1, /## Round 2/);
+    assert.match(body1, /resulting verify status: gaps_found/, "Round 1 must name its resulting status");
+    assert.match(body1, /resulting verify status: passed/, "Round 2 must name its resulting status");
+    assert.match(body1, /gaps: true/, "each round section must name the delegated actions");
+    assert.match(body1, /gapsOnly: true/);
+
+    // ── invocation 2: seed gaps again, one round recovers — the log APPENDS
+    await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_GAPS);
+    verifyWrites = ["passed"];
+    const res2 = await repairTool.execute({ phase: 1 }, exec);
+    assert.match(res2, /RECOVERED/);
+    const repair2 = await svc.readArtifact(CWD, 1, "REPAIR");
+    const body2 = parseFrontmatter(repair2).body;
+    assert.equal(parseFrontmatter(repair2).frontmatter.final_status, "passed");
+    assert.equal((body2.match(/## Round 1/g) || []).length, 2,
+      "the first invocation's Round 1 section must survive (append, never truncate)");
+    assert.match(body2, /## Round 2/, "the first invocation's Round 2 section must survive too");
+    assert.equal((body2.match(/## Round \d/g) || []).length, 3,
+      "exactly three round sections after two invocations (2 + 1)");
+  });
+
+  test("STATE immobility: no-op, stop-with-cause, and fail-loud delegate exits never touch STATE (D-01/V14)", async () => {
+    const stateFm = async () => JSON.stringify((await svc.readState(CWD)).frontmatter);
+    // (a) passed no-op
+    const before1 = await stateFm();
+    await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_PASSED);
+    await repairTool.execute({ phase: 1 }, exec);
+    assert.equal(await stateFm(), before1, "the no-op exit must not touch STATE");
+    // (b) stop-with-cause (human_needed gate stop writes REPAIR.md + commits — no STATE write)
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    const before2 = await stateFm();
+    await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_HUMAN);
+    await repairTool.execute({ phase: 1 }, exec);
+    assert.equal(await stateFm(), before2, "the gate-stop exit must not touch STATE");
+    // (c) a ctx whose tools contain ONLY gsd_repair: fail-loud delegate error, not a STATE write
+    fs = new FakeFs();
+    svc = await buildProject(fs, CWD);
+    const before3 = await stateFm();
+    await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_GAPS);
+    const saved = repairCtx.tools;
+    repairCtx.tools = [repairTool];
+    await assert.rejects(() => repairTool.execute({ phase: 1 }, exec), /gsd_plan tool not registered/);
+    repairCtx.tools = saved;
+    assert.equal(await stateFm(), before3, "the fail-loud delegate exit must not touch STATE");
+  });
+});
+
+// ── no-fork / no-STATE / no-raw-fs / commit-scope static wiring (V4/V10 — D-01/D-08/D-10/D-12) ──
+describe("gsd_repair wiring statics via source assertions (V4/V10 — D-01/D-08/D-10/D-12/DUR-06)", () => {
+  const readRepairSrc = () => readFile(new URL("../lib/repair.js", import.meta.url), "utf8");
+
+  test("imports commitArtifacts from ./_git-artifacts.js and uses scope \"repair\" exactly once (V10/D-10)", async () => {
+    const src = await readRepairSrc();
+    assert.match(src, /import\s*\{\s*commitArtifacts\s*\}\s*from\s*["']\.\/_git-artifacts\.js["']/,
+      "repair must ride the shared commitArtifacts seam");
+    assert.equal((src.match(/scope: "repair"/g) || []).length, 1,
+      'scope: "repair" must appear exactly once (the single commit site)');
+  });
+
+  test("delegates, never forks the agent prompts (V4/D-08)", async () => {
+    const src = await readRepairSrc();
+    assert.doesNotMatch(src, /PLANNER_PROMPT|EXECUTOR_PROMPT|VERIFIER_PROMPT/,
+      "repair must not duplicate any delegated tool's subagent prompt");
+  });
+
+  test("no inline git logic — the fixed-argument-array discipline stays in the shared seam (D-12)", async () => {
+    const src = await readRepairSrc();
+    assert.doesNotMatch(src, /promisify\(\s*execFile\s*\)/, "no promisify(execFile) inline");
+    assert.doesNotMatch(src, /execFileSync\s*\(\s*["']git["']/, "no synchronous git shell-out");
+    assert.doesNotMatch(src, /["']git["']\s*,\s*\[/, "no inline git CLI invocation");
+  });
+
+  test("artefact I/O via GsdState accessors; matchesGapClosure reused, never reimplemented (DUR-06/OQ-3)", async () => {
+    const src = await readRepairSrc();
+    assert.doesNotMatch(src, /node:fs\/promises/, "all .planning/ writes must route through GsdState");
+    assert.doesNotMatch(src, /function matchesGapClosure/, "matchesGapClosure must be imported, not redefined");
+  });
+
+  test("one-way import direction: repair never imports autonomous (OQ-4)", async () => {
+    const src = await readRepairSrc();
+    assert.doesNotMatch(src, /from ["']\.\/autonomous\.js["']/, "autonomous imports repair, never the reverse");
+  });
+
+  test("repair never advances STATE itself (D-01/V14)", async () => {
+    const src = await readRepairSrc();
+    assert.doesNotMatch(src, /setActivePhase/, "repair must not call setActivePhase");
+    assert.doesNotMatch(src, /completePhase/, "repair must not call completePhase");
+    assert.doesNotMatch(src, /setStep\(/, "repair must not call setStep(");
+  });
+});
