@@ -9,13 +9,13 @@ next_phases: [58]
 progress:
   total_phases: 58
   completed_phases: 57
-  total_plans: 2
-  completed_plans: 149
+  total_plans: 3
+  completed_plans: 151
   percent: 98
 current_phase: 58
 current_phase_name: node-repair
-current_plan: 2
-last_updated: "2026-09-08T03:50:10.918Z"
+current_plan: 1
+last_updated: "2026-09-08T04:18:56.681Z"
 state_head: null
 last_activity: 2026-09-08
 stopped_at: "Phase 57 shipped — PR #71"
@@ -300,6 +300,7 @@ _No active phase._
 - Phase 58: CONTEXT.md sealed — 12 decisions
 - Phase 58: planned — 3 plan(s) across 2 wave(s).
 - Phase 58: COVERAGE.md written (coverage 100%, gaps: none)
+- Phase 58: plan 01 executed — gsd_repair engine (trigger gate, strict-order delegation round, bounded 2-round budget, stop-with-cause, REPAIR.md accumulation) + gsdRepair capability + /gsd-repair command + patch row/export/counts (37 tools / 34 commands / 28 keys / 27 rows); 1047 tests green.
 
 ### Blockers / Concerns
 _none_

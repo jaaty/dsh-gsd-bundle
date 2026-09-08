@@ -126,4 +126,4 @@
 - [x] CLH-05: Quick batch: run multiple quick tasks in a single batch with per-task results.
 - [x] CLH-06: Fast mode: provide a lightweight single-pass fast path for simple phase work.
 - [x] CLH-07: MVP phase: guide a minimal-viable-phase planning and execution flow.
-- [ ] CLH-08: Node repair: automatically recover a plan whose verification failed instead of stopping.
+- [x] CLH-08: Node repair: automatically recover a plan whose verification failed instead of stopping.
