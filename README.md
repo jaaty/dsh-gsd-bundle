@@ -88,6 +88,8 @@ dsh --profile <name> web   # or tui / headless
 
 The bundle's `cordis.patch.yml` overrides the host `agent-loop` row to configure a `gsd` agent and inserts the 12 GSD plugin rows. CLI profiles get the `gsd` startup agent; web sessions are created on demand and inherit the GSD persona + tools.
 
+**About the peer dependencies:** `@deepseek-ai/dsh-tools` and `@deepseek-ai/dsh-llm` are imported directly by the bundle's modules. `@deepseek-ai/schemastery` and `@deepseek-ai/cordis` are **host-contract peers** — no module imports them; they are declared so npm installs a compatible host runtime, and the host supplies them via the injected `ctx` (tools/provide/get) at runtime. Both declarations are intentional.
+
 ## Quickstart
 
 In a session on a profile with the bundle mounted:
