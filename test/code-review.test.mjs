@@ -15,9 +15,11 @@ import { apply as applyCoreTools } from "../lib/core-tools.js";
 import { buildCapability, CAPABILITY_KEYS } from "../lib/_capabilities.js";
 import { loopSteps, renderPersonaBody } from "../lib/_render.js";
 import { parseFrontmatter } from "../lib/_shared.js";
-import { resolveFindings, severityCounts, resolveFixFlags, computeScope, validateFiles, filterSourcePaths, filterBySeverity, hasBlockingFindings, applyAnchorEdits, excerpt, resolveFixStatus } from "../lib/code-review.js";
+import { resolveFindings, severityCounts, resolveFixFlags, computeScope, validateFiles, filterSourcePaths, filterBySeverity, hasBlockingFindings, applyAnchorEdits, excerpt, resolveFixStatus, parseGate, setParseGateExecFileFn } from "../lib/code-review.js";
 import { commitSourceFiles } from "../lib/_git-artifacts.js";
 import { CODE_FIXER_PROMPT } from "../lib/_agents.js";
+import { existsSync } from "node:fs";
+import { tmpdir } from "node:os";
 
 // Lazily import the plugin under test (created in Task 2) so the capability +
 // wiring tests in Task 1 run before lib/code-review.js exists.
@@ -1086,6 +1088,284 @@ describe("code-review: --fix skip-and-continue + real causes (D-06/D-07/OQ-1/OQ-
     assert.equal(excerpt(long, 10), "xxxxxxxxxx…");
     // Surrounding whitespace is trimmed (repair.js precedent).
     assert.equal(excerpt("  hi  "), "hi");
+  });
+});
+
+// ── --fix parse gate + commit-outcome handling (D-03/D-12/OQ-5/OQ-10/OQ-11) ──
+
+describe("code-review: --fix parse gate + commit-outcome handling (D-03/D-12)", () => {
+  test("parseGate: real node --check passes valid ESM content", async () => {
+    const r = await parseGate("export const x = 1;\nexport const y = 2;\n", "lib/foo.js");
+    assert.equal(r.ok, true);
+    assert.equal(r.checked, true);
+  });
+
+  test("parseGate: real node --check fails on a syntax error with the stderr cause", async () => {
+    const r = await parseGate("const x = {;\n", "lib/foo.js");
+    assert.equal(r.ok, false);
+    assert.equal(r.checked, true);
+    assert.match(r.cause, /SyntaxError/);
+  });
+
+  test("parseGate: non-.js/.mjs targets get anchor validation only — no child process (D-03)", async () => {
+    let calls = 0;
+    const recording = async () => { calls++; };
+    const r = await parseGate("any content", "docs/notes.md", recording);
+    assert.deepEqual(r, { ok: true, checked: false });
+    assert.equal(calls, 0, "node --check must not run for a non-JS target");
+  });
+
+  test("parseGate: temp .mjs copy is removed after the check (OQ-10)", async () => {
+    const recorded = [];
+    const recording = async (_file, args) => { recorded.push([...args]); };
+    const r = await parseGate("export const ok = 1;\n", "lib/foo.js", recording);
+    assert.equal(r.ok, true);
+    assert.equal(recorded.length, 1);
+    const tmpPath = recorded[0][1];
+    assert.match(tmpPath, /\.mjs$/, "the checked file is a .mjs copy");
+    assert.ok(tmpPath.startsWith(tmpdir()), "the temp copy lives under os.tmpdir(), never in the workspace");
+    assert.equal(existsSync(tmpPath), false, "the temp copy is removed after the gate");
+    assert.equal(existsSync(recorded[0][0]), false, "the temp dir is removed too");
+  });
+
+  test("parseGate: injected failing execFileFn → { ok: false } with the cause (fault simulation)", async () => {
+    const failing = async () => {
+      throw Object.assign(new Error("simulated node fault"), { stderr: "boom: simulated stderr" });
+    };
+    const r = await parseGate("export const x = 1;\n", "lib/foo.js", failing);
+    assert.equal(r.ok, false);
+    assert.match(r.cause, /simulated stderr/);
+  });
+
+  test("--fix: a valid ESM edit passes the gate and lands with a hash (real node --check)", async () => {
+    const reviewerCtrl = { structured: { findings: [
+      { id: "CR-01", severity: "BLOCKER", file: "lib/foo.js", lines: "1", title: "t", evidence: "e", suggestion: "s" },
+    ]}};
+    const fixerCtrl = { structured: () => ({
+      id: "CR-01", status: "fixed", file: "lib/foo.js",
+      edits: [{ find: "export const x = 1;", replace: "export const x = 1; // guarded" }],
+    })};
+    const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+    const { ctx, fs } = await mountReview({ subagents: subs });
+    await bootstrapReview(ctx);
+    const gsdState = ctx.get("gsdState");
+    const { fakeGit, hashes } = makeFakeGit();
+    ctx.gitFn = fakeGit;
+    await seedSourceFile(fs, "lib/foo.js");
+
+    const res = await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js" });
+    assert.match(res, /REVIEW-FIX/i);
+    const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+    const { frontmatter, body } = parseFrontmatter(fixReport);
+    assert.equal(frontmatter.status, "applied");
+    assert.equal(frontmatter.fixes_applied, 1);
+    assert.deepEqual(frontmatter.commits, [hashes[0]]);
+    const foo = await fs.readText(await fs.resolve(`${CWD}/lib/foo.js`));
+    assert.equal(foo, "export const x = 1; // guarded\n");
+    assert.match(body, new RegExp(hashes[0]));
+  });
+
+  test("--fix: a syntax-error edit aborts BEFORE the write — file byte-identical, parse cause recorded (D-03)", async () => {
+    const reviewerCtrl = { structured: { findings: [
+      { id: "CR-01", severity: "BLOCKER", file: "lib/foo.js", lines: "1", title: "t", evidence: "e", suggestion: "s" },
+    ]}};
+    const fixerCtrl = { structured: () => ({
+      id: "CR-01", status: "fixed", file: "lib/foo.js",
+      edits: [{ find: "export const x = 1;", replace: "const x = {;" }],
+    })};
+    const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+    const { ctx, fs } = await mountReview({ subagents: subs });
+    await bootstrapReview(ctx);
+    const gsdState = ctx.get("gsdState");
+    const { fakeGit, hashes } = makeFakeGit();
+    ctx.gitFn = fakeGit;
+    await seedSourceFile(fs, "lib/foo.js");
+
+    const res = await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js" });
+    assert.match(res, /REVIEW-FIX/i);
+    const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+    const { frontmatter, body } = parseFrontmatter(fixReport);
+    assert.equal(frontmatter.status, "skipped");
+    assert.equal(frontmatter.fixes_applied, 0);
+    assert.equal(frontmatter.fixes_skipped, 1);
+    assert.equal(frontmatter.commits.length, 0, "nothing landed");
+    assert.equal(hashes.length, 0, "no commit was attempted for a parse-gated fix");
+    assert.match(body, /parse check failed/);
+    assert.match(body, /SyntaxError/);
+    const foo = await fs.readText(await fs.resolve(`${CWD}/lib/foo.js`));
+    assert.equal(foo, "export const x = 1;\n", "the file must stay byte-identical");
+  });
+
+  test("--fix: temp file is cleaned up after a full tool run (OQ-10)", async () => {
+    const recorded = [];
+    const recording = async (_file, args) => { recorded.push([...args]); };
+    setParseGateExecFileFn(recording);
+    try {
+      const reviewerCtrl = { structured: { findings: [
+        { id: "CR-01", severity: "BLOCKER", file: "lib/foo.js", lines: "1", title: "t", evidence: "e", suggestion: "s" },
+      ]}};
+      const fixerCtrl = { structured: () => ({
+        id: "CR-01", status: "fixed", file: "lib/foo.js",
+        edits: [{ find: "export const x = 1;", replace: "export const x = 1; // ok" }],
+      })};
+      const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+      const { ctx, fs } = await mountReview({ subagents: subs });
+      await bootstrapReview(ctx);
+      ctx.gitFn = makeFakeGit().fakeGit;
+      await seedSourceFile(fs, "lib/foo.js");
+
+      await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js" });
+      assert.equal(recorded.length, 1, "the parse gate ran exactly once for the .js target");
+      const tmpPath = recorded[0][1];
+      assert.equal(existsSync(tmpPath), false, "the --check temp path no longer exists after the run");
+    } finally {
+      setParseGateExecFileFn(null); // restore the real promisified execFile
+    }
+  });
+
+  test("--fix: extension routing — a .md finding lands while node --check is never invoked (D-03)", async () => {
+    const recorded = [];
+    const recording = async (_file, args) => { recorded.push([...args]); };
+    setParseGateExecFileFn(recording);
+    try {
+      const reviewerCtrl = { structured: { findings: [
+        { id: "IF-01", severity: "INFO", file: "lib/notes.md", lines: "1", title: "t", evidence: "e", suggestion: "s" },
+      ]}};
+      const fixerCtrl = { structured: () => ({
+        id: "IF-01", status: "fixed", file: "lib/notes.md",
+        edits: [{ find: "export const x = 1;", replace: "note: fixed" }],
+      })};
+      const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+      const { ctx, fs } = await mountReview({ subagents: subs });
+      await bootstrapReview(ctx);
+      const gsdState = ctx.get("gsdState");
+      ctx.gitFn = makeFakeGit().fakeGit;
+      await seedSourceFile(fs, "lib/notes.md");
+
+      const res = await runReview(ctx, { phase: 1, all: true, files: "lib/notes.md" });
+      assert.match(res, /REVIEW-FIX/i);
+      assert.equal(recorded.length, 0, "node --check must never run for a .md target");
+      const notes = await fs.readText(await fs.resolve(`${CWD}/lib/notes.md`));
+      assert.equal(notes, "note: fixed\n", "the non-JS fix landed via anchor validation only");
+      const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+      const { frontmatter } = parseFrontmatter(fixReport);
+      assert.equal(frontmatter.fixes_applied, 1);
+    } finally {
+      setParseGateExecFileFn(null);
+    }
+  });
+
+  test("--fix: an injected failing execFileFn on a .js target → skipped with the parse cause (OQ-10)", async () => {
+    const failing = async () => {
+      throw Object.assign(new Error("node subprocess exploded"), { stderr: "simulated node fault stderr" });
+    };
+    setParseGateExecFileFn(failing);
+    try {
+      const reviewerCtrl = { structured: { findings: [
+        { id: "CR-01", severity: "BLOCKER", file: "lib/foo.js", lines: "1", title: "t", evidence: "e", suggestion: "s" },
+      ]}};
+      const fixerCtrl = { structured: () => ({
+        id: "CR-01", status: "fixed", file: "lib/foo.js",
+        edits: [{ find: "export const x = 1;", replace: "export const x = 1; // ok" }],
+      })};
+      const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+      const { ctx, fs } = await mountReview({ subagents: subs });
+      await bootstrapReview(ctx);
+      const gsdState = ctx.get("gsdState");
+      ctx.gitFn = makeFakeGit().fakeGit;
+      await seedSourceFile(fs, "lib/foo.js");
+
+      await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js" });
+      const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+      const { frontmatter, body } = parseFrontmatter(fixReport);
+      assert.equal(frontmatter.fixes_applied, 0);
+      assert.match(body, /parse check failed: simulated node fault stderr/);
+      const foo = await fs.readText(await fs.resolve(`${CWD}/lib/foo.js`));
+      assert.equal(foo, "export const x = 1;\n", "byte-identical — abort before write");
+    } finally {
+      setParseGateExecFileFn(null);
+    }
+  });
+
+  test("--fix: commitSourceFiles warning after a write restores the pre-edit file (OQ-5/D-12)", async () => {
+    // A gitFn whose diff --cached --name-only always returns empty → the
+    // commit path reports "nothing staged" AFTER the write landed.
+    const gitCalls = [];
+    const nothingStagedGit = async (_cwd, args) => {
+      gitCalls.push([...args]);
+      if (args[0] === "rev-parse") return "deadbeefnever";
+      return "";
+    };
+    const reviewerCtrl = { structured: { findings: [
+      { id: "CR-01", severity: "BLOCKER", file: "lib/foo.js", lines: "1", title: "t", evidence: "e", suggestion: "s" },
+    ]}};
+    const fixerCtrl = { structured: () => ({
+      id: "CR-01", status: "fixed", file: "lib/foo.js",
+      edits: [{ find: "export const x = 1;", replace: "export const x = 1; // should be rolled back" }],
+    })};
+    const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+    const { ctx, fs } = await mountReview({ subagents: subs });
+    await bootstrapReview(ctx);
+    const gsdState = ctx.get("gsdState");
+    ctx.gitFn = nothingStagedGit;
+    await seedSourceFile(fs, "lib/foo.js");
+
+    const res = await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js" });
+    assert.match(res, /REVIEW-FIX/i);
+    const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+    const { frontmatter, body } = parseFrontmatter(fixReport);
+    // The file is restored byte-identical — a "fixed" row always implies a
+    // landed commit, so this fix is skipped with the warning as its cause.
+    const foo = await fs.readText(await fs.resolve(`${CWD}/lib/foo.js`));
+    assert.equal(foo, "export const x = 1;\n", "disk state restored to match the report");
+    assert.equal(frontmatter.status, "skipped");
+    assert.equal(frontmatter.fixes_applied, 0);
+    assert.equal(frontmatter.fixes_skipped, 1);
+    assert.deepEqual(frontmatter.commits, []);
+    assert.match(body, /nothing staged/, "the warning is the recorded cause");
+  });
+
+  test("--fix: rev-parse failure after a landed commit keeps 'fixed' with an unresolved-hash note (OQ-11)", async () => {
+    // add/diff/commit behave like the real seam (the commit LANDS); only the
+    // rev-parse HEAD hash capture faults.
+    const gitCalls = [];
+    const commitWorksButRevParseFails = async (_cwd, args) => {
+      gitCalls.push([...args]);
+      if (args[0] === "rev-parse") throw new Error("rev-parse blew up");
+      if (args[0] === "add") return "";
+      if (args[0] === "diff" && args[1] === "--cached" && args[2] === "--name-only") {
+        const lastAdd = [...gitCalls].reverse().find((c) => c[0] === "add");
+        return lastAdd ? lastAdd.slice(1).join("\n") : "";
+      }
+      if (args[0] === "commit") return "";
+      return "";
+    };
+    const reviewerCtrl = { structured: { findings: [
+      { id: "CR-01", severity: "BLOCKER", file: "lib/foo.js", lines: "1", title: "t", evidence: "e", suggestion: "s" },
+    ]}};
+    const fixerCtrl = { structured: () => ({
+      id: "CR-01", status: "fixed", file: "lib/foo.js",
+      edits: [{ find: "export const x = 1;", replace: "export const x = 1; // landed" }],
+    })};
+    const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+    const { ctx, fs } = await mountReview({ subagents: subs });
+    await bootstrapReview(ctx);
+    const gsdState = ctx.get("gsdState");
+    ctx.gitFn = commitWorksButRevParseFails;
+    await seedSourceFile(fs, "lib/foo.js");
+
+    const res = await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js" });
+    assert.match(res, /REVIEW-FIX/i);
+    const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+    const { frontmatter, body } = parseFrontmatter(fixReport);
+    // The commit exists — the row stays 'fixed' and fixes_applied stays truthful.
+    assert.equal(frontmatter.status, "applied");
+    assert.equal(frontmatter.fixes_applied, 1);
+    assert.equal(frontmatter.fixes_skipped, 0);
+    assert.deepEqual(frontmatter.commits, [], "no hash was captured");
+    const foo = await fs.readText(await fs.resolve(`${CWD}/lib/foo.js`));
+    assert.equal(foo, "export const x = 1; // landed\n", "the fix stays on disk");
+    assert.match(body, /commit hash unresolved: rev-parse blew up/, "the unresolved-hash note renders on the row");
   });
 });
 
