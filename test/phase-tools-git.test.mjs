@@ -82,3 +82,38 @@ describe("phase tools auto-commit via shared commitArtifacts (D-03/D-04/D-06)", 
     assert.match(src, /DO NOT commit/, "the verifier subagent must still be told not to commit VERIFICATION.md");
   });
 });
+
+// Phase 58 node-repair static wiring (plan 01): lib/repair.js rides the same
+// shared commitArtifacts seam with its own scope "repair", keeps all git logic
+// in the shared helper, and never advances STATE itself (D-01 — repair is an
+// out-of-band action; the delegated tools own every STATE transition).
+describe("repair.js auto-commits via shared commitArtifacts (phase 58, D-01/D-10/D-12)", () => {
+  test("lib/repair.js imports commitArtifacts from ./_git-artifacts.js", async () => {
+    const src = await readLib("repair.js");
+    assert.match(
+      src,
+      /import\s*\{\s*commitArtifacts\s*\}\s*from\s*["']\.\/_git-artifacts\.js["']/,
+      "repair.js must import commitArtifacts from ./_git-artifacts.js",
+    );
+  });
+
+  test("lib/repair.js uses scope \"repair\" exactly once", async () => {
+    const src = await readLib("repair.js");
+    const count = (src.match(/scope: "repair"/g) || []).length;
+    assert.equal(count, 1, `scope "repair" must appear exactly once in repair.js, found ${count}`);
+  });
+
+  test("lib/repair.js has NO inline git logic (stays in the shared helper)", async () => {
+    const src = await readLib("repair.js");
+    assert.doesNotMatch(src, /promisify\(\s*execFile\s*\)/, "repair.js must not re-import promisify(execFile)");
+    assert.doesNotMatch(src, /execFileSync\s*\(\s*["']git["']/, "repair.js must not shell out to git synchronously");
+    assert.doesNotMatch(src, /["']git["']\s*,\s*\[/, "repair.js must not invoke the git CLI inline");
+  });
+
+  test("lib/repair.js never advances STATE itself (D-01)", async () => {
+    const src = await readLib("repair.js");
+    assert.doesNotMatch(src, /setActivePhase/, "repair.js must not call setActivePhase");
+    assert.doesNotMatch(src, /completePhase/, "repair.js must not call completePhase");
+    assert.doesNotMatch(src, /setStep\(/, "repair.js must not call setStep(");
+  });
+});

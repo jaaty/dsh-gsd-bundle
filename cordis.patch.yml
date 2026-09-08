@@ -153,6 +153,13 @@
     - id: gsd-add-tests
       name: '@dsh-gsd/bundle/add-tests'
 
+    # The node-repair out-of-band orchestrator: bounded automatic recovery
+    # rounds (gsd_plan --gaps → gsd_execute --gaps-only → gsd_verify --gaps)
+    # for a phase whose verification found gaps. Not a loop step; it
+    # orchestrates the loop.
+    - id: gsd-repair
+      name: '@dsh-gsd/bundle/repair'
+
     - id: gsd-ship
       name: '@dsh-gsd/bundle/ship'
 
