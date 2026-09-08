@@ -120,6 +120,7 @@
   },
   "files": [
     "lib/*.js",
+    "lib/*.mjs",
     "cordis.patch.yml",
     "README.md",
     "NOTICE",
