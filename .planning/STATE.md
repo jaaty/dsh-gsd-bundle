@@ -2,20 +2,20 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: idle
-active_phase: null
-next_action: null
-next_phases: [57]
+status: plan
+active_phase: 58
+next_action: plan-phase
+next_phases: [58]
 progress:
   total_phases: 58
   completed_phases: 57
   total_plans: 2
   completed_plans: 149
   percent: 98
-current_phase: 57
-current_phase_name: mvp-phase
+current_phase: 58
+current_phase_name: node-repair
 current_plan: 2
-last_updated: "2026-09-08T03:14:37.787Z"
+last_updated: "2026-09-08T03:17:54.713Z"
 state_head: null
 last_activity: 2026-09-08
 stopped_at: "Phase 57 shipped — PR #71"
@@ -297,6 +297,7 @@ _No active phase._
 - Phase 57: planned — 2 plan(s) across 2 wave(s).
 - Phase 57: plan 01 executed — gsd_mvp_phase tool + gsdMvpPhase capability + /gsd-mvp-phase command (propose-then-confirm scoping -> real PLAN.md via gsd_plan -> delegate to execute/verify/ship, fail-fast); mount/capabilities/render counts updated; 1041 tests green.
 - Phase 57 shipped — PR #71 (https://github.com/jaaty/dsh-gsd-bundle/pull/71)
+- Phase 58: CONTEXT.md sealed — 12 decisions
 
 ### Blockers / Concerns
 _none_
