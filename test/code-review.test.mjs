@@ -540,11 +540,22 @@ function makeReviewFixSubagents(reviewerCtrl, fixerCtrl) {
   };
 }
 
-// A fake gitFn that records calls and simulates staging/committing.
+// A fake gitFn that records calls and simulates staging/committing. rev-parse
+// (the D-12 per-fix hash capture) returns a distinct fake full hash per call,
+// recorded in `hashes` in call order so tests can assert exactly which hashes
+// landed in REVIEW-FIX.md.
 function makeFakeGit() {
   const calls = [];
+  const hashes = [];
+  let revParseCount = 0;
   const fakeGit = async (_cwd, args) => {
     calls.push([...args]);
+    if (args[0] === "rev-parse") {
+      revParseCount++;
+      const hash = `deadbeef${String(revParseCount).padStart(2, "0")}c0ffee`;
+      hashes.push(hash);
+      return hash;
+    }
     if (args[0] === "add") return "";
     if (args[0] === "diff" && args[1] === "--cached" && args[2] === "--name-only") {
       // Return the staged files from the last "add" call.
@@ -554,7 +565,7 @@ function makeFakeGit() {
     if (args[0] === "commit") return "";
     return "";
   };
-  return { calls, fakeGit };
+  return { calls, fakeGit, hashes };
 }
 
 const FINDINGS_MIXED = {
@@ -621,17 +632,36 @@ describe("code-review: --fix per-fix atomic commits + severity filtering (D-04/D
     assert.match(CODE_FIXER_PROMPT, /gsd-code-fixer/i);
     assert.match(CODE_FIXER_PROMPT, /Do NOT commit/i);
     assert.match(CODE_FIXER_PROMPT, /Do NOT.*worktree|Do NOT manage worktree/i);
+    // Anchor-edit contract (D-02): bounded edits with verbatim exactly-once
+    // anchors — the full-file-echo demand is gone.
+    assert.match(CODE_FIXER_PROMPT, /edits/);
+    assert.match(CODE_FIXER_PROMPT, /verbatim/i);
+    assert.match(CODE_FIXER_PROMPT, /exactly once/i);
+    assert.doesNotMatch(CODE_FIXER_PROMPT, /FULL fixed file content/i);
   });
 
   test("--fix: per-fix atomic commits with scoped messages + REVIEW-FIX.md (D-11/D-12)", async () => {
-    const { calls: gitCalls, fakeGit } = makeFakeGit();
+    const { calls: gitCalls, fakeGit, hashes } = makeFakeGit();
     const reviewerCtrl = { structured: FINDINGS_MIXED };
+    const spawnOrder = [];
+    reviewerCtrl.capture = () => spawnOrder.push("reviewer");
     let fixerCallIdx = 0;
     const fixerCtrl = {
+      capture: () => spawnOrder.push("fixer"),
       structured: () => {
         const fixes = [
-          { id: "CR-01", status: "fixed", file: "lib/foo.js", content: "fixed content 1" },
-          { id: "WR-01", status: "fixed", file: "lib/bar.js", content: "fixed content 2" },
+          {
+            id: "CR-01", status: "fixed", file: "lib/foo.js",
+            // Two ordered edits: edit 2's anchor only exists after edit 1 lands.
+            edits: [
+              { find: "export const x = 1;", replace: "export const x = 0;" },
+              { find: "export const x = 0;", replace: "export const x = 42; // guarded null" },
+            ],
+          },
+          {
+            id: "WR-01", status: "fixed", file: "lib/bar.js",
+            edits: [{ find: "export const x = 1;", replace: "const x = 1; // const style" }],
+          },
         ];
         return fixes[fixerCallIdx++];
       },
@@ -650,23 +680,43 @@ describe("code-review: --fix per-fix atomic commits + severity filtering (D-04/D
     const res = await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js,lib/bar.js,lib/baz.js" });
     assert.match(res, /REVIEW-FIX/i);
 
+    // One-shot flow (D-04): the reviewer spawns before any fixer spawn.
+    assert.equal(spawnOrder[0], "reviewer", "reviewer must spawn before the first fixer");
+    assert.equal(spawnOrder[1], "fixer");
+
     // REVIEW-FIX.md was written with 2 fixes applied (BLOCKER + WARNING, no INFO).
     const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
     assert.ok(fixReport, "REVIEW-FIX.md was not written");
-    const { frontmatter } = parseFrontmatter(fixReport);
+    const { frontmatter, body } = parseFrontmatter(fixReport);
     assert.equal(frontmatter.fixes_applied, 2);
+    assert.equal(frontmatter.status, "applied");
+    // Real per-fix commit hashes recorded (D-11/D-12): frontmatter commits
+    // deep-equal the two rev-parse captures, in fix order.
+    assert.deepEqual(frontmatter.commits, [hashes[0], hashes[1]]);
 
-    // Fix content was written to the files.
+    // Anchor edits were applied to the files (not a full-content echo):
+    // foo.js got both ordered edits, bar.js got its single edit.
     const fooContent = await fs.readText(await fs.resolve(`${CWD}/lib/foo.js`));
-    assert.equal(fooContent, "fixed content 1");
+    assert.equal(fooContent, "export const x = 42; // guarded null\n");
     const barContent = await fs.readText(await fs.resolve(`${CWD}/lib/bar.js`));
-    assert.equal(barContent, "fixed content 2");
+    assert.equal(barContent, "const x = 1; // const style\n");
 
-    // commitSourceFiles was called twice (one per finding) with scoped messages.
+    // Body rows carry the commit hashes (D-11 manual-report shape).
+    assert.match(body, new RegExp(hashes[0]));
+    assert.match(body, new RegExp(hashes[1]));
+
+    // commitSourceFiles was called twice (one per finding) with scoped messages,
+    // each followed by a rev-parse HEAD hash capture (D-12).
     const commitCalls = gitCalls.filter((c) => c[0] === "commit");
     assert.equal(commitCalls.length, 2, "expected 2 per-fix commits");
     assert.match(commitCalls[0][2], /phase 1 review-fix.*F01.*BLOCKER/i);
     assert.match(commitCalls[1][2], /phase 1 review-fix.*F02.*WARNING/i);
+    const revParseCalls = gitCalls.filter((c) => c[0] === "rev-parse" && c[1] === "HEAD");
+    assert.equal(revParseCalls.length, 2, "expected one rev-parse HEAD per fix commit");
+    for (const cc of commitCalls) {
+      const idx = gitCalls.indexOf(cc);
+      assert.deepEqual(gitCalls[idx + 1], ["rev-parse", "HEAD"], "hash capture must follow each commit");
+    }
   });
 
   test("--fix fail-fast: review UNAVAILABLE → throws (D-09)", async () => {
@@ -692,9 +742,9 @@ describe("code-review: --fix per-fix atomic commits + severity filtering (D-04/D
     const fixerCtrl = {
       structured: () => {
         const fixes = [
-          { id: "CR-01", status: "fixed", file: "lib/foo.js", content: "f1" },
-          { id: "WR-01", status: "fixed", file: "lib/bar.js", content: "f2" },
-          { id: "IF-01", status: "fixed", file: "lib/baz.js", content: "f3" },
+          { id: "CR-01", status: "fixed", file: "lib/foo.js", edits: [{ find: "export const x = 1;", replace: "export const x = 0; // guarded" }] },
+          { id: "WR-01", status: "fixed", file: "lib/bar.js", edits: [{ find: "export const x = 1;", replace: "const x = 1;" }] },
+          { id: "IF-01", status: "fixed", file: "lib/baz.js", edits: [{ find: "export const x = 1;", replace: "export const x = 1; // trimmed" }] },
         ];
         return fixes[fixerCallIdx++];
       },
@@ -722,8 +772,8 @@ describe("code-review: --fix per-fix atomic commits + severity filtering (D-04/D
     const fixerCtrl = {
       structured: () => {
         const fixes = [
-          { id: "CR-01", status: "fixed", file: "lib/foo.js", content: "f1" },
-          { id: "WR-01", status: "fixed", file: "lib/bar.js", content: "f2" },
+          { id: "CR-01", status: "fixed", file: "lib/foo.js", edits: [{ find: "export const x = 1;", replace: "export const x = 0; // guarded" }] },
+          { id: "WR-01", status: "fixed", file: "lib/bar.js", edits: [{ find: "export const x = 1;", replace: "const x = 1;" }] },
         ];
         return fixes[fixerCallIdx++];
       },
