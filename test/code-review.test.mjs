@@ -963,6 +963,33 @@ describe("code-review: --fix tool-side structural/path validation (OQ-6/OQ-7/OQ-
   });
 });
 
+// ── --fix unchanged guards (D-04/D-08) ───────────────────────────────────────
+
+describe("code-review: --fix unchanged guards (D-04/D-08)", () => {
+  test("clean review with fix:true → soft-skip, NO REVIEW-FIX.md, no fixer spawn (D-08)", async () => {
+    let fixerCalls = 0;
+    const reviewerCtrl = { structured: { findings: [] } };
+    const fixerCtrl = {
+      structured: () => {
+        fixerCalls++;
+        return { id: "x", status: "fixed", file: "lib/sample.js", edits: [] };
+      },
+    };
+    const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+    const { ctx, fs } = await mountReview({ subagents: subs });
+    await bootstrapReview(ctx);
+    const gsdState = ctx.get("gsdState");
+    ctx.gitFn = makeFakeGit().fakeGit;
+    const rel = await seedSourceFile(fs);
+
+    const res = await runReview(ctx, { phase: 1, fix: true, files: rel });
+    assert.match(res, /clean|no findings/i);
+    const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+    assert.ok(!fixReport, "a clean review must not write REVIEW-FIX.md");
+    assert.equal(fixerCalls, 0, "no fixer spawn on a clean review");
+  });
+});
+
 // ── --auto iteration loop (D-06) ─────────────────────────────────────────────
 
 describe("code-review: --auto iteration loop (D-06)", () => {
@@ -984,7 +1011,12 @@ describe("code-review: --auto iteration loop (D-06)", () => {
     const fixerCtrl = {
       structured: () => {
         fixerCallCount++;
-        return { id: "x", status: "fixed", file: "lib/foo.js", content: "fixed" };
+        // Anchor-edit fixtures: unique anchors copied from the seeded content.
+        const fixes = [
+          { id: "CR-01", status: "fixed", file: "lib/foo.js", edits: [{ find: "export const x = 1;", replace: "export const x = 2; // fixed" }] },
+          { id: "WR-01", status: "fixed", file: "lib/bar.js", edits: [{ find: "export const x = 1;", replace: "const x = 1; // const style" }] },
+        ];
+        return fixes[fixerCallCount - 1];
       },
     };
     const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
@@ -1003,6 +1035,9 @@ describe("code-review: --auto iteration loop (D-06)", () => {
     assert.equal(fixerCallCount, 2, "fixer should be spawned for iteration 1's 2 blocking findings");
     // Should mention convergence, not cap.
     assert.match(res, /converg|resolved|clean|iteration/i);
+    // The round-1 fix actually landed on disk (anchor edits applied, not echoed).
+    const fooContent = await fs.readText(await fs.resolve(`${CWD}/lib/foo.js`));
+    assert.equal(fooContent, "export const x = 2; // fixed\n");
   });
 
   test("cap: reviewer always returns BLOCKER → reaches max 3 iterations", async () => {
@@ -1019,7 +1054,7 @@ describe("code-review: --auto iteration loop (D-06)", () => {
     const fixerCtrl = {
       structured: () => {
         fixerCallCount++;
-        return { id: "CR-01", status: "fixed", file: "lib/foo.js", content: "fixed" };
+        return { id: "CR-01", status: "fixed", file: "lib/foo.js", edits: [{ find: "export const x = 1;", replace: "export const x = 2; // fixed" }] };
       },
     };
     const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
