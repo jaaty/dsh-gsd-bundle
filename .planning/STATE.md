@@ -5,20 +5,20 @@ milestone_name: core-loop-helpers
 status: idle
 active_phase: null
 next_action: null
-next_phases: [57]
+next_phases: [58]
 progress:
-  total_phases: 58
-  completed_phases: 57
-  total_plans: 2
-  completed_plans: 149
+  total_phases: 59
+  completed_phases: 58
+  total_plans: 3
+  completed_plans: 153
   percent: 98
-current_phase: 57
-current_phase_name: mvp-phase
-current_plan: 2
-last_updated: "2026-09-08T03:14:37.787Z"
+current_phase: 58
+current_phase_name: node-repair
+current_plan: 3
+last_updated: "2026-09-08T04:53:46.219Z"
 state_head: null
 last_activity: 2026-09-08
-stopped_at: "Phase 57 shipped — PR #71"
+stopped_at: "Phase 58 shipped — PR #72"
 paused_at: null
 ---
 # GSD STATE
@@ -297,6 +297,13 @@ _No active phase._
 - Phase 57: planned — 2 plan(s) across 2 wave(s).
 - Phase 57: plan 01 executed — gsd_mvp_phase tool + gsdMvpPhase capability + /gsd-mvp-phase command (propose-then-confirm scoping -> real PLAN.md via gsd_plan -> delegate to execute/verify/ship, fail-fast); mount/capabilities/render counts updated; 1041 tests green.
 - Phase 57 shipped — PR #71 (https://github.com/jaaty/dsh-gsd-bundle/pull/71)
+- Phase 58: CONTEXT.md sealed — 12 decisions
+- Phase 58: planned — 3 plan(s) across 2 wave(s).
+- Phase 58: COVERAGE.md written (coverage 100%, gaps: none)
+- Phase 58: plan 01 executed — gsd_repair engine (trigger gate, strict-order delegation round, bounded 2-round budget, stop-with-cause, REPAIR.md accumulation) + gsdRepair capability + /gsd-repair command + patch row/export/counts (37 tools / 34 commands / 28 keys / 27 rows); 1047 tests green.
+- Phase 58: REVIEW.md written (status issues_found, findings 12 (1B/6W/5I))
+- Phase management add: 59 phase(s) now
+- Phase 58 shipped — PR #72 (https://github.com/jaaty/dsh-gsd-bundle/pull/72)
 
 ### Blockers / Concerns
 _none_

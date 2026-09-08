@@ -17,7 +17,7 @@ import { FakeFs } from "./fake-fs.mjs";
 
 export const CWD = "/project";
 
-// The 26 plugin rows in cordis.patch.yml insert order (D-03), verbatim from
+// The 27 plugin rows in cordis.patch.yml insert order (D-03), verbatim from
 // cordis.patch.yml. Each {id, sub} maps the patch row id to the
 // @dsh-gsd/bundle/<sub> subpath export.
 export const PATCH_ROWS = [
@@ -42,6 +42,7 @@ export const PATCH_ROWS = [
   { id: "gsd-mempalace", sub: "mempalace" },
   { id: "gsd-autonomous", sub: "autonomous" },
   { id: "gsd-add-tests", sub: "add-tests" },
+  { id: "gsd-repair", sub: "repair" },
   { id: "gsd-ship", sub: "ship" },
   { id: "gsd-ui", sub: "ui" },
   { id: "gsd-quick", sub: "quick" },
@@ -230,10 +231,14 @@ export const presentTools = (ctx) =>
   );
 
 // D-02 invariant: no `gsd_*` token appears unless its owning capability was
-// provided in this mount. Any absent-step tool mention is a violation.
+// provided in this mount. Any absent-step tool mention is a violation. The
+// character class INCLUDES `_` (CR-06): `/gsd_[a-z]+/` truncated underscore
+// names ("gsd_quick_batch" → "gsd_quick"), so an absent multi-word tool could
+// pass whenever its truncated prefix's capability was present — the same flaw
+// render.test.mjs fixed and documented in its assertNoAbsentTool.
 export const assertNoAbsentToolToken = (ctx, text, label) => {
   const present = presentTools(ctx);
-  const tokens = text.match(/gsd_[a-z]+/g) || [];
+  const tokens = text.match(/gsd_[a-z_]+/g) || [];
   for (const tok of tokens) {
     assert.ok(
       present.has(tok),
