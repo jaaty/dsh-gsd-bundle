@@ -15,7 +15,7 @@ progress:
 current_phase: 58
 current_phase_name: node-repair
 current_plan: 2
-last_updated: "2026-09-08T03:50:04.211Z"
+last_updated: "2026-09-08T03:50:10.918Z"
 state_head: null
 last_activity: 2026-09-08
 stopped_at: "Phase 57 shipped — PR #71"
@@ -299,6 +299,7 @@ _No active phase._
 - Phase 57 shipped — PR #71 (https://github.com/jaaty/dsh-gsd-bundle/pull/71)
 - Phase 58: CONTEXT.md sealed — 12 decisions
 - Phase 58: planned — 3 plan(s) across 2 wave(s).
+- Phase 58: COVERAGE.md written (coverage 100%, gaps: none)
 
 ### Blockers / Concerns
 _none_
