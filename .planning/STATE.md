@@ -2,7 +2,7 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: verify
+status: review
 active_phase: 58
 next_action: verify-phase
 next_phases: [58]
@@ -15,7 +15,7 @@ progress:
 current_phase: 58
 current_phase_name: node-repair
 current_plan: 3
-last_updated: "2026-09-08T04:26:44.014Z"
+last_updated: "2026-09-08T04:34:38.270Z"
 state_head: null
 last_activity: 2026-09-08
 stopped_at: "Phase 57 shipped — PR #71"
@@ -301,6 +301,7 @@ _No active phase._
 - Phase 58: planned — 3 plan(s) across 2 wave(s).
 - Phase 58: COVERAGE.md written (coverage 100%, gaps: none)
 - Phase 58: plan 01 executed — gsd_repair engine (trigger gate, strict-order delegation round, bounded 2-round budget, stop-with-cause, REPAIR.md accumulation) + gsdRepair capability + /gsd-repair command + patch row/export/counts (37 tools / 34 commands / 28 keys / 27 rows); 1047 tests green.
+- Phase 58: REVIEW.md written (status issues_found, findings 12 (1B/6W/5I))
 
 ### Blockers / Concerns
 _none_
