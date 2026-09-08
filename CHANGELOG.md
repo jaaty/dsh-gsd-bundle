@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-09-08
+
+### Added
+
+- **Milestone `core-loop-helpers`** — eight core-loop helper commands completing the phase-loop tooling surface. Version bumped to 3.1.0.
+  - **phase-management** (PR #65): /gsd-phase — add, insert, remove, reorder, and edit phases directly in ROADMAP.md with validation and integrity checks.
+  - **smart-entry** (PR #67): /gsd-next — detect the current project state and route the user to the best next action, with an auto-advance option.
+  - **freeform-routing** (PR #68): /gsd-route — parse a plain-English intent and dispatch it to the most appropriate GSD command (recommend-only).
+  - **quick-batch** (PR #69): /gsd-quick-batch — run multiple quick tasks in a single batch with per-task results and failure isolation.
+  - **fast-mode** (PR #70): /gsd-fast-mode — a lightweight single-pass fast path for simple phase work.
+  - **mvp-phase** (PR #71): /gsd-mvp-phase — guide a minimal-viable-phase propose-then-confirm scoping flow.
+  - **node-repair** (PR #72): /gsd-repair — bounded automatic recovery for a phase whose verification failed instead of stopping.
+  - **review-fix-companion** (PR #73): the gsd_code_review --fix companion rebuilt on a bounded anchor-edit contract — per-fix atomic commits with real commit hashes, skip-and-continue fault isolation, a node --check parse gate before write, and REVIEW-FIX.md reporting that works in live sessions.
+
 ## [3.0.0] - 2026-09-04
 
 ### Added

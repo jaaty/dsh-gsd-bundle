@@ -5,17 +5,17 @@ milestone_name: core-loop-helpers
 status: idle
 active_phase: null
 next_action: null
-next_phases: [59]
+next_phases: []
 progress:
   total_phases: 59
   completed_phases: 59
   total_plans: 3
   completed_plans: 156
   percent: 100
-current_phase: 59
-current_phase_name: review-fix-companion
-current_plan: 2
-last_updated: "2026-09-08T06:34:49.615Z"
+current_phase: null
+current_phase_name: null
+current_plan: null
+last_updated: "2026-09-08T06:44:54.451Z"
 state_head: null
 last_activity: 2026-09-08
 stopped_at: "Phase 59 shipped — PR #73"
@@ -308,6 +308,17 @@ _No active phase._
 - Phase 59: planned — 3 plan(s) across 2 wave(s).
 - Phase 59: COVERAGE.md written (coverage 100%, gaps: none)
 - Phase 59 shipped — PR #73 (https://github.com/jaaty/dsh-gsd-bundle/pull/73)
+- Milestone core-loop-helpers: AUDIT.md written (status ready-to-close)
+- quick 2026-09-08-milestone-release-v3-1-0: Release the `core-loop-helpers` milestone as v3.1.0. Orient against `.planning/STATE.md` first: the milestone is fully COMPLETE (59/59 phases shipped, 81/81 requirements complete, 59/59 verifications passed, close-gate `ready-to-close` per .planning/milestones/core-loop-helpers-AUDIT.md). The v3.1.0 delta over v3.0.0 is phases 52-59 (requirements CLH-01..CLH-09): phase-management (PR #65), smart-entry (PR #67), freeform-routing (PR #68), quick-batch (PR #69), fast-mode (PR #70), mvp-phase (PR #71), node-repair (PR #72), review-fix-companion (PR #73 — merged; PR body has full detail). Branch is main, working tree is clean, local main is AHEAD of origin/main by exactly 1 commit (72d4b1a docs(planning): milestone audit report — push it as part of the release). Existing tags: v1.7.0, v2.0.0, v2.1.0, v2.2.0, v3.0.0 (there is NO v3.1.0 tag yet). package.json version is 3.0.0. CHANGELOG.md has an empty `## [Unreleased]` section above `## [3.0.0] - 2026-09-04`. gh CLI is authenticated as account jaaty. The npm registry is NOT reachable in this environment (npm cache path EROFS) — do NOT attempt npm publish; report it as an environment-blocked warning, matching the v3.0.0 release precedent which also skipped npm publish.
+
+Do the full milestone release end to end, atomically (follow the v3.0.0 release pattern recorded in .planning/quick/2026-09-04-milestone-release-v3-0-0/TASK.md):
+1. Bump the version to 3.1.0 in package.json AND regenerate/sync package-lock.json (npm install --package-lock-only is acceptable if npm ci/network is unavailable; the lockfile's version fields must read 3.1.0).
+2. Add the CHANGELOG `## [3.1.0] - 2026-09-08` block (move nothing into [Unreleased]; leave the empty [Unreleased] section in place above it). Source of truth: the 8 phase goals in .planning/ROADMAP.md rows 52-59 and the merged PR titles (#65..#73) — Added entries for: phase-management (/gsd-phase add/insert/remove/reorder/edit with validation), smart-entry (/gsd-next state detection + auto-advance), freeform-routing (/gsd-route intent dispatch), quick-batch (/gsd-quick-batch), fast-mode (/gsd-fast-mode), mvp-phase (/gsd-mvp-phase), node-repair (/gsd-repair bounded auto-recovery), review-fix-companion (gsd_code_review --fix anchor-edit contract with per-fix atomic commits and REVIEW-FIX.md, working in live sessions). WITHOUT inventing claims not in the ROADMAP/PRs.
+3. Update the README npm-version badge from @3.0.0 to @3.1.0 and update the badge test (test/ has a badge currency gate — find it via grep for '3.0.0' in test/) so CI stays green.
+4. Run `npm test` — the FULL suite must pass (baseline 1109 tests, plus the badge test).
+5. Commit the release prep atomically (version + CHANGELOG + README + badge test in one commit, conventional message like `chore(release): v3.1.0`), then push main to origin (first push the pending 72d4b1a audit commit — a single `git push origin main` covers both). If a direct push to main is rejected by branch protection, open a PR from a release-prep branch and squash-merge it, then reset local main to origin (the v3.0.0 release used PR #60 this way).
+6. Create the annotated tag v3.1.0 pointing at the release commit on main and push it, then create the GitHub Release v3.1.0 from that tag with notes drafted strictly from the CHANGELOG [3.1.0] block (write notes to a fixed .planning temp path first, e.g. .planning/quick/release-notes-v3.1.0.md, and pass the file via argument array).
+All git/gh commands must use explicit argument arrays; never interpolate a model- or user-supplied value into a shell string. Do not push force, do not alter protected refs, do not run git clean/reset --hard. The working tree must be left clean on main with the v3.1.0 tag pointing at the release commit. Record the release as a one-line entry under .planning/quick/2026-09-04-milestone-release-v3-1-0-style (use slug milestone-release-v3-1-0).
 
 ### Blockers / Concerns
 _none_
