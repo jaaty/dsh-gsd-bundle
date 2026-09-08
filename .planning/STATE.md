@@ -10,12 +10,12 @@ progress:
   total_phases: 59
   completed_phases: 58
   total_plans: 3
-  completed_plans: 153
+  completed_plans: 155
   percent: 98
 current_phase: 59
 current_phase_name: review-fix-companion
-current_plan: 3
-last_updated: "2026-09-08T05:25:37.850Z"
+current_plan: 1
+last_updated: "2026-09-08T05:32:03.997Z"
 state_head: null
 last_activity: 2026-09-08
 stopped_at: "Phase 58 shipped — PR #72"
