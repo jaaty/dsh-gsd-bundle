@@ -127,3 +127,4 @@
 - [x] CLH-06: Fast mode: provide a lightweight single-pass fast path for simple phase work.
 - [x] CLH-07: MVP phase: guide a minimal-viable-phase planning and execution flow.
 - [x] CLH-08: Node repair: automatically recover a plan whose verification failed instead of stopping.
+- [ ] CLH-09: Review-fix companion: the gsd_code_review fix flag applies REVIEW.md findings as per-fix atomic commits into REVIEW-FIX.md and works in live sessions.
