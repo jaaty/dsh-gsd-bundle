@@ -15,7 +15,7 @@ import { apply as applyCoreTools } from "../lib/core-tools.js";
 import { buildCapability, CAPABILITY_KEYS } from "../lib/_capabilities.js";
 import { loopSteps, renderPersonaBody } from "../lib/_render.js";
 import { parseFrontmatter } from "../lib/_shared.js";
-import { resolveFindings, severityCounts, resolveFixFlags, computeScope, validateFiles, filterSourcePaths, filterBySeverity, hasBlockingFindings } from "../lib/code-review.js";
+import { resolveFindings, severityCounts, resolveFixFlags, computeScope, validateFiles, filterSourcePaths, filterBySeverity, hasBlockingFindings, applyAnchorEdits } from "../lib/code-review.js";
 import { commitSourceFiles } from "../lib/_git-artifacts.js";
 import { CODE_FIXER_PROMPT } from "../lib/_agents.js";
 
@@ -514,6 +514,71 @@ describe("code-review: 3-tier file scoping (D-08)", () => {
   });
 });
 
+// ── applyAnchorEdits pure helper (D-01/D-02/D-03) ────────────────────────────
+
+describe("code-review: applyAnchorEdits pure helper (D-01/D-02/D-03)", () => {
+  const CONTENT = "export const x = 1;\nexport const y = 2;\n";
+
+  test("unique-anchor happy path replaces exactly the intended occurrence", () => {
+    const r = applyAnchorEdits(CONTENT, [{ find: "export const y = 2;", replace: "export const y = 20;" }]);
+    assert.equal(r.failed, null);
+    assert.equal(r.content, "export const x = 1;\nexport const y = 20;\n");
+  });
+
+  test("sequential edits: edit 2 validates against the result of edit 1 (evolving content, D-02)", () => {
+    const r = applyAnchorEdits(CONTENT, [
+      { find: "export const x = 1;", replace: "export const x = 10;" },
+      { find: "export const x = 10;", replace: "export const x = 100;" },
+    ]);
+    assert.equal(r.failed, null);
+    assert.equal(r.content, "export const x = 100;\nexport const y = 2;\n");
+  });
+
+  test("duplicate anchor (find occurs twice) fails naming the edit and the count", () => {
+    const dup = "const a = 1;\nconst a = 1;\n";
+    const r = applyAnchorEdits(dup, [{ find: "const a = 1;", replace: "const a = 2;" }]);
+    assert.ok(r.failed, "a twice-matching anchor must fail");
+    assert.match(r.failed, /edit 1/);
+    assert.match(r.failed, /2 times/);
+    assert.equal(r.content, dup, "original returned byte-identical");
+  });
+
+  test("missing anchor (0 occurrences) fails naming the edit and the count", () => {
+    const r = applyAnchorEdits(CONTENT, [{ find: "no such line", replace: "x" }]);
+    assert.ok(r.failed);
+    assert.match(r.failed, /edit 1/);
+    assert.match(r.failed, /0 times/);
+    assert.equal(r.content, CONTENT);
+  });
+
+  test("empty find string fails", () => {
+    const r = applyAnchorEdits(CONTENT, [{ find: "", replace: "x" }]);
+    assert.ok(r.failed, "an empty find anchor must be rejected");
+    assert.equal(r.content, CONTENT);
+  });
+
+  test("replace containing the find string does not corrupt a later edit's matching", () => {
+    // Edit 1's replacement embeds edit 2's anchor; edit 2 must still match
+    // exactly once against the evolving content and replace correctly (OQ-9).
+    const r = applyAnchorEdits("A;\nB;\n", [
+      { find: "B;", replace: "B; // B; was here" },
+      { find: "B; // B; was here", replace: "C;" },
+    ]);
+    assert.equal(r.failed, null);
+    assert.equal(r.content, "A;\nC;\n");
+  });
+
+  test("any failed edit returns the ORIGINAL content byte-identical (D-03 atomicity)", () => {
+    const r = applyAnchorEdits(CONTENT, [
+      { find: "export const x = 1;", replace: "export const x = 10;" },
+      { find: "missing anchor", replace: "zzz" },
+    ]);
+    assert.ok(r.failed);
+    assert.match(r.failed, /edit 2/);
+    assert.equal(r.content, CONTENT, "no partial application may escape");
+  });
+});
+
 // ── --fix per-fix atomic commits + severity filtering (D-04/D-05/D-11/D-12) ──
 
 // A controllable fake subagents factory that routes by label: reviewer vs fixer.
@@ -813,6 +878,88 @@ describe("code-review: --fix per-fix atomic commits + severity filtering (D-04/D
     const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
     assert.ok(fixReport, "REVIEW-FIX.md must be written even on fixer fault");
     assert.match(fixReport, /UNAVAILABLE/i);
+  });
+});
+
+// ── --fix tool-side structural/path validation (OQ-6/OQ-7/OQ-8) ──────────────
+
+describe("code-review: --fix tool-side structural/path validation (OQ-6/OQ-7/OQ-8)", () => {
+  const FINDING = { id: "CR-01", severity: "BLOCKER", file: "lib/foo.js", lines: "1", title: "t", evidence: "e", suggestion: "s" };
+
+  // Mount a --fix run with one seeded source file and controllable reviewer
+  // findings + fixer structured output (value or fn(req)); returns the fixer
+  // spawn count so tests can prove a finding never reached the fixer.
+  async function mountFixScenario(findings, fixerStructured, seed = "lib/foo.js") {
+    const reviewerCtrl = { structured: { findings } };
+    let fixerCalls = 0;
+    const fixerCtrl = {
+      structured: (req) => {
+        fixerCalls++;
+        return typeof fixerStructured === "function" ? fixerStructured(req) : fixerStructured;
+      },
+    };
+    const subs = makeReviewFixSubagents(reviewerCtrl, fixerCtrl);
+    const { ctx, fs } = await mountReview({ subagents: subs });
+    await bootstrapReview(ctx);
+    ctx.gitFn = makeFakeGit().fakeGit;
+    await seedSourceFile(fs, seed);
+    const gsdState = ctx.get("gsdState");
+    return { ctx, fs, gsdState, getFixerCalls: () => fixerCalls };
+  }
+
+  test("status fixed without edits → skipped 'fixer returned no edits', file byte-identical (OQ-6)", async () => {
+    const { ctx, fs, gsdState, getFixerCalls } = await mountFixScenario(
+      [FINDING],
+      { id: "CR-01", status: "fixed", file: "lib/foo.js" },
+    );
+    await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js" });
+    assert.equal(getFixerCalls(), 1, "the fixer did spawn — the tool-side check caught the missing edits");
+    const content = await fs.readText(await fs.resolve(`${CWD}/lib/foo.js`));
+    assert.equal(content, "export const x = 1;\n", "file must stay byte-identical");
+    const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+    const { frontmatter, body } = parseFrontmatter(fixReport);
+    assert.equal(frontmatter.fixes_skipped, 1);
+    assert.equal(frontmatter.fixes_applied, 0);
+    assert.match(body, /fixer returned no edits/);
+  });
+
+  test("mismatched fixer id → skipped 'fixer returned output for finding <id>' (OQ-7)", async () => {
+    const { ctx, fs, gsdState, getFixerCalls } = await mountFixScenario(
+      [FINDING],
+      { id: "WR-99", status: "fixed", file: "lib/foo.js", edits: [{ find: "export const x = 1;", replace: "hacked" }] },
+    );
+    await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js" });
+    assert.equal(getFixerCalls(), 1);
+    const content = await fs.readText(await fs.resolve(`${CWD}/lib/foo.js`));
+    assert.equal(content, "export const x = 1;\n", "mismatched-id output must never be applied");
+    const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+    assert.match(fixReport, /fixer returned output for finding WR-99/);
+  });
+
+  test("mismatched fixer file → skipped naming the mismatch; finding.file stays the target (OQ-8)", async () => {
+    const { ctx, fs, gsdState, getFixerCalls } = await mountFixScenario(
+      [FINDING],
+      { id: "CR-01", status: "fixed", file: "lib/other.js", edits: [{ find: "export const x = 1;", replace: "redirected" }] },
+    );
+    await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js" });
+    assert.equal(getFixerCalls(), 1);
+    const content = await fs.readText(await fs.resolve(`${CWD}/lib/foo.js`));
+    assert.equal(content, "export const x = 1;\n", "a mismatched echoed path must not redirect the write");
+    const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+    assert.match(fixReport, /fixer returned file lib\/other\.js but the finding targets lib\/foo\.js/);
+  });
+
+  test("reviewer finding with an invalid fix target path → skipped without any fixer spawn (OQ-8)", async () => {
+    const evil = { id: "CR-01", severity: "BLOCKER", file: "../evil.js", lines: "1", title: "t", evidence: "e", suggestion: "s" };
+    const { ctx, gsdState, getFixerCalls } = await mountFixScenario(
+      [evil],
+      { id: "CR-01", status: "fixed", file: "../evil.js", edits: [{ find: "x", replace: "y" }] },
+    );
+    await runReview(ctx, { phase: 1, fix: true, files: "lib/foo.js" });
+    assert.equal(getFixerCalls(), 0, "the fixer must not spawn for an invalid fix target path");
+    const fixReport = await gsdState.readArtifact(CWD, 1, "REVIEW-FIX");
+    assert.ok(fixReport);
+    assert.match(fixReport, /invalid fix target path: \.\.\/evil\.js/);
   });
 });
 
