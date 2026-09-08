@@ -2,9 +2,9 @@
 gsd_state_version: 1
 milestone: v3.1.0
 milestone_name: core-loop-helpers
-status: verify
+status: ship
 active_phase: 59
-next_action: verify-phase
+next_action: ship-phase
 next_phases: [59]
 progress:
   total_phases: 59
@@ -15,7 +15,7 @@ progress:
 current_phase: 59
 current_phase_name: review-fix-companion
 current_plan: 2
-last_updated: "2026-09-08T05:40:29.136Z"
+last_updated: "2026-09-08T06:31:28.398Z"
 state_head: null
 last_activity: 2026-09-08
 stopped_at: "Phase 58 shipped — PR #72"
