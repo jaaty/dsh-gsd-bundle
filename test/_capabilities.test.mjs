@@ -1,7 +1,8 @@
 // Unit tests for the capability descriptor model in lib/_capabilities.js.
-// Proves DEGR-01 (the 11-key capability surface), the D-03 descriptor shape,
-// the D-04 per-plugin mapping, the D-03 role enum, the D-11 order-sorted chain,
-// and the D-10 fail-loud validation.
+// Proves DEGR-01 (the CAPABILITY_KEYS surface — currently 28 keys, asserted
+// against the constant below so this count cannot go stale), the D-03
+// descriptor shape, the D-04 per-plugin mapping, the D-03 role enum, the D-11
+// order-sorted chain, and the D-10 fail-loud validation.
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
