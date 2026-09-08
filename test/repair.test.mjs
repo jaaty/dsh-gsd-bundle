@@ -19,6 +19,9 @@ import { FakeFs } from "./helpers/fake-fs.mjs";
 import { buildProject, FENCED_PLAN, FENCED_SUMMARY, VERIFICATION_PASSED, VERIFICATION_GAPS } from "./helpers/project.mjs";
 import { awaitingMarker, parseFrontmatter } from "../lib/_shared.js";
 import { apply as applyRepair, REPAIR_ROUND_BUDGET } from "../lib/repair.js";
+import { apply as applyPlan } from "../lib/plan.js";
+import { apply as applyExecute } from "../lib/execute.js";
+import { apply as applyVerify } from "../lib/verify.js";
 
 const CWD = "/project";
 const PHASE_DIR = `${CWD}/.planning/phases/01-auth`;
@@ -419,3 +422,125 @@ describe("gsd_repair wiring statics via source assertions (V4/V10 — D-01/D-08/
     assert.doesNotMatch(src, /setStep\(/, "repair must not call setStep(");
   });
 });
+
+describe("gsd_repair full-surface integration through the REAL delegate tools (V15 — D-06/D-08)", () => {
+  // Label-keyed fake subagents service for the REAL plan/execute/verify tools,
+  // cloned from test/tools.test.mjs makeSubagents (labels: "plan research …",
+  // "planner …", "plan-checker …", "execute <plan-id>", "verify phase N").
+  // buildProject seeds no RESEARCH.md, so the real gsd_plan delegate spawns the
+  // researcher on round 1 (lib/plan.js:116) and SKIPS it on round 2 (plan.js
+  // persists RESEARCH.md after the researcher returns, lib/plan.js:132).
+  let researchSpawns = 0;
+  let plannerSpawns = 0;
+
+  beforeEach(async () => {
+    await resetHarness();
+    verifyWrites = ["gaps_found", "passed"]; // two-round recovery sequence
+    researchSpawns = 0;
+    plannerSpawns = 0;
+  });
+
+  function makeIntegrationSubagents() {
+    return {
+      getProvider: (n) => (n === "spawn" ? { spawn: true } : undefined),
+      async start(_n, req) {
+        const label = req.label;
+        let text = "done";
+        if (label.startsWith("plan research")) {
+          researchSpawns += 1;
+          text = "# RESEARCH\n\nAll research complete for the repair integration smoke.\n\n## Open Questions\n\n- none (RESOLVED)\n\nStandard.";
+        } else if (label.startsWith("planner")) {
+          // write the NEXT free <PP> fix plan (gap_closure: true) — round 1 → 01,
+          // round 2 → 02, mirroring the real gap-closure planner (lib/plan.js:193).
+          plannerSpawns += 1;
+          const pp = String(plannerSpawns).padStart(2, "0");
+          await fs.writeText({ targetKey: `${PHASE_DIR}/01-auth-${pp}-PLAN.md` }, FENCED_PLAN);
+          text = "## PLANNING COMPLETE";
+        } else if (label.startsWith("plan-checker")) {
+          text = "## VERIFICATION PASSED";
+        } else if (label.startsWith("execute")) {
+          const pp = String(label.split(" ")[1] || "01-auth-01").split("-").pop();
+          await fs.writeText({ targetKey: `${PHASE_DIR}/01-auth-${pp}-SUMMARY.md` }, FENCED_SUMMARY);
+          text = "executor done";
+        } else if (label.startsWith("verify")) {
+          const status = verifyWrites.shift() ?? "gaps_found";
+          await fs.writeText({ targetKey: VERIFICATION_FILE }, status === "passed" ? VERIFICATION_PASSED : VERIFICATION_GAPS);
+          text = `status: ${status}`;
+        }
+        return { result: { output: [{ type: "text", text }], stopReason: "completed", structured: undefined }, dispose: () => {} };
+      },
+    };
+  }
+
+  test("seeded gaps → two rounds → status passed end-to-end with the real plan/execute/verify tools (V15)", async () => {
+    // the REAL gsd_plan stops with its no-CONTEXT guard otherwise (lib/plan.js:94-96)
+    await svc.writeArtifact(CWD, 1, "CONTEXT", "# ctx");
+    await svc.writeArtifact(CWD, 1, "VERIFICATION", VERIFICATION_GAPS);
+
+    const c = {
+      fs,
+      get: (n) => (n === "gsdState" ? svc : n === "subagents" ? makeIntegrationSubagents() : undefined),
+      provide() {},
+      effect: () => () => {},
+    };
+    const tools = [];
+    c.tools = { register: (t) => tools.push(t) };
+    applyPlan(c, {});
+    applyExecute(c, {});
+    applyVerify(c, {});
+    applyRepair(c, {});
+    const tool = tools.find((t) => t && t.name === "gsd_repair");
+    assert.ok(tool, "gsd_repair must be registered");
+    c.tools = tools; // REAL gsd_plan/gsd_execute/gsd_verify + gsd_repair (array shape)
+
+    const res = await tool.execute({ phase: 1 }, exec);
+    assert.match(res, /RECOVERED/, "the report must signal recovery through the real machinery");
+    assert.match(res, /Rounds run: 2/);
+
+    // all three delegate tools really ran and produced their artefacts
+    assert(fs.files.has(`${PHASE_DIR}/01-auth-01-PLAN.md`), "round 1 fix plan must exist");
+    assert.match(fs.files.get(`${PHASE_DIR}/01-auth-01-PLAN.md`), /gap_closure: true/);
+    assert(fs.files.has(`${PHASE_DIR}/01-auth-01-SUMMARY.md`), "round 1 fix plan must have executed");
+    assert(fs.files.has(`${PHASE_DIR}/01-auth-02-PLAN.md`), "round 2 fix plan must exist");
+    assert(fs.files.has(`${PHASE_DIR}/01-auth-02-SUMMARY.md`), "round 2 fix plan must have executed");
+
+    // the final VERIFICATION artefact on FakeFs is passed (written by the real verify)
+    const ver = await svc.readArtifact(CWD, 1, "VERIFICATION");
+    assert.match(ver, /status: passed/);
+
+    // REPAIR.md records the recovery
+    const repair = await svc.readArtifact(CWD, 1, "REPAIR");
+    const { frontmatter: fm, body } = parseFrontmatter(repair);
+    assert.equal(fm.final_status, "passed");
+    assert.equal(fm.rounds_run, 2);
+    assert.match(body, /## Round 2/);
+
+    // round 2 skipped the researcher (RESEARCH.md persisted by round 1 — OQ-9)
+    assert.equal(researchSpawns, 1, "the researcher must spawn exactly once across both rounds");
+
+    // delegated tools own every STATE transition: verify(passed) advanced to ship
+    const st = await svc.readState(CWD);
+    assert.equal(st.frontmatter.status, "ship");
+    assert.equal(String(st.frontmatter.active_phase), "1");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suite-level coverage map (for gap-analysis cross-reference).
+// Decisions → tests:
+//   D-01 (action, never advances STATE)  → "STATE immobility…" test + "never advances STATE" static
+//   D-02 (verify route text)             → plan-02 surface; not asserted here
+//   D-03 (rounds domain, default 2)      → "rounds validation…" + REPAIR_ROUND_BUDGET === 2 + budget-exhaustion default
+//   D-04 (gaps_found-only trigger)       → human_needed / missing-file / unparseable / distinctness tests (zero delegates)
+//   D-05 (passed no-op)                  → "no-op on passed…" test
+//   D-06 (strict round order)            → "single-round happy path…" args/order assertions + integration test
+//   D-07 (budget cap)                    → "budget exhaustion…" + "recovery on round 2…" tests
+//   D-08 (delegate, never fork)          → "delegates, never forks…" static + integration through the REAL tools
+//   D-10 (REPAIR.md + scope-repair commit) → "recovery on round 2 + REPAIR.md accumulation…" + commitArtifacts/scope statics
+//   D-11 (stop-with-cause, no blind retry)→ no-fix-plan / checkpoint-marker tests (exact delegate counts)
+//   D-12 (no new deps, arg-array git)    → "no inline git logic…" static
+// RESEARCH V-numbers → tests:
+//   V1 gate tests · V2 rounds tests · V3 order test · V4 fork static · V5 missing-delegate test
+//   V6 no-fix-plan test · V7 checkpoint/marker test · V8 budget+recovery tests · V9 accumulation test
+//   V10 commit statics · V13 mount counts (test/mount.test.mjs, plan 01) · V14 STATE immobility · V15 integration test
+// ─────────────────────────────────────────────────────────────────────────────
